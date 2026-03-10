@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Classmate Connect</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+padding:20px;
+}
+
+#chatList{
+background:white;
+border:1px solid #ccc;
+margin-bottom:15px;
+}
+
+.chatUser{
+padding:10px;
+border-bottom:1px solid #eee;
+cursor:pointer;
+}
+
+.chatUser:hover{
+background:#f5f5f5;
+}
+
+input{
+display:block;
+margin-top:10px;
+padding:10px;
+width:260px;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+background:#2e86de;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+#chatBox{
+height:300px;
+overflow-y:auto;
+border:1px solid #ccc;
+padding:10px;
+background:white;
+margin-top:10px;
+}
+
+.message{
+padding:8px;
+margin:5px;
+border-radius:10px;
+max-width:70%;
+}
+
+.sent{
+background:#dcf8c6;
+margin-left:auto;
+text-align:right;
+}
+
+.received{
+background:#f1f0f0;
+margin-right:auto;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Classmate Connect</h2>
+
+<!-- LOGIN PAGE -->
+
+<div id="loginPage">
+
+<input id="phoneNumber" placeholder="+91XXXXXXXXXX">
+
+<div id="recaptcha-container"></div>
+
+<button onclick="sendOTP()">Send OTP</button>
+
+<br><br>
+
+<input id="otp" placeholder="Enter OTP">
+
+<button onclick="verifyOTP()">Verify OTP</button>
+
+</div>
+
+<!-- NAME PAGE -->
+
+<div id="namePage" style="display:none">
+
+<h3>Enter Your Name</h3>
+
+<input id="userName" placeholder="Your Name">
+
+<button onclick="saveName()">Continue</button>
+
+</div>
+
+<!-- DASHBOARD -->
+
+<div id="dashboard" style="display:none">
+
+<h3>Your Chats</h3>
+
+<input id="searchPhone" placeholder="Enter phone number to start chat">
+
+<button onclick="startChat()">Start Chat</button>
+
+<div id="chatList"></div>
+
+<h3>Chat with: <span id="chatUserName"></span></h3>
+
+<div id="chatBox"></div>
+
+<input id="messageInput" placeholder="Type message">
+
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+
+const firebaseConfig={
+apiKey:"AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
+authDomain:"classmate-connect-4ef14.firebaseapp.com",
+projectId:"classmate-connect-4ef14",
+storageBucket:"classmate-connect-4ef14.appspot.com",
+messagingSenderId:"836999548178",
+appId:"1:836999548178:web:8fc82fcf07289647c5f7cb"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db=firebase.firestore();
+
+let currentUserPhone="";
+let currentChat="";
+
+window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier("recaptcha-container");
+
+/* SEND OTP */
+
+function sendOTP(){
+
+let phone=document.getElementById("phoneNumber").value;
+
+firebase.auth().signInWithPhoneNumber(phone,window.recaptchaVerifier)
+
+.then(function(result){
+
+window.confirmationResult=result;
+
+alert("OTP Sent");
+
+})
+
+.catch(function(error){
+
+alert(error.message);
+
+});
+
+}
+
+/* VERIFY OTP */
+
+function verifyOTP(){
+
+let code=document.getElementById("otp").value;
+
+confirmationResult.confirm(code)
+
+.then(function(result){
+
+currentUserPhone=result.user.phoneNumber;
+
+document.getElementById("loginPage").style.display="none";
+
+checkUser();
+
+})
+
+.catch(function(error){
+
+alert(error.message);
+
+});
+
+}
+
+/* CHECK USER */
+
+function checkUser(){
+
+db.collection("users").doc(currentUserPhone).get()
+
+.then(function(doc){
+
+if(doc.exists){
+
+document.getElementById("dashboard").style.display="block";
+
+loadChatList();
+
+}else{
+
+document.getElementById("namePage").style.display="block";
+
+}
+
+});
+
+}
+
+/* SAVE NAME */
+
+function saveName(){
+
+let name=document.getElementById("userName").value;
+
+db.collection("users").doc(currentUserPhone).set({
+
+name:name
+
+})
+
+.then(function(){
+
+document.getElementById("namePage").style.display="none";
+
+document.getElementById("dashboard").style.display="block";
+
+loadChatList();
+
+});
+
+}
+
+/* START CHAT */
+
+function startChat(){
+
+let phone=document.getElementById("searchPhone").value;
+
+if(phone==""){
+
+alert("Enter phone number");
+
+return;
+
+}
+
+openChat(phone);
+
+}
+
+/* LOAD CHAT LIST */
+
+function loadChatList(){
+
+db.collection("messages")
+
+.orderBy("time")
+
+.onSnapshot(function(snapshot){
+
+let chatUsers={};
+
+snapshot.forEach(function(doc){
+
+let msg=doc.data();
+
+if(msg.sender==currentUserPhone){
+
+chatUsers[msg.receiver]=true;
+
+}
+
+if(msg.receiver==currentUserPhone){
+
+chatUsers[msg.sender]=true;
+
+}
+
+});
+
+let list=document.getElementById("chatList");
+
+list.innerHTML="";
+
+for(let phone in chatUsers){
+
+db.collection("users").doc(phone).get()
+
+.then(function(doc){
+
+let name=phone;
+
+if(doc.exists){
+
+name=doc.data().name;
+
+}
+
+let div=document.createElement("div");
+
+div.classList.add("chatUser");
+
+div.innerText=name;
+
+div.onclick=function(){
+
+openChat(phone);
+
+};
+
+list.appendChild(div);
+
+});
+
+}
+
+});
+
+}
+
+/* OPEN CHAT */
+
+function openChat(phone){
+
+currentChat=phone;
+
+db.collection("users").doc(phone).get()
+
+.then(function(doc){
+
+let name=phone;
+
+if(doc.exists){
+
+name=doc.data().name;
+
+}
+
+document.getElementById("chatUserName").innerText=name;
+
+});
+
+loadMessages();
+
+}
+
+/* SEND MESSAGE */
+
+function sendMessage(){
+
+let text=document.getElementById("messageInput").value;
+
+if(text=="") return;
+
+db.collection("messages").add({
+
+sender:currentUserPhone,
+receiver:currentChat,
+text:text,
+time:Date.now()
+
+});
+
+document.getElementById("messageInput").value="";
+
+}
+
+/* LOAD MESSAGES */
+
+function loadMessages(){
+
+db.collection("messages")
+
+.orderBy("time")
+
+.onSnapshot(function(snapshot){
+
+let chatBox=document.getElementById("chatBox");
+
+chatBox.innerHTML="";
+
+snapshot.forEach(function(doc){
+
+let msg=doc.data();
+
+if(
+
+(msg.sender==currentUserPhone && msg.receiver==currentChat)
+
+||
+
+(msg.sender==currentChat && msg.receiver==currentUserPhone)
+
+){
+
+let div=document.createElement("div");
+
+div.classList.add("message");
+
+if(msg.sender==currentUserPhone){
+
+div.classList.add("sent");
+
+}else{
+
+div.classList.add("received");
+
+}
+
+div.innerText=msg.text;
+
+chatBox.appendChild(div);
+
+}
+
+});
+
+chatBox.scrollTop=chatBox.scrollHeight;
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
