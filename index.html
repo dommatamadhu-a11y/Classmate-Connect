@@ -69,24 +69,6 @@ justify-content:space-between;
 align-items:center;
 }
 
-.row{
-display:flex;
-align-items:center;
-}
-
-.avatar{
-width:40px;
-height:40px;
-border-radius:50%;
-background:#1976d2;
-color:white;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-margin-right:10px;
-}
-
 .chatBox{
 height:60vh;
 overflow:auto;
@@ -110,15 +92,6 @@ margin-left:auto;
 background:#eeeeee;
 }
 
-.badge{
-background:red;
-color:white;
-border-radius:50%;
-padding:2px 6px;
-font-size:12px;
-margin-left:4px;
-}
-
 </style>
 </head>
 
@@ -126,14 +99,27 @@ margin-left:4px;
 
 <header>Classmate Connect</header>
 
-<nav>
-<button onclick="showSection('find')">Find Classmates</button>
-<button onclick="showSection('requests')">Friend Requests <span id="reqBadge"></span></button>
-<button onclick="showSection('friends')">Friends</button>
-<button onclick="showSection('chatScreen')">Chats</button>
-</nav>
+<!-- LOGIN -->
 
-<div id="profile" class="section" style="display:block">
+<div id="login" class="section" style="display:block">
+
+<h3>Login with Phone</h3>
+
+<input id="phone" placeholder="+91XXXXXXXXXX">
+
+<div id="recaptcha"></div>
+
+<button class="primary" onclick="sendOTP()">Send OTP</button>
+
+<input id="otp" placeholder="Enter OTP">
+
+<button class="primary" onclick="verifyOTP()">Verify OTP</button>
+
+</div>
+
+<!-- PROFILE -->
+
+<div id="profile" class="section">
 
 <h3>Create Profile</h3>
 
@@ -151,6 +137,22 @@ margin-left:4px;
 
 </div>
 
+<!-- NAV -->
+
+<nav>
+
+<button onclick="showSection('find')">Find Classmates</button>
+
+<button onclick="showSection('requests')">Friend Requests</button>
+
+<button onclick="showSection('friends')">Friends</button>
+
+<button onclick="showSection('chatScreen')">Chats</button>
+
+</nav>
+
+<!-- FIND -->
+
 <div id="find" class="section">
 
 <h3>Find Classmates</h3>
@@ -165,6 +167,8 @@ margin-left:4px;
 
 </div>
 
+<!-- REQUESTS -->
+
 <div id="requests" class="section">
 
 <h3>Friend Requests</h3>
@@ -173,6 +177,8 @@ margin-left:4px;
 
 </div>
 
+<!-- FRIENDS -->
+
 <div id="friends" class="section">
 
 <h3>Your Friends</h3>
@@ -180,6 +186,8 @@ margin-left:4px;
 <div id="friendsList"></div>
 
 </div>
+
+<!-- CHAT -->
 
 <div id="chatScreen" class="section">
 
@@ -214,6 +222,8 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
 getAuth,
+RecaptchaVerifier,
+signInWithPhoneNumber,
 onAuthStateChanged
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -230,31 +240,65 @@ storageBucket: "classmate-connect-4ef14.firebasestorage.app",
 
 messagingSenderId: "836999548178",
 
-appId: "1:836999548178:web:8fc82fcf07289647c5f7cb",
-
-measurementId: "G-GW98KFSFTR"
+appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
 
 };
 
-const app = initializeApp(firebaseConfig)
+const app=initializeApp(firebaseConfig)
 
-const db = getFirestore(app)
+const db=getFirestore(app)
 
-const auth = getAuth(app)
+const auth=getAuth(app)
 
 let currentUser
-
 let chatUser
-
-onAuthStateChanged(auth,user=>{
-if(user){
-currentUser=user.phoneNumber
-}
-})
+let confirmationResult
 
 window.showSection=function(id){
 document.querySelectorAll(".section").forEach(s=>s.style.display="none")
 document.getElementById(id).style.display="block"
+}
+
+window.recaptcha=new RecaptchaVerifier(auth,"recaptcha",{size:"normal"})
+
+window.sendOTP=async function(){
+
+let phone=document.getElementById("phone").value
+
+confirmationResult=await signInWithPhoneNumber(auth,phone,recaptcha)
+
+alert("OTP Sent")
+
+}
+
+window.verifyOTP=async function(){
+
+let code=document.getElementById("otp").value
+
+let result=await confirmationResult.confirm(code)
+
+currentUser=result.user.phoneNumber
+
+checkProfile()
+
+}
+
+async function checkProfile(){
+
+let docRef=doc(db,"users",currentUser)
+
+let snap=await getDocs(collection(db,"users"))
+
+if(!snap.empty){
+
+showSection("find")
+
+}else{
+
+showSection("profile")
+
+}
+
 }
 
 window.saveProfile=async function(){
@@ -269,13 +313,11 @@ class:document.getElementById("class").value,
 
 year:document.getElementById("year").value,
 
-city:document.getElementById("city").value,
-
-createdAt:Date.now()
+city:document.getElementById("city").value
 
 })
 
-alert("Profile saved")
+alert("Profile Saved")
 
 showSection("find")
 
@@ -297,29 +339,11 @@ let d=docSnap.data()
 
 if(docSnap.id!==currentUser && d.school.includes(school) && d.year==year){
 
-let letter=d.name.charAt(0).toUpperCase()
-
 html+=`
 
 <div class="card">
 
-<div class="row">
-
-<div class="avatar">${letter}</div>
-
-<div>
-
-<div>${d.name}</div>
-
-<div>${d.class} - ${d.year}</div>
-
-<div><b>${d.school.toUpperCase()}</b></div>
-
-<div>${d.city}</div>
-
-</div>
-
-</div>
+${d.name}
 
 <button onclick="sendRequest('${docSnap.id}')">Add</button>
 
@@ -337,141 +361,17 @@ document.getElementById("results").innerHTML=html
 
 window.sendRequest=async function(id){
 
-let q=query(
-
-collection(db,"friendRequests"),
-
-where("from","==",currentUser),
-
-where("to","==",id)
-
-)
-
-let snap=await getDocs(q)
-
-if(!snap.empty){
-
-alert("Request already sent")
-
-return
-
-}
-
 await addDoc(collection(db,"friendRequests"),{
 
 from:currentUser,
 
 to:id,
 
-status:"pending",
-
-time:Date.now()
+status:"pending"
 
 })
 
-alert("Friend request sent")
-
-}
-
-function loadRequests(){
-
-let q=query(
-
-collection(db,"friendRequests"),
-
-where("to","==",currentUser),
-
-where("status","==","pending")
-
-)
-
-onSnapshot(q,snapshot=>{
-
-let html=""
-
-document.getElementById("reqBadge").innerText=snapshot.size||""
-
-snapshot.forEach(docSnap=>{
-
-let d=docSnap.data()
-
-html+=`
-
-<div class="card">
-
-${d.from}
-
-<button onclick="acceptRequest('${docSnap.id}','${d.from}')">Accept</button>
-
-</div>
-
-`
-
-})
-
-document.getElementById("requestList").innerHTML=html
-
-})
-
-}
-
-window.acceptRequest=async function(id,from){
-
-await addDoc(collection(db,"friends"),{
-
-user1:currentUser,
-
-user2:from
-
-})
-
-await updateDoc(doc(db,"friendRequests",id),{
-
-status:"accepted"
-
-})
-
-}
-
-function loadFriends(){
-
-onSnapshot(collection(db,"friends"),snapshot=>{
-
-let html=""
-
-snapshot.forEach(docSnap=>{
-
-let d=docSnap.data()
-
-let friend=d.user1===currentUser?d.user2:d.user1
-
-html+=`
-
-<div class="card" onclick="openChat('${friend}')">
-
-${friend}
-
-</div>
-
-`
-
-})
-
-document.getElementById("friendsList").innerHTML=html
-
-})
-
-}
-
-window.openChat=function(id){
-
-chatUser=id
-
-document.getElementById("chatName").innerText=id
-
-showSection("chatScreen")
-
-loadMessages()
+alert("Friend Request Sent")
 
 }
 
@@ -494,44 +394,6 @@ time:Date.now()
 document.getElementById("msgInput").value=""
 
 }
-
-function loadMessages(){
-
-let q=query(collection(db,"messages"),orderBy("time"))
-
-onSnapshot(q,snapshot=>{
-
-let html=""
-
-snapshot.forEach(docSnap=>{
-
-let m=docSnap.data()
-
-if(
-
-(m.from===currentUser && m.to===chatUser) ||
-
-(m.from===chatUser && m.to===currentUser)
-
-){
-
-let cls=m.from===currentUser?"msg me":"msg other"
-
-html+=`<div class="${cls}">${m.text}</div>`
-
-}
-
-})
-
-document.getElementById("chatBox").innerHTML=html
-
-})
-
-}
-
-loadRequests()
-
-loadFriends()
 
 </script>
 
