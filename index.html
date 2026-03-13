@@ -1,1 +1,539 @@
-<p>&lt;!DOCTYPE html&gt;<br>&lt;html&gt;<br>&lt;head&gt;<br>&lt;meta charset="UTF-8"&gt;<br>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</p><p>&lt;title&gt;Classmate Connect&lt;/title&gt;</p><p>&lt;style&gt;<br>body{<br>font-family:Arial;<br>margin:0;<br>background:#f4f6f8;<br>}</p><p>header{<br>background:#1976d2;<br>color:white;<br>padding:15px;<br>text-align:center;<br>font-size:20px;<br>font-weight:bold;<br>}</p><p>nav{<br>display:flex;<br>justify-content:space-around;<br>background:white;<br>padding:10px;<br>border-bottom:1px solid #ddd;<br>}</p><p>nav button{<br>background:none;<br>border:none;<br>font-size:14px;<br>}</p><p>.section{<br>display:none;<br>padding:15px;<br>}</p><p>input{<br>width:100%;<br>padding:10px;<br>margin:5px 0;<br>border-radius:6px;<br>border:1px solid #ccc;<br>}</p><p>button.primary{<br>background:#1976d2;<br>color:white;<br>border:none;<br>padding:10px;<br>border-radius:6px;<br>width:100%;<br>}</p><p>.card{<br>background:#e3f2fd;<br>padding:12px;<br>border-radius:10px;<br>margin:10px 0;<br>display:flex;<br>justify-content:space-between;<br>align-items:center;<br>}</p><p>.row{<br>display:flex;<br>align-items:center;<br>}</p><p>.avatar{<br>width:40px;<br>height:40px;<br>border-radius:50%;<br>background:#1976d2;<br>color:white;<br>display:flex;<br>align-items:center;<br>justify-content:center;<br>font-weight:bold;<br>margin-right:10px;<br>}</p><p>.chatBox{<br>height:60vh;<br>overflow:auto;<br>background:white;<br>padding:10px;<br>}</p><p>.msg{<br>padding:8px;<br>border-radius:10px;<br>margin:6px;<br>max-width:60%;<br>}</p><p>.me{<br>background:#c8e6c9;<br>margin-left:auto;<br>}</p><p>.other{<br>background:#eeeeee;<br>}</p><p>.badge{<br>background:red;<br>color:white;<br>border-radius:50%;<br>padding:2px 6px;<br>font-size:12px;<br>margin-left:4px;<br>}<br>&lt;/style&gt;<br>&lt;/head&gt;</p><p>&lt;body&gt;</p><p>&lt;header&gt;Classmate Connect&lt;/header&gt;</p><p>&lt;nav&gt;<br>&lt;button onclick="showSection('find')"&gt;Find Classmates&lt;/button&gt;<br>&lt;button onclick="showSection('requests')"&gt;Friend Requests &lt;span id="reqBadge"&gt;&lt;/span&gt;&lt;/button&gt;<br>&lt;button onclick="showSection('friends')"&gt;Friends&lt;/button&gt;<br>&lt;button onclick="showSection('chatScreen')"&gt;Chats&lt;/button&gt;<br>&lt;/nav&gt;</p><p>&lt;div id="profile" class="section" style="display:block"&gt;<br>&lt;h3&gt;Create Profile&lt;/h3&gt;<br>&lt;input id="name" placeholder="Name"&gt;<br>&lt;input id="school" placeholder="School / College"&gt;<br>&lt;input id="class" placeholder="Class"&gt;<br>&lt;input id="year" placeholder="Year of Passing"&gt;<br>&lt;input id="city" placeholder="City"&gt;<br>&lt;button class="primary" onclick="saveProfile()"&gt;Save Profile&lt;/button&gt;<br>&lt;/div&gt;</p><p>&lt;div id="find" class="section"&gt;<br>&lt;h3&gt;Find Classmates&lt;/h3&gt;<br>&lt;input id="searchSchool" placeholder="School"&gt;<br>&lt;input id="searchYear" placeholder="Year"&gt;<br>&lt;button class="primary" onclick="findUsers()"&gt;Search&lt;/button&gt;<br>&lt;div id="results"&gt;&lt;/div&gt;<br>&lt;/div&gt;</p><p>&lt;div id="requests" class="section"&gt;<br>&lt;h3&gt;Friend Requests&lt;/h3&gt;<br>&lt;div id="requestList"&gt;&lt;/div&gt;<br>&lt;/div&gt;</p><p>&lt;div id="friends" class="section"&gt;<br>&lt;h3&gt;Your Friends&lt;/h3&gt;<br>&lt;div id="friendsList"&gt;&lt;/div&gt;<br>&lt;/div&gt;</p><p>&lt;div id="chatScreen" class="section"&gt;<br>&lt;h3 id="chatName"&gt;&lt;/h3&gt;<br>&lt;div class="chatBox" id="chatBox"&gt;&lt;/div&gt;<br>&lt;input id="msgInput" placeholder="Type message"&gt;<br>&lt;button class="primary" onclick="sendMsg()"&gt;Send&lt;/button&gt;<br>&lt;/div&gt;</p><p>&lt;script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"&gt;&lt;/script&gt;<br>&lt;script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"&gt;&lt;/script&gt;<br>&lt;script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"&gt;&lt;/script&gt;</p><p>&lt;script&gt;<br>// 🔹 Firebase config<br>const firebaseConfig = {<br>// For Firebase JS SDK v7.20.0 and later, measurementId is optional<br>&nbsp; apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",<br>&nbsp; authDomain: "classmate-connect-4ef14.firebaseapp.com",<br>&nbsp; projectId: "classmate-connect-4ef14",<br>&nbsp; storageBucket: "classmate-connect-4ef14.firebasestorage.app",<br>&nbsp; messagingSenderId: "836999548178",<br>&nbsp; appId: "1:836999548178:web:8fc82fcf07289647c5f7cb",<br>&nbsp; measurementId: "G-GW98KFSFTR"<br>};</p><p>firebase.initializeApp(firebaseConfig)</p><p>const db=firebase.firestore()<br>const auth=firebase.auth()</p><p>let currentUser<br>let chatUser</p><p>auth.onAuthStateChanged(user=&gt;{<br>if(user){<br>currentUser=user.phoneNumber<br>}<br>})</p><p>// 🔹 Section switch<br>function showSection(id){<br>document.querySelectorAll(".section").forEach(s=&gt;s.style.display="none")<br>document.getElementById(id).style.display="block"<br>}</p><p>// 🔹 Save profile<br>function saveProfile(){<br>db.collection("users").doc(currentUser).set({<br>name:document.getElementById("name").value,<br>school:document.getElementById("school").value.toLowerCase(),<br>class:document.getElementById("class").value,<br>year:document.getElementById("year").value,<br>city:document.getElementById("city").value,<br>createdAt:Date.now()<br>})<br>alert("Profile saved")<br>showSection("find")<br>}</p><p>// 🔹 Find classmates<br>function findUsers(){<br>let school=document.getElementById("searchSchool").value.toLowerCase()<br>let year=document.getElementById("searchYear").value</p><p>db.collection("users").get().then(snapshot=&gt;{<br>let html=""<br>snapshot.forEach(doc=&gt;{<br>let d=doc.data()<br>if(doc.id!==currentUser &amp;&amp; d.school.includes(school) &amp;&amp; d.year==year){<br>let letter=d.name.charAt(0).toUpperCase()<br>html+=`<br>&lt;div class="card"&gt;<br>&lt;div class="row"&gt;<br>&lt;div class="avatar"&gt;${letter}&lt;/div&gt;<br>&lt;div&gt;<br>&lt;div&gt;${d.name}&lt;/div&gt;<br>&lt;div&gt;${d.class} - ${d.year}&lt;/div&gt;<br>&lt;div&gt;&lt;b&gt;${d.school.toUpperCase()}&lt;/b&gt;&lt;/div&gt;<br>&lt;div&gt;${d.city}&lt;/div&gt;<br>&lt;/div&gt;<br>&lt;/div&gt;<br>&lt;button onclick="sendRequest('${doc.id}')"&gt;Add&lt;/button&gt;<br>&lt;/div&gt;<br>`<br>}<br>})<br>document.getElementById("results").innerHTML=html<br>})<br>}</p><p>// 🔹 Send friend request (duplicate prevent)<br>function sendRequest(id){<br>if(id===currentUser){<br>alert("You cannot send request to yourself")<br>return<br>}<br>db.collection("friendRequests")<br>.where("from","==",currentUser)<br>.where("to","==",id)<br>.get()<br>.then(snapshot=&gt;{<br>if(snapshot.size&gt;0){<br>alert("Friend request already sent")<br>return<br>}<br>db.collection("friendRequests").add({<br>from:currentUser,<br>to:id,<br>status:"pending",<br>time:Date.now()<br>})<br>alert("Friend request sent")<br>})<br>}</p><p>// 🔹 Load incoming requests<br>function loadRequests(){<br>db.collection("friendRequests")<br>.where("to","==",currentUser)<br>.where("status","==","pending")<br>.onSnapshot(snapshot=&gt;{<br>let html=""<br>document.getElementById("reqBadge").innerText=snapshot.size||""<br>snapshot.forEach(doc=&gt;{<br>let d=doc.data()<br>html+=`<br>&lt;div class="card"&gt;<br>${d.from}<br>&lt;button onclick="acceptRequest('${doc.id}','${d.from}')"&gt;Accept&lt;/button&gt;<br>&lt;/div&gt;<br>`<br>})<br>document.getElementById("requestList").innerHTML=html<br>})<br>}</p><p>// 🔹 Accept request<br>function acceptRequest(id,from){<br>db.collection("friends").add({<br>user1:currentUser,<br>user2:from<br>})<br>db.collection("friendRequests").doc(id).update({<br>status:"accepted"<br>})<br>}</p><p>// 🔹 Load friends<br>function loadFriends(){<br>db.collection("friends").onSnapshot(snapshot=&gt;{<br>let html=""<br>snapshot.forEach(doc=&gt;{<br>let d=doc.data()<br>let friend=d.user1===currentUser?d.user2:d.user1<br>html+=`<br>&lt;div class="card" onclick="openChat('${friend}')"&gt;<br>${friend}<br>&lt;/div&gt;<br>`<br>})<br>document.getElementById("friendsList").innerHTML=html<br>})<br>}</p><p>// 🔹 Open chat<br>function openChat(id){<br>chatUser=id<br>document.getElementById("chatName").innerText=id<br>showSection("chatScreen")<br>loadMessages()<br>}</p><p>// 🔹 Send message<br>function sendMsg(){<br>let text=document.getElementById("msgInput").value<br>db.collection("messages").add({<br>from:currentUser,<br>to:chatUser,<br>text:text,<br>time:Date.now()<br>})<br>document.getElementById("msgInput").value=""<br>}</p><p>// 🔹 Load messages<br>function loadMessages(){<br>db.collection("messages")<br>.orderBy("time")<br>.onSnapshot(snapshot=&gt;{<br>let html=""<br>snapshot.forEach(doc=&gt;{<br>let m=doc.data()<br>if(<br>(m.from===currentUser &amp;&amp; m.to===chatUser) ||<br>(m.from===chatUser &amp;&amp; m.to===currentUser)<br>){<br>let cls=m.from===currentUser?"msg me":"msg other"<br>html+=`&lt;div class="${cls}"&gt;${m.text}&lt;/div&gt;`<br>}<br>})<br>document.getElementById("chatBox").innerHTML=html<br>})<br>}</p><p>// 🔹 Initial load<br>loadRequests()<br>loadFriends()<br>&lt;/script&gt;</p><p>&lt;/body&gt;<br>&lt;/html&gt;</p>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Classmate Connect</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f4f6f8;
+}
+
+header{
+background:#1976d2;
+color:white;
+padding:15px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+}
+
+nav{
+display:flex;
+justify-content:space-around;
+background:white;
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+nav button{
+background:none;
+border:none;
+font-size:14px;
+}
+
+.section{
+display:none;
+padding:15px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin:5px 0;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button.primary{
+background:#1976d2;
+color:white;
+border:none;
+padding:10px;
+border-radius:6px;
+width:100%;
+}
+
+.card{
+background:#e3f2fd;
+padding:12px;
+border-radius:10px;
+margin:10px 0;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.row{
+display:flex;
+align-items:center;
+}
+
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+background:#1976d2;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+margin-right:10px;
+}
+
+.chatBox{
+height:60vh;
+overflow:auto;
+background:white;
+padding:10px;
+}
+
+.msg{
+padding:8px;
+border-radius:10px;
+margin:6px;
+max-width:60%;
+}
+
+.me{
+background:#c8e6c9;
+margin-left:auto;
+}
+
+.other{
+background:#eeeeee;
+}
+
+.badge{
+background:red;
+color:white;
+border-radius:50%;
+padding:2px 6px;
+font-size:12px;
+margin-left:4px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>Classmate Connect</header>
+
+<nav>
+<button onclick="showSection('find')">Find Classmates</button>
+<button onclick="showSection('requests')">Friend Requests <span id="reqBadge"></span></button>
+<button onclick="showSection('friends')">Friends</button>
+<button onclick="showSection('chatScreen')">Chats</button>
+</nav>
+
+<div id="profile" class="section" style="display:block">
+
+<h3>Create Profile</h3>
+
+<input id="name" placeholder="Name">
+
+<input id="school" placeholder="School / College">
+
+<input id="class" placeholder="Class">
+
+<input id="year" placeholder="Year of Passing">
+
+<input id="city" placeholder="City">
+
+<button class="primary" onclick="saveProfile()">Save Profile</button>
+
+</div>
+
+<div id="find" class="section">
+
+<h3>Find Classmates</h3>
+
+<input id="searchSchool" placeholder="School">
+
+<input id="searchYear" placeholder="Year">
+
+<button class="primary" onclick="findUsers()">Search</button>
+
+<div id="results"></div>
+
+</div>
+
+<div id="requests" class="section">
+
+<h3>Friend Requests</h3>
+
+<div id="requestList"></div>
+
+</div>
+
+<div id="friends" class="section">
+
+<h3>Your Friends</h3>
+
+<div id="friendsList"></div>
+
+</div>
+
+<div id="chatScreen" class="section">
+
+<h3 id="chatName"></h3>
+
+<div class="chatBox" id="chatBox"></div>
+
+<input id="msgInput" placeholder="Type message">
+
+<button class="primary" onclick="sendMsg()">Send</button>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+doc,
+setDoc,
+addDoc,
+getDocs,
+onSnapshot,
+updateDoc,
+query,
+where,
+orderBy
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+getAuth,
+onAuthStateChanged
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
+
+authDomain: "classmate-connect-4ef14.firebaseapp.com",
+
+projectId: "classmate-connect-4ef14",
+
+storageBucket: "classmate-connect-4ef14.firebasestorage.app",
+
+messagingSenderId: "836999548178",
+
+appId: "1:836999548178:web:8fc82fcf07289647c5f7cb",
+
+measurementId: "G-GW98KFSFTR"
+
+};
+
+const app = initializeApp(firebaseConfig)
+
+const db = getFirestore(app)
+
+const auth = getAuth(app)
+
+let currentUser
+
+let chatUser
+
+onAuthStateChanged(auth,user=>{
+if(user){
+currentUser=user.phoneNumber
+}
+})
+
+window.showSection=function(id){
+document.querySelectorAll(".section").forEach(s=>s.style.display="none")
+document.getElementById(id).style.display="block"
+}
+
+window.saveProfile=async function(){
+
+await setDoc(doc(db,"users",currentUser),{
+
+name:document.getElementById("name").value,
+
+school:document.getElementById("school").value.toLowerCase(),
+
+class:document.getElementById("class").value,
+
+year:document.getElementById("year").value,
+
+city:document.getElementById("city").value,
+
+createdAt:Date.now()
+
+})
+
+alert("Profile saved")
+
+showSection("find")
+
+}
+
+window.findUsers=async function(){
+
+let school=document.getElementById("searchSchool").value.toLowerCase()
+
+let year=document.getElementById("searchYear").value
+
+let snapshot=await getDocs(collection(db,"users"))
+
+let html=""
+
+snapshot.forEach(docSnap=>{
+
+let d=docSnap.data()
+
+if(docSnap.id!==currentUser && d.school.includes(school) && d.year==year){
+
+let letter=d.name.charAt(0).toUpperCase()
+
+html+=`
+
+<div class="card">
+
+<div class="row">
+
+<div class="avatar">${letter}</div>
+
+<div>
+
+<div>${d.name}</div>
+
+<div>${d.class} - ${d.year}</div>
+
+<div><b>${d.school.toUpperCase()}</b></div>
+
+<div>${d.city}</div>
+
+</div>
+
+</div>
+
+<button onclick="sendRequest('${docSnap.id}')">Add</button>
+
+</div>
+
+`
+
+}
+
+})
+
+document.getElementById("results").innerHTML=html
+
+}
+
+window.sendRequest=async function(id){
+
+let q=query(
+
+collection(db,"friendRequests"),
+
+where("from","==",currentUser),
+
+where("to","==",id)
+
+)
+
+let snap=await getDocs(q)
+
+if(!snap.empty){
+
+alert("Request already sent")
+
+return
+
+}
+
+await addDoc(collection(db,"friendRequests"),{
+
+from:currentUser,
+
+to:id,
+
+status:"pending",
+
+time:Date.now()
+
+})
+
+alert("Friend request sent")
+
+}
+
+function loadRequests(){
+
+let q=query(
+
+collection(db,"friendRequests"),
+
+where("to","==",currentUser),
+
+where("status","==","pending")
+
+)
+
+onSnapshot(q,snapshot=>{
+
+let html=""
+
+document.getElementById("reqBadge").innerText=snapshot.size||""
+
+snapshot.forEach(docSnap=>{
+
+let d=docSnap.data()
+
+html+=`
+
+<div class="card">
+
+${d.from}
+
+<button onclick="acceptRequest('${docSnap.id}','${d.from}')">Accept</button>
+
+</div>
+
+`
+
+})
+
+document.getElementById("requestList").innerHTML=html
+
+})
+
+}
+
+window.acceptRequest=async function(id,from){
+
+await addDoc(collection(db,"friends"),{
+
+user1:currentUser,
+
+user2:from
+
+})
+
+await updateDoc(doc(db,"friendRequests",id),{
+
+status:"accepted"
+
+})
+
+}
+
+function loadFriends(){
+
+onSnapshot(collection(db,"friends"),snapshot=>{
+
+let html=""
+
+snapshot.forEach(docSnap=>{
+
+let d=docSnap.data()
+
+let friend=d.user1===currentUser?d.user2:d.user1
+
+html+=`
+
+<div class="card" onclick="openChat('${friend}')">
+
+${friend}
+
+</div>
+
+`
+
+})
+
+document.getElementById("friendsList").innerHTML=html
+
+})
+
+}
+
+window.openChat=function(id){
+
+chatUser=id
+
+document.getElementById("chatName").innerText=id
+
+showSection("chatScreen")
+
+loadMessages()
+
+}
+
+window.sendMsg=async function(){
+
+let text=document.getElementById("msgInput").value
+
+await addDoc(collection(db,"messages"),{
+
+from:currentUser,
+
+to:chatUser,
+
+text:text,
+
+time:Date.now()
+
+})
+
+document.getElementById("msgInput").value=""
+
+}
+
+function loadMessages(){
+
+let q=query(collection(db,"messages"),orderBy("time"))
+
+onSnapshot(q,snapshot=>{
+
+let html=""
+
+snapshot.forEach(docSnap=>{
+
+let m=docSnap.data()
+
+if(
+
+(m.from===currentUser && m.to===chatUser) ||
+
+(m.from===chatUser && m.to===currentUser)
+
+){
+
+let cls=m.from===currentUser?"msg me":"msg other"
+
+html+=`<div class="${cls}">${m.text}</div>`
+
+}
+
+})
+
+document.getElementById("chatBox").innerHTML=html
+
+})
+
+}
+
+loadRequests()
+
+loadFriends()
+
+</script>
+
+</body>
+</html>
