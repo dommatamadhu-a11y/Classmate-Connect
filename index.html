@@ -60,6 +60,17 @@ border-radius:6px;
 width:100%;
 }
 
+.logout{
+background:red;
+color:white;
+border:none;
+padding:8px;
+border-radius:6px;
+position:absolute;
+right:10px;
+top:10px;
+}
+
 .card{
 background:white;
 padding:12px;
@@ -90,22 +101,10 @@ margin-right:10px;
 position:relative;
 }
 
-.onlineDot{
-width:10px;
-height:10px;
-background:green;
-border-radius:50%;
-position:absolute;
-bottom:0;
-right:0;
-border:2px solid white;
-}
-
 .profileBox{
 background:white;
 padding:20px;
 border-radius:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .chatBox{
@@ -142,7 +141,10 @@ color:gray;
 
 <body>
 
-<header>Classmate Connect</header>
+<header>
+Classmate Connect
+<button class="logout" onclick="logout()">Logout</button>
+</header>
 
 <nav>
 
@@ -192,29 +194,14 @@ color:gray;
 
 
 <div id="requests" class="section">
-
 <h3>Friend Requests</h3>
-
 <div id="requestList"></div>
-
 </div>
 
 
 <div id="friends" class="section">
-
 <h3>Friends</h3>
-
 <div id="friendsList"></div>
-
-</div>
-
-
-<div id="chats" class="section">
-
-<h3>Chats</h3>
-
-<div id="chatList"></div>
-
 </div>
 
 
@@ -228,7 +215,6 @@ color:gray;
 <p id="pSchool"></p>
 <p id="pYear"></p>
 <p id="pCity"></p>
-<p id="pStatus"></p>
 
 <button class="primary" onclick="startChat()">Message</button>
 
