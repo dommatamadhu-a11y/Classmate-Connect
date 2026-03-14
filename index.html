@@ -65,8 +65,8 @@ padding:12px;
 border-radius:10px;
 margin:10px 0;
 display:flex;
-align-items:center;
 justify-content:space-between;
+align-items:center;
 box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
@@ -125,18 +125,27 @@ color:gray;
 <header>Classmate Connect</header>
 
 <nav>
+
 <button onclick="showSection('find')">Find</button>
 <button onclick="showSection('requests')">Requests</button>
-<button onclick="showSection('friends')">Friends</button>
-<button onclick="showSection('chatScreen')">Chat</button>
+<button onclick="showSection('chats')">Chats</button>
+
 </nav>
 
+
 <div id="login" class="section" style="display:block">
+
 <h3>Login</h3>
-<button class="primary" onclick="googleLogin()">Login with Google</button>
+
+<button class="primary" onclick="googleLogin()">
+Login with Google
+</button>
+
 </div>
 
+
 <div id="profile" class="section">
+
 <h3>Create Profile</h3>
 
 <input id="name" placeholder="Name">
@@ -144,8 +153,12 @@ color:gray;
 <input id="year" placeholder="Year">
 <input id="city" placeholder="City">
 
-<button class="primary" onclick="saveProfile()">Save Profile</button>
+<button class="primary" onclick="saveProfile()">
+Save Profile
+</button>
+
 </div>
+
 
 <div id="find" class="section">
 
@@ -160,15 +173,24 @@ color:gray;
 
 </div>
 
+
 <div id="requests" class="section">
+
 <h3>Friend Requests</h3>
+
 <div id="requestList"></div>
+
 </div>
 
-<div id="friends" class="section">
-<h3>Your Friends</h3>
-<div id="friendsList"></div>
+
+<div id="chats" class="section">
+
+<h3>Chats</h3>
+
+<div id="chatList"></div>
+
 </div>
+
 
 <div id="chatScreen" class="section">
 
@@ -180,7 +202,9 @@ color:gray;
 
 <input id="msgInput" placeholder="Type message" oninput="typing()">
 
-<button class="primary" onclick="sendMsg()">Send</button>
+<button class="primary" onclick="sendMsg()">
+Send
+</button>
 
 </div>
 
