@@ -23,24 +23,36 @@ text-align:center;
 font-size:20px;
 }
 
+nav{
+display:flex;
+background:#eee;
+}
+
+nav button{
+flex:1;
+padding:10px;
+border:none;
+background:#eee;
+}
+
 .section{
 display:none;
 padding:15px;
-}
-
-button{
-padding:10px;
-border:none;
-background:#1976d2;
-color:white;
-width:100%;
-margin-top:10px;
 }
 
 input{
 width:100%;
 padding:10px;
 margin-top:10px;
+}
+
+button.primary{
+background:#1976d2;
+color:white;
+border:none;
+padding:10px;
+margin-top:10px;
+width:100%;
 }
 
 .card{
@@ -58,6 +70,14 @@ border-radius:8px;
 
 <header>Classmate Connect</header>
 
+<nav>
+
+<button onclick="showSection('find')">Find Classmates</button>
+
+<button onclick="showSection('requests')">Friend Requests</button>
+
+</nav>
+
 
 <!-- LOGIN -->
 
@@ -65,9 +85,14 @@ border-radius:8px;
 
 <h3>Login</h3>
 
-<button onclick="googleLogin()">Login with Google</button>
+<button class="primary" onclick="googleLogin()">
+
+Login with Google
+
+</button>
 
 </div>
+
 
 
 <!-- PROFILE -->
@@ -78,15 +103,20 @@ border-radius:8px;
 
 <input id="name" placeholder="Name">
 
-<input id="school" placeholder="School / College">
+<input id="school" placeholder="School">
 
-<input id="year" placeholder="Year of Passing">
+<input id="year" placeholder="Year">
 
 <input id="city" placeholder="City">
 
-<button onclick="saveProfile()">Save Profile</button>
+<button class="primary" onclick="saveProfile()">
+
+Save Profile
+
+</button>
 
 </div>
+
 
 
 <!-- FIND CLASSMATES -->
@@ -99,11 +129,28 @@ border-radius:8px;
 
 <input id="searchYear" placeholder="Year">
 
-<button onclick="findUsers()">Search</button>
+<button class="primary" onclick="findUsers()">
+
+Search
+
+</button>
 
 <div id="results"></div>
 
 </div>
+
+
+
+<!-- FRIEND REQUESTS -->
+
+<div id="requests" class="section">
+
+<h3>Friend Requests</h3>
+
+<div id="requestList"></div>
+
+</div>
+
 
 
 <script type="module" src="app.js"></script>
