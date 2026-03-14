@@ -15,7 +15,9 @@ getDoc,
 getDocs,
 collection,
 addDoc,
+deleteDoc,
 query,
+where,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -50,6 +52,9 @@ currentUser=result.user;
 document.getElementById("login").style.display="none";
 document.getElementById("profile").style.display="block";
 
+loadRequests();
+loadFriends();
+
 });
 
 };
@@ -59,13 +64,7 @@ window.logout=async function(){
 
 await signOut(auth);
 
-currentUser=null;
-
-document.querySelectorAll(".section").forEach(s=>s.style.display="none");
-
-document.getElementById("login").style.display="block";
-
-alert("Logged out");
+location.reload();
 
 };
 
@@ -79,13 +78,12 @@ let city=document.getElementById("city").value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 
-name:name,
-school:school,
-year:year,
-city:city,
-online:true
+name,
+school,
+year,
+city
 
-},{merge:true});
+});
 
 showSection("find");
 
@@ -111,9 +109,9 @@ let letter=d.name.charAt(0).toUpperCase();
 
 html+=`
 
-<div class="card" onclick="viewProfile('${docu.id}')">
+<div class="card">
 
-<div class="row">
+<div class="row" onclick="viewProfile('${docu.id}')">
 
 <div class="avatar">${letter}</div>
 
@@ -139,6 +137,108 @@ html+=`
 document.getElementById("results").innerHTML=html;
 
 };
+
+
+window.sendRequest=async function(id){
+
+await addDoc(collection(db,"friendRequests"),{
+
+from:currentUser.uid,
+to:id,
+time:Date.now()
+
+});
+
+alert("Friend request sent");
+
+};
+
+
+function loadRequests(){
+
+const q=query(collection(db,"friendRequests"),where("to","==",currentUser.uid));
+
+onSnapshot(q,(snapshot)=>{
+
+let html="";
+
+snapshot.forEach(docu=>{
+
+let d=docu.data();
+
+html+=`
+
+<div class="card">
+
+${d.from}
+
+<button onclick="acceptRequest('${docu.id}','${d.from}')">Accept</button>
+
+</div>
+
+`;
+
+});
+
+document.getElementById("requestList").innerHTML=html;
+
+});
+
+}
+
+
+window.acceptRequest=async function(id,from){
+
+await addDoc(collection(db,"friends"),{
+
+user1:currentUser.uid,
+user2:from
+
+});
+
+await deleteDoc(doc(db,"friendRequests",id));
+
+};
+
+
+function loadFriends(){
+
+const q=query(collection(db,"friends"));
+
+onSnapshot(q,(snapshot)=>{
+
+let html="";
+
+snapshot.forEach(docu=>{
+
+let d=docu.data();
+
+let friend=null;
+
+if(d.user1==currentUser.uid) friend=d.user2;
+if(d.user2==currentUser.uid) friend=d.user1;
+
+if(friend){
+
+html+=`
+
+<div class="card" onclick="viewProfile('${friend}')">
+
+${friend}
+
+</div>
+
+`;
+
+}
+
+});
+
+document.getElementById("friendsList").innerHTML=html;
+
+});
+
+}
 
 
 window.viewProfile=async function(id){
@@ -172,22 +272,6 @@ loadMessages();
 };
 
 
-window.sendRequest=async function(id){
-
-await addDoc(collection(db,"friendRequests"),{
-
-from:currentUser.uid,
-to:id,
-status:"pending",
-time:Date.now()
-
-});
-
-alert("Request sent");
-
-};
-
-
 window.sendMsg=async function(){
 
 let text=document.getElementById("msgInput").value;
@@ -196,7 +280,7 @@ await addDoc(collection(db,"messages"),{
 
 from:currentUser.uid,
 to:chatUser,
-text:text,
+text,
 time:Date.now()
 
 });
@@ -230,11 +314,8 @@ let time=new Date(m.time).toLocaleTimeString();
 html+=`
 
 <div class="${cls}">
-
 ${m.text}
-
 <div class="time">${time}</div>
-
 </div>
 
 `;
