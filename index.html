@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <meta charset="UTF-8">
+
 <title>Classmate Connect</title>
 
 <style>
 
 body{
-font-family: Arial;
+font-family:Arial;
 margin:0;
 background:#f2f2f2;
 }
@@ -15,26 +18,23 @@ background:#f2f2f2;
 header{
 background:#1976d2;
 color:white;
-padding:12px;
+padding:15px;
 text-align:center;
 font-size:20px;
-}
-
-nav{
-display:flex;
-background:#eee;
-}
-
-nav button{
-flex:1;
-padding:10px;
-border:none;
-background:#eee;
 }
 
 .section{
 display:none;
 padding:15px;
+}
+
+button{
+padding:10px;
+border:none;
+background:#1976d2;
+color:white;
+width:100%;
+margin-top:10px;
 }
 
 input{
@@ -43,63 +43,31 @@ padding:10px;
 margin-top:10px;
 }
 
-button.primary{
-background:#1976d2;
-color:white;
-border:none;
-padding:10px;
-width:100%;
-margin-top:10px;
-}
-
 .card{
 background:white;
 padding:10px;
 margin-top:10px;
-border-radius:6px;
-}
-
-.chatBox{
-height:300px;
-background:white;
-overflow:auto;
-padding:10px;
-margin-top:10px;
+border-radius:8px;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <header>Classmate Connect</header>
 
-<nav>
-<button onclick="showSection('find')">Find Classmates</button>
-<button onclick="showSection('requests')">Friend Requests</button>
-<button onclick="showSection('friends')">Friends</button>
-<button onclick="showSection('chat')">Chats</button>
-</nav>
-
 
 <!-- LOGIN -->
 
 <div id="login" class="section" style="display:block">
 
-<h3>Login with Phone</h3>
+<h3>Login</h3>
 
-<input id="phone" placeholder="+91XXXXXXXXXX">
-
-<div id="recaptcha-container"></div>
-
-<button class="primary" onclick="sendOTP()">Send OTP</button>
-
-<input id="otp" placeholder="Enter OTP">
-
-<button class="primary" onclick="verifyOTP()">Verify OTP</button>
+<button onclick="googleLogin()">Login with Google</button>
 
 </div>
-
 
 
 <!-- PROFILE -->
@@ -109,15 +77,16 @@ margin-top:10px;
 <h3>Create Profile</h3>
 
 <input id="name" placeholder="Name">
+
 <input id="school" placeholder="School / College">
-<input id="class" placeholder="Class">
+
 <input id="year" placeholder="Year of Passing">
+
 <input id="city" placeholder="City">
 
-<button class="primary" onclick="saveProfile()">Save Profile</button>
+<button onclick="saveProfile()">Save Profile</button>
 
 </div>
-
 
 
 <!-- FIND CLASSMATES -->
@@ -126,58 +95,19 @@ margin-top:10px;
 
 <h3>Find Classmates</h3>
 
-<input id="searchSchool" placeholder="School / College">
-<input id="searchYear" placeholder="Year of Passing">
+<input id="searchSchool" placeholder="School">
 
-<button class="primary" onclick="findUsers()">Search</button>
+<input id="searchYear" placeholder="Year">
+
+<button onclick="findUsers()">Search</button>
 
 <div id="results"></div>
 
 </div>
 
 
-
-<!-- REQUESTS -->
-
-<div id="requests" class="section">
-
-<h3>Friend Requests</h3>
-
-<div id="requestList"></div>
-
-</div>
-
-
-
-<!-- FRIENDS -->
-
-<div id="friends" class="section">
-
-<h3>Your Friends</h3>
-
-<div id="friendsList"></div>
-
-</div>
-
-
-
-<!-- CHAT -->
-
-<div id="chat" class="section">
-
-<h3 id="chatName"></h3>
-
-<div class="chatBox" id="chatBox"></div>
-
-<input id="msgInput" placeholder="Type message">
-
-<button class="primary" onclick="sendMsg()">Send</button>
-
-</div>
-
-
-
 <script type="module" src="app.js"></script>
 
 </body>
+
 </html>
