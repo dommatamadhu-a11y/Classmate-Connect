@@ -1,24 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-import {
-getFirestore,
-collection,
-doc,
-setDoc,
-addDoc,
-getDoc,
-getDocs,
-query,
-where,
-onSnapshot,
-orderBy
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-import {
-getAuth,
-RecaptchaVerifier,
-signInWithPhoneNumber
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
 const firebaseConfig = {
 
@@ -28,7 +13,7 @@ authDomain: "classmate-connect-4ef14.firebaseapp.com",
 
 projectId: "classmate-connect-4ef14",
 
-storageBucket: "classmate-connect-4ef14.firebasestorage.app",
+storageBucket: "classmate-connect-4ef14.appspot.com",
 
 messagingSenderId: "836999548178",
 
@@ -36,146 +21,115 @@ appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
 
 };
 
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
-const auth = getAuth(app)
 
-let currentUser
-let chatUser
-let confirmationResult
+const app = initializeApp(firebaseConfig);
 
-window.showSection=function(id){
+const auth = getAuth(app);
 
-document.querySelectorAll(".section").forEach(s=>s.style.display="none")
+const db = getFirestore(app);
 
-document.getElementById(id).style.display="block"
+const provider = new GoogleAuthProvider();
 
-}
+let currentUser;
 
-window.recaptcha = new RecaptchaVerifier(auth,"recaptcha",{size:"normal"})
 
-window.sendOTP = async function(){
 
-let phone=document.getElementById("phone").value
+// GOOGLE LOGIN
 
-confirmationResult = await signInWithPhoneNumber(auth,phone,recaptcha)
+window.googleLogin = function(){
 
-alert("OTP Sent")
+signInWithPopup(auth,provider)
 
-}
+.then((result)=>{
 
-window.verifyOTP = async function(){
+currentUser = result.user;
 
-let code=document.getElementById("otp").value
+document.getElementById("login").style.display="none";
 
-let result=await confirmationResult.confirm(code)
-
-currentUser=result.user.phoneNumber
-
-checkProfile()
-
-}
-
-async function checkProfile(){
-
-const ref = doc(db,"users",currentUser)
-
-const snap = await getDoc(ref)
-
-if(snap.exists()){
-
-showSection("find")
-
-}else{
-
-showSection("profile")
-
-}
-
-}
-
-window.saveProfile = async function(){
-
-await setDoc(doc(db,"users",currentUser),{
-
-name:name.value,
-institution:institution.value.toLowerCase(),
-class:class.value,
-year:year.value,
-city:city.value,
-type:type.value
+document.getElementById("profile").style.display="block";
 
 })
 
-alert("Profile saved")
+.catch((error)=>{
 
-showSection("find")
+alert(error.message);
 
-}
+});
+
+};
+
+
+
+// SAVE PROFILE
+
+window.saveProfile = async function(){
+
+let name=document.getElementById("name").value;
+
+let school=document.getElementById("school").value;
+
+let year=document.getElementById("year").value;
+
+let city=document.getElementById("city").value;
+
+await setDoc(doc(db,"users",currentUser.uid),{
+
+name:name,
+
+school:school,
+
+year:year,
+
+city:city
+
+});
+
+alert("Profile saved");
+
+document.getElementById("profile").style.display="none";
+
+document.getElementById("find").style.display="block";
+
+};
+
+
+
+// FIND USERS
 
 window.findUsers = async function(){
 
-let inst = searchInstitution.value.toLowerCase()
+let school=document.getElementById("searchSchool").value.toLowerCase();
 
-let yr = searchYear.value
+let year=document.getElementById("searchYear").value;
 
-let snap = await getDocs(collection(db,"users"))
+let snapshot=await getDocs(collection(db,"users"));
 
-let html=""
+let html="";
 
-snap.forEach(docSnap=>{
+snapshot.forEach(docu=>{
 
-let d=docSnap.data()
+let d=docu.data();
 
-if(docSnap.id!==currentUser && d.institution.includes(inst) && d.year==yr){
-
-let letter=d.name.charAt(0).toUpperCase()
+if(d.school.toLowerCase().includes(school) && d.year==year){
 
 html+=`
 
 <div class="card">
 
-<div class="row">
+<b>${d.name}</b><br>
 
-<div class="avatar">${letter}</div>
+${d.school}<br>
 
-<div>
-
-<div>${d.name}</div>
-
-<div>${d.class} - ${d.year}</div>
-
-<b>${d.institution}</b>
+${d.city}
 
 </div>
 
-</div>
-
-<button onclick="sendRequest('${docSnap.id}')">Add</button>
-
-</div>
-
-`
+`;
 
 }
 
-})
+});
 
-results.innerHTML=html
+document.getElementById("results").innerHTML=html;
 
-}
-
-window.sendRequest = async function(id){
-
-await addDoc(collection(db,"friendRequests"),{
-
-from:currentUser,
-to:id,
-status:"pending",
-time:Date.now()
-
-})
-
-alert("Request sent")
-
-}
+};
