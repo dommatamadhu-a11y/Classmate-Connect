@@ -21,36 +21,29 @@ onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-// FIREBASE CONFIG
 const firebaseConfig = {
 
-apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
-authDomain: "classmate-connect-4ef14.firebaseapp.com",
-projectId: "classmate-connect-4ef14",
-storageBucket: "classmate-connect-4ef14.appspot.com",
-messagingSenderId: "836999548178",
-appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
+apiKey:"AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
+authDomain:"classmate-connect-4ef14.firebaseapp.com",
+projectId:"classmate-connect-4ef14",
+storageBucket:"classmate-connect-4ef14.appspot.com",
+messagingSenderId:"836999548178",
+appId:"1:836999548178:web:8fc82fcf07289647c5f7cb"
 
 };
 
-
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
-
 const db = getFirestore(app);
-
 const provider = new GoogleAuthProvider();
-
 
 let currentUser;
 let chatUser;
 
 
+// LOGIN
 
-// GOOGLE LOGIN
-
-window.googleLogin = function(){
+window.googleLogin=function(){
 
 signInWithPopup(auth,provider)
 
@@ -67,12 +60,6 @@ online:true
 document.getElementById("login").style.display="none";
 document.getElementById("profile").style.display="block";
 
-})
-
-.catch((error)=>{
-
-alert(error.message);
-
 });
 
 };
@@ -81,7 +68,7 @@ alert(error.message);
 
 // SAVE PROFILE
 
-window.saveProfile = async function(){
+window.saveProfile=async function(){
 
 let name=document.getElementById("name").value;
 let school=document.getElementById("school").value;
@@ -98,8 +85,6 @@ online:true
 
 },{merge:true});
 
-alert("Profile saved");
-
 showSection("find");
 
 };
@@ -108,7 +93,7 @@ showSection("find");
 
 // FIND USERS
 
-window.findUsers = async function(){
+window.findUsers=async function(){
 
 let school=document.getElementById("searchSchool").value.toLowerCase();
 let year=document.getElementById("searchYear").value;
@@ -121,11 +106,7 @@ snapshot.forEach(docu=>{
 
 let d=docu.data();
 
-if(
-docu.id!==currentUser.uid &&
-d.school.toLowerCase().includes(school) &&
-d.year==year
-){
+if(docu.id!==currentUser.uid && d.school.toLowerCase().includes(school) && d.year==year){
 
 let letter=d.name.charAt(0).toUpperCase();
 
@@ -146,9 +127,7 @@ html+=`
 
 </div>
 
-<button onclick="sendRequest('${docu.id}')">
-Add
-</button>
+<button onclick="sendRequest('${docu.id}')">Add</button>
 
 </div>
 
@@ -164,9 +143,9 @@ document.getElementById("results").innerHTML=html;
 
 
 
-// SEND FRIEND REQUEST
+// FRIEND REQUEST
 
-window.sendRequest = async function(id){
+window.sendRequest=async function(id){
 
 await addDoc(collection(db,"friendRequests"),{
 
@@ -177,7 +156,7 @@ time:Date.now()
 
 });
 
-alert("Friend request sent");
+alert("Request sent");
 
 };
 
@@ -185,7 +164,7 @@ alert("Friend request sent");
 
 // LOAD REQUESTS
 
-window.loadRequests = function(){
+window.loadRequests=function(){
 
 const q=query(
 collection(db,"friendRequests"),
@@ -227,7 +206,7 @@ document.getElementById("requestList").innerHTML=html;
 
 // ACCEPT REQUEST
 
-window.acceptRequest = async function(id,from){
+window.acceptRequest=async function(id,from){
 
 await addDoc(collection(db,"friends"),{
 
@@ -242,35 +221,53 @@ status:"accepted"
 
 });
 
-alert("Friend added");
-
 };
 
 
 
-// LOAD FRIENDS
+// CHAT LIST
 
-window.loadFriends = function(){
+window.loadChats=function(){
 
-onSnapshot(collection(db,"friends"),async(snapshot)=>{
+onSnapshot(collection(db,"messages"),async(snapshot)=>{
+
+let chats={};
+
+snapshot.forEach(docu=>{
+
+let m=docu.data();
+
+if(m.from===currentUser.uid || m.to===currentUser.uid){
+
+let friend=m.from===currentUser.uid?m.to:m.from;
+
+if(!chats[friend] || chats[friend].time<m.time){
+
+chats[friend]=m;
+
+}
+
+}
+
+});
 
 let html="";
 
-for(const docu of snapshot.docs){
+for(let id in chats){
 
-let d=docu.data();
-
-let friend=d.user1===currentUser.uid?d.user2:d.user1;
-
-let userDoc=await getDoc(doc(db,"users",friend));
+let userDoc=await getDoc(doc(db,"users",id));
 
 let user=userDoc.data();
 
 let letter=user.name.charAt(0).toUpperCase();
 
+let last=chats[id].text;
+
+let time=new Date(chats[id].time).toLocaleTimeString();
+
 html+=`
 
-<div class="card" onclick="openChat('${friend}')">
+<div class="card" onclick="openChat('${id}')">
 
 <div class="row">
 
@@ -279,16 +276,13 @@ html+=`
 <div>
 
 <div>${user.name}</div>
-
-<div style="font-size:12px;color:gray">
-
-${user.online ? "Online" : "Offline"}
+<div style="font-size:12px;color:gray">${last}</div>
 
 </div>
 
 </div>
 
-</div>
+<div style="font-size:11px;color:gray">${time}</div>
 
 </div>
 
@@ -296,7 +290,7 @@ ${user.online ? "Online" : "Offline"}
 
 }
 
-document.getElementById("friendsList").innerHTML=html;
+document.getElementById("chatList").innerHTML=html;
 
 });
 
@@ -306,7 +300,7 @@ document.getElementById("friendsList").innerHTML=html;
 
 // OPEN CHAT
 
-window.openChat = function(id){
+window.openChat=function(id){
 
 chatUser=id;
 
@@ -320,44 +314,11 @@ loadMessages();
 
 
 
-// CHECK FRIEND
-
-async function areFriends(a,b){
-
-const q1=query(collection(db,"friends"),
-where("user1","==",a),
-where("user2","==",b));
-
-const q2=query(collection(db,"friends"),
-where("user1","==",b),
-where("user2","==",a));
-
-const s1=await getDocs(q1);
-const s2=await getDocs(q2);
-
-return !(s1.empty && s2.empty);
-
-}
-
-
-
 // SEND MESSAGE
 
-window.sendMsg = async function(){
+window.sendMsg=async function(){
 
 let text=document.getElementById("msgInput").value;
-
-if(!text) return;
-
-let ok=await areFriends(currentUser.uid,chatUser);
-
-if(!ok){
-
-alert("You can chat only with friends");
-
-return;
-
-}
 
 await addDoc(collection(db,"messages"),{
 
@@ -421,9 +382,9 @@ document.getElementById("chatBox").innerHTML=html;
 
 
 
-// TYPING INDICATOR
+// TYPING
 
-window.typing = async function(){
+window.typing=async function(){
 
 await setDoc(doc(db,"typing",chatUser),{
 
@@ -439,13 +400,11 @@ user:currentUser.uid
 
 window.showSection=function(id){
 
-document.querySelectorAll(".section")
-.forEach(s=>s.style.display="none");
+document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 
 document.getElementById(id).style.display="block";
 
 if(id==="requests") loadRequests();
-
-if(id==="friends") loadFriends();
+if(id==="chats") loadChats();
 
 };
