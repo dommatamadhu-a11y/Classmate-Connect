@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Classmate Connect</title>
 
@@ -12,7 +12,7 @@
 body{
 font-family:Arial;
 margin:0;
-background:#f2f2f2;
+background:#f4f6f8;
 }
 
 header{
@@ -25,14 +25,16 @@ font-size:20px;
 
 nav{
 display:flex;
-background:#eee;
+justify-content:space-around;
+background:white;
+padding:10px;
+border-bottom:1px solid #ddd;
 }
 
 nav button{
-flex:1;
-padding:10px;
+background:none;
 border:none;
-background:#eee;
+font-size:14px;
 }
 
 .section{
@@ -43,7 +45,9 @@ padding:15px;
 input{
 width:100%;
 padding:10px;
-margin-top:10px;
+margin:5px 0;
+border-radius:6px;
+border:1px solid #ccc;
 }
 
 button.primary{
@@ -51,15 +55,41 @@ background:#1976d2;
 color:white;
 border:none;
 padding:10px;
-margin-top:10px;
+border-radius:6px;
 width:100%;
 }
 
 .card{
+background:#e3f2fd;
+padding:12px;
+border-radius:10px;
+margin:10px 0;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.chatBox{
+height:60vh;
+overflow:auto;
 background:white;
 padding:10px;
-margin-top:10px;
-border-radius:8px;
+}
+
+.msg{
+padding:8px;
+border-radius:10px;
+margin:6px;
+max-width:60%;
+}
+
+.me{
+background:#c8e6c9;
+margin-left:auto;
+}
+
+.other{
+background:#eeeeee;
 }
 
 </style>
@@ -71,77 +101,52 @@ border-radius:8px;
 <header>Classmate Connect</header>
 
 <nav>
-
-<button onclick="showSection('find')">Find Classmates</button>
-
-<button onclick="showSection('requests')">Friend Requests</button>
-
+<button onclick="showSection('find')">Find</button>
+<button onclick="showSection('requests')">Requests</button>
+<button onclick="showSection('friends')">Friends</button>
+<button onclick="showSection('chatScreen')">Chat</button>
 </nav>
-
-
-<!-- LOGIN -->
 
 <div id="login" class="section" style="display:block">
 
 <h3>Login</h3>
-
-<button class="primary" onclick="googleLogin()">
-
-Login with Google
-
-</button>
+<button class="primary" onclick="googleLogin()">Login with Google</button>
 
 </div>
 
-
-
-<!-- PROFILE -->
 
 <div id="profile" class="section">
 
 <h3>Create Profile</h3>
 
 <input id="name" placeholder="Name">
-
 <input id="school" placeholder="School">
-
 <input id="year" placeholder="Year">
-
 <input id="city" placeholder="City">
 
-<button class="primary" onclick="saveProfile()">
+<label>
+<input type="checkbox" id="hidePhone">
+Hide my phone number
+</label>
 
-Save Profile
-
-</button>
+<button class="primary" onclick="saveProfile()">Save Profile</button>
 
 </div>
 
-
-
-<!-- FIND CLASSMATES -->
 
 <div id="find" class="section">
 
 <h3>Find Classmates</h3>
 
 <input id="searchSchool" placeholder="School">
-
 <input id="searchYear" placeholder="Year">
 
-<button class="primary" onclick="findUsers()">
-
-Search
-
-</button>
+<button class="primary" onclick="findUsers()">Search</button>
 
 <div id="results"></div>
 
 </div>
 
-
-
-<!-- FRIEND REQUESTS -->
 
 <div id="requests" class="section">
 
@@ -152,9 +157,29 @@ Search
 </div>
 
 
+<div id="friends" class="section">
+
+<h3>Your Friends</h3>
+
+<div id="friendsList"></div>
+
+</div>
+
+
+<div id="chatScreen" class="section">
+
+<h3 id="chatName"></h3>
+
+<div class="chatBox" id="chatBox"></div>
+
+<input id="msgInput" placeholder="Type message">
+
+<button class="primary" onclick="sendMsg()">Send</button>
+
+</div>
+
 
 <script type="module" src="app.js"></script>
 
 </body>
-
 </html>
