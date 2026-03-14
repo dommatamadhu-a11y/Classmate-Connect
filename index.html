@@ -27,13 +27,13 @@ nav{
 display:flex;
 justify-content:space-around;
 background:white;
-padding:10px;
 border-bottom:1px solid #ddd;
 }
 
 nav button{
 background:none;
 border:none;
+padding:12px;
 font-size:14px;
 }
 
@@ -60,13 +60,32 @@ width:100%;
 }
 
 .card{
-background:#e3f2fd;
+background:white;
 padding:12px;
 border-radius:10px;
 margin:10px 0;
 display:flex;
-justify-content:space-between;
 align-items:center;
+justify-content:space-between;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.row{
+display:flex;
+align-items:center;
+}
+
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+background:#1976d2;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+margin-right:10px;
 }
 
 .chatBox{
@@ -92,6 +111,11 @@ margin-left:auto;
 background:#eeeeee;
 }
 
+.time{
+font-size:10px;
+color:gray;
+}
+
 </style>
 
 </head>
@@ -108,15 +132,11 @@ background:#eeeeee;
 </nav>
 
 <div id="login" class="section" style="display:block">
-
 <h3>Login</h3>
 <button class="primary" onclick="googleLogin()">Login with Google</button>
-
 </div>
 
-
 <div id="profile" class="section">
-
 <h3>Create Profile</h3>
 
 <input id="name" placeholder="Name">
@@ -124,15 +144,8 @@ background:#eeeeee;
 <input id="year" placeholder="Year">
 <input id="city" placeholder="City">
 
-<label>
-<input type="checkbox" id="hidePhone">
-Hide my phone number
-</label>
-
 <button class="primary" onclick="saveProfile()">Save Profile</button>
-
 </div>
-
 
 <div id="find" class="section">
 
@@ -147,37 +160,29 @@ Hide my phone number
 
 </div>
 
-
 <div id="requests" class="section">
-
 <h3>Friend Requests</h3>
-
 <div id="requestList"></div>
-
 </div>
-
 
 <div id="friends" class="section">
-
 <h3>Your Friends</h3>
-
 <div id="friendsList"></div>
-
 </div>
-
 
 <div id="chatScreen" class="section">
 
 <h3 id="chatName"></h3>
 
+<div id="typing"></div>
+
 <div class="chatBox" id="chatBox"></div>
 
-<input id="msgInput" placeholder="Type message">
+<input id="msgInput" placeholder="Type message" oninput="typing()">
 
 <button class="primary" onclick="sendMsg()">Send</button>
 
 </div>
-
 
 <script type="module" src="app.js"></script>
 
