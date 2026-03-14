@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta charset="UTF-8">
@@ -86,6 +87,25 @@ align-items:center;
 justify-content:center;
 font-weight:bold;
 margin-right:10px;
+position:relative;
+}
+
+.onlineDot{
+width:10px;
+height:10px;
+background:green;
+border-radius:50%;
+position:absolute;
+bottom:0;
+right:0;
+border:2px solid white;
+}
+
+.profileBox{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .chatBox{
@@ -128,6 +148,7 @@ color:gray;
 
 <button onclick="showSection('find')">Find</button>
 <button onclick="showSection('requests')">Requests</button>
+<button onclick="showSection('friends')">Friends</button>
 <button onclick="showSection('chats')">Chats</button>
 
 </nav>
@@ -137,9 +158,7 @@ color:gray;
 
 <h3>Login</h3>
 
-<button class="primary" onclick="googleLogin()">
-Login with Google
-</button>
+<button class="primary" onclick="googleLogin()">Login with Google</button>
 
 </div>
 
@@ -153,9 +172,7 @@ Login with Google
 <input id="year" placeholder="Year">
 <input id="city" placeholder="City">
 
-<button class="primary" onclick="saveProfile()">
-Save Profile
-</button>
+<button class="primary" onclick="saveProfile()">Save Profile</button>
 
 </div>
 
@@ -183,6 +200,15 @@ Save Profile
 </div>
 
 
+<div id="friends" class="section">
+
+<h3>Friends</h3>
+
+<div id="friendsList"></div>
+
+</div>
+
+
 <div id="chats" class="section">
 
 <h3>Chats</h3>
@@ -192,21 +218,37 @@ Save Profile
 </div>
 
 
+<div id="profileView" class="section">
+
+<h3>User Profile</h3>
+
+<div class="profileBox">
+
+<h3 id="pName"></h3>
+<p id="pSchool"></p>
+<p id="pYear"></p>
+<p id="pCity"></p>
+<p id="pStatus"></p>
+
+<button class="primary" onclick="startChat()">Message</button>
+
+</div>
+
+</div>
+
+
 <div id="chatScreen" class="section">
 
 <h3 id="chatName"></h3>
 
-<div id="typing"></div>
-
 <div class="chatBox" id="chatBox"></div>
 
-<input id="msgInput" placeholder="Type message" oninput="typing()">
+<input id="msgInput" placeholder="Type message">
 
-<button class="primary" onclick="sendMsg()">
-Send
-</button>
+<button class="primary" onclick="sendMsg()">Send</button>
 
 </div>
+
 
 <script type="module" src="app.js"></script>
 
