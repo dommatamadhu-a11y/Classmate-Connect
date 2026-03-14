@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -69,6 +70,24 @@ justify-content:space-between;
 align-items:center;
 }
 
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+background:#1976d2;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+margin-right:10px;
+}
+
+.row{
+display:flex;
+align-items:center;
+}
+
 .chatBox{
 height:60vh;
 overflow:auto;
@@ -93,6 +112,7 @@ background:#eeeeee;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -125,39 +145,42 @@ background:#eeeeee;
 
 <input id="name" placeholder="Name">
 
-<input id="school" placeholder="School / College">
+<input id="institution" placeholder="School / College / Workplace">
 
 <input id="class" placeholder="Class">
 
-<input id="year" placeholder="Year of Passing">
+<input id="year" placeholder="Year">
 
 <input id="city" placeholder="City">
+
+<select id="type">
+<option value="school">School</option>
+<option value="college">College</option>
+<option value="work">Workplace</option>
+<option value="alumni">Alumni</option>
+</select>
 
 <button class="primary" onclick="saveProfile()">Save Profile</button>
 
 </div>
 
-<!-- NAV -->
-
 <nav>
 
 <button onclick="showSection('find')">Find Classmates</button>
 
-<button onclick="showSection('requests')">Friend Requests</button>
+<button onclick="showSection('requests')">Requests</button>
 
 <button onclick="showSection('friends')">Friends</button>
 
-<button onclick="showSection('chatScreen')">Chats</button>
+<button onclick="showSection('chat')">Chats</button>
 
 </nav>
-
-<!-- FIND -->
 
 <div id="find" class="section">
 
 <h3>Find Classmates</h3>
 
-<input id="searchSchool" placeholder="School">
+<input id="searchInstitution" placeholder="Institution">
 
 <input id="searchYear" placeholder="Year">
 
@@ -167,8 +190,6 @@ background:#eeeeee;
 
 </div>
 
-<!-- REQUESTS -->
-
 <div id="requests" class="section">
 
 <h3>Friend Requests</h3>
@@ -176,8 +197,6 @@ background:#eeeeee;
 <div id="requestList"></div>
 
 </div>
-
-<!-- FRIENDS -->
 
 <div id="friends" class="section">
 
@@ -187,9 +206,7 @@ background:#eeeeee;
 
 </div>
 
-<!-- CHAT -->
-
-<div id="chatScreen" class="section">
+<div id="chat" class="section">
 
 <h3 id="chatName"></h3>
 
@@ -201,201 +218,7 @@ background:#eeeeee;
 
 </div>
 
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-getFirestore,
-collection,
-doc,
-setDoc,
-addDoc,
-getDocs,
-onSnapshot,
-updateDoc,
-query,
-where,
-orderBy
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import {
-getAuth,
-RecaptchaVerifier,
-signInWithPhoneNumber,
-onAuthStateChanged
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-const firebaseConfig = {
-
-apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
-
-authDomain: "classmate-connect-4ef14.firebaseapp.com",
-
-projectId: "classmate-connect-4ef14",
-
-storageBucket: "classmate-connect-4ef14.firebasestorage.app",
-
-messagingSenderId: "836999548178",
-
-appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
-
-};
-
-const app=initializeApp(firebaseConfig)
-
-const db=getFirestore(app)
-
-const auth=getAuth(app)
-
-let currentUser
-let chatUser
-let confirmationResult
-
-window.showSection=function(id){
-document.querySelectorAll(".section").forEach(s=>s.style.display="none")
-document.getElementById(id).style.display="block"
-}
-
-window.recaptcha=new RecaptchaVerifier(auth,"recaptcha",{size:"normal"})
-
-window.sendOTP=async function(){
-
-let phone=document.getElementById("phone").value
-
-confirmationResult=await signInWithPhoneNumber(auth,phone,recaptcha)
-
-alert("OTP Sent")
-
-}
-
-window.verifyOTP=async function(){
-
-let code=document.getElementById("otp").value
-
-let result=await confirmationResult.confirm(code)
-
-currentUser=result.user.phoneNumber
-
-checkProfile()
-
-}
-
-async function checkProfile(){
-
-let docRef=doc(db,"users",currentUser)
-
-let snap=await getDocs(collection(db,"users"))
-
-if(!snap.empty){
-
-showSection("find")
-
-}else{
-
-showSection("profile")
-
-}
-
-}
-
-window.saveProfile=async function(){
-
-await setDoc(doc(db,"users",currentUser),{
-
-name:document.getElementById("name").value,
-
-school:document.getElementById("school").value.toLowerCase(),
-
-class:document.getElementById("class").value,
-
-year:document.getElementById("year").value,
-
-city:document.getElementById("city").value
-
-})
-
-alert("Profile Saved")
-
-showSection("find")
-
-}
-
-window.findUsers=async function(){
-
-let school=document.getElementById("searchSchool").value.toLowerCase()
-
-let year=document.getElementById("searchYear").value
-
-let snapshot=await getDocs(collection(db,"users"))
-
-let html=""
-
-snapshot.forEach(docSnap=>{
-
-let d=docSnap.data()
-
-if(docSnap.id!==currentUser && d.school.includes(school) && d.year==year){
-
-html+=`
-
-<div class="card">
-
-${d.name}
-
-<button onclick="sendRequest('${docSnap.id}')">Add</button>
-
-</div>
-
-`
-
-}
-
-})
-
-document.getElementById("results").innerHTML=html
-
-}
-
-window.sendRequest=async function(id){
-
-await addDoc(collection(db,"friendRequests"),{
-
-from:currentUser,
-
-to:id,
-
-status:"pending"
-
-})
-
-alert("Friend Request Sent")
-
-}
-
-window.sendMsg=async function(){
-
-let text=document.getElementById("msgInput").value
-
-await addDoc(collection(db,"messages"),{
-
-from:currentUser,
-
-to:chatUser,
-
-text:text,
-
-time:Date.now()
-
-})
-
-document.getElementById("msgInput").value=""
-
-}
-
-</script>
+<script type="module" src="app.js"></script>
 
 </body>
 </html>
