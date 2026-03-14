@@ -3,7 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
 getAuth,
 GoogleAuthProvider,
-signInWithPopup
+signInWithPopup,
+signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -15,8 +16,6 @@ getDocs,
 collection,
 addDoc,
 query,
-where,
-updateDoc,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -44,7 +43,7 @@ window.googleLogin=function(){
 
 signInWithPopup(auth,provider)
 
-.then(async(result)=>{
+.then((result)=>{
 
 currentUser=result.user;
 
@@ -52,6 +51,21 @@ document.getElementById("login").style.display="none";
 document.getElementById("profile").style.display="block";
 
 });
+
+};
+
+
+window.logout=async function(){
+
+await signOut(auth);
+
+currentUser=null;
+
+document.querySelectorAll(".section").forEach(s=>s.style.display="none");
+
+document.getElementById("login").style.display="block";
+
+alert("Logged out");
 
 };
 
@@ -138,7 +152,6 @@ document.getElementById("pName").innerText=d.name;
 document.getElementById("pSchool").innerText="School: "+d.school;
 document.getElementById("pYear").innerText="Year: "+d.year;
 document.getElementById("pCity").innerText="City: "+d.city;
-document.getElementById("pStatus").innerText=d.online?"Online":"Offline";
 
 showSection("profileView");
 
