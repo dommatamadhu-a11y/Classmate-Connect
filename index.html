@@ -1,41 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Classmate Connect</title>
 
 <style>
 
 body{
-font-family:Arial;
+font-family: Arial;
 margin:0;
-background:#f4f6f8;
+background:#f2f2f2;
 }
 
 header{
 background:#1976d2;
 color:white;
-padding:15px;
+padding:12px;
 text-align:center;
 font-size:20px;
-font-weight:bold;
 }
 
 nav{
 display:flex;
-justify-content:space-around;
-background:white;
-padding:10px;
-border-bottom:1px solid #ddd;
+background:#eee;
 }
 
 nav button{
-background:none;
+flex:1;
+padding:10px;
 border:none;
-font-size:14px;
+background:#eee;
 }
 
 .section{
@@ -46,9 +40,7 @@ padding:15px;
 input{
 width:100%;
 padding:10px;
-margin:5px 0;
-border-radius:6px;
-border:1px solid #ccc;
+margin-top:10px;
 }
 
 button.primary{
@@ -56,68 +48,39 @@ background:#1976d2;
 color:white;
 border:none;
 padding:10px;
-border-radius:6px;
 width:100%;
+margin-top:10px;
 }
 
 .card{
-background:#e3f2fd;
-padding:12px;
-border-radius:10px;
-margin:10px 0;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.avatar{
-width:40px;
-height:40px;
-border-radius:50%;
-background:#1976d2;
-color:white;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-margin-right:10px;
-}
-
-.row{
-display:flex;
-align-items:center;
+background:white;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
 }
 
 .chatBox{
-height:60vh;
-overflow:auto;
+height:300px;
 background:white;
+overflow:auto;
 padding:10px;
-}
-
-.msg{
-padding:8px;
-border-radius:10px;
-margin:6px;
-max-width:60%;
-}
-
-.me{
-background:#c8e6c9;
-margin-left:auto;
-}
-
-.other{
-background:#eeeeee;
+margin-top:10px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <header>Classmate Connect</header>
+
+<nav>
+<button onclick="showSection('find')">Find Classmates</button>
+<button onclick="showSection('requests')">Friend Requests</button>
+<button onclick="showSection('friends')">Friends</button>
+<button onclick="showSection('chat')">Chats</button>
+</nav>
+
 
 <!-- LOGIN -->
 
@@ -137,6 +100,8 @@ background:#eeeeee;
 
 </div>
 
+
+
 <!-- PROFILE -->
 
 <div id="profile" class="section">
@@ -144,51 +109,35 @@ background:#eeeeee;
 <h3>Create Profile</h3>
 
 <input id="name" placeholder="Name">
-
-<input id="institution" placeholder="School / College / Workplace">
-
+<input id="school" placeholder="School / College">
 <input id="class" placeholder="Class">
-
-<input id="year" placeholder="Year">
-
+<input id="year" placeholder="Year of Passing">
 <input id="city" placeholder="City">
-
-<select id="type">
-<option value="school">School</option>
-<option value="college">College</option>
-<option value="work">Workplace</option>
-<option value="alumni">Alumni</option>
-</select>
 
 <button class="primary" onclick="saveProfile()">Save Profile</button>
 
 </div>
 
-<nav>
 
-<button onclick="showSection('find')">Find Classmates</button>
 
-<button onclick="showSection('requests')">Requests</button>
-
-<button onclick="showSection('friends')">Friends</button>
-
-<button onclick="showSection('chat')">Chats</button>
-
-</nav>
+<!-- FIND CLASSMATES -->
 
 <div id="find" class="section">
 
 <h3>Find Classmates</h3>
 
-<input id="searchInstitution" placeholder="Institution">
-
-<input id="searchYear" placeholder="Year">
+<input id="searchSchool" placeholder="School / College">
+<input id="searchYear" placeholder="Year of Passing">
 
 <button class="primary" onclick="findUsers()">Search</button>
 
 <div id="results"></div>
 
 </div>
+
+
+
+<!-- REQUESTS -->
 
 <div id="requests" class="section">
 
@@ -198,6 +147,10 @@ background:#eeeeee;
 
 </div>
 
+
+
+<!-- FRIENDS -->
+
 <div id="friends" class="section">
 
 <h3>Your Friends</h3>
@@ -205,6 +158,10 @@ background:#eeeeee;
 <div id="friendsList"></div>
 
 </div>
+
+
+
+<!-- CHAT -->
 
 <div id="chat" class="section">
 
@@ -216,8 +173,9 @@ background:#eeeeee;
 
 <button class="primary" onclick="sendMsg()">Send</button>
 
-</div id="recaptcha-container"></div>
-</body>
+</div>
+
+
 
 <script type="module" src="app.js"></script>
 
