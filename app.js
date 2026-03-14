@@ -1,8 +1,20 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+getFirestore,
+doc,
+setDoc,
+getDocs,
+collection,
+addDoc,
+query,
+where,
+updateDoc
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
 const firebaseConfig = {
@@ -120,7 +132,13 @@ html+=`
 
 ${d.school}<br>
 
-${d.city}
+${d.city}<br>
+
+<button onclick="sendFriendRequest('${docu.id}')">
+
+Add Friend
+
+</button>
 
 </div>
 
@@ -131,5 +149,107 @@ ${d.city}
 });
 
 document.getElementById("results").innerHTML=html;
+
+};
+
+
+
+// SEND FRIEND REQUEST
+
+window.sendFriendRequest = async function(targetId){
+
+await addDoc(collection(db,"friendRequests"),{
+
+from:currentUser.uid,
+
+to:targetId,
+
+status:"pending"
+
+});
+
+alert("Friend request sent");
+
+};
+
+
+
+// LOAD FRIEND REQUESTS
+
+window.loadFriendRequests = async function(){
+
+let q=query(
+
+collection(db,"friendRequests"),
+
+where("to","==",currentUser.uid)
+
+);
+
+let snapshot=await getDocs(q);
+
+let html="";
+
+snapshot.forEach(req=>{
+
+let d=req.data();
+
+html+=`
+
+<div class="card">
+
+Friend request from: ${d.from}
+
+<br>
+
+<button onclick="acceptRequest('${req.id}')">
+
+Accept
+
+</button>
+
+</div>
+
+`;
+
+});
+
+document.getElementById("requestList").innerHTML=html;
+
+};
+
+
+
+// ACCEPT REQUEST
+
+window.acceptRequest = async function(id){
+
+await updateDoc(doc(db,"friendRequests",id),{
+
+status:"accepted"
+
+});
+
+alert("Friend added");
+
+};
+
+
+
+// SHOW SECTION
+
+window.showSection=function(id){
+
+document.querySelectorAll(".section")
+
+.forEach(s=>s.style.display="none");
+
+document.getElementById(id).style.display="block";
+
+if(id==="requests"){
+
+loadFriendRequests();
+
+}
 
 };
