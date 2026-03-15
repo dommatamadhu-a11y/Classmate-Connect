@@ -4,7 +4,7 @@ import {
 getAuth,
 GoogleAuthProvider,
 signInWithRedirect,
-getRedirectResult,
+onAuthStateChanged,
 signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -16,66 +16,68 @@ getDoc,
 getDocs,
 collection,
 addDoc,
-deleteDoc,
 query,
-where,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-// FIREBASE CONFIG
-const firebaseConfig = {
-apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
-authDomain: "classmate-connect-4ef14.firebaseapp.com",
-projectId: "classmate-connect-4ef14",
-storageBucket: "classmate-connect-4ef14.appspot.com",
-messagingSenderId: "836999548178",
-appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
+const firebaseConfig={
+apiKey:"AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
+authDomain:"classmate-connect-4ef14.firebaseapp.com",
+projectId:"classmate-connect-4ef14",
+storageBucket:"classmate-connect-4ef14.appspot.com",
+messagingSenderId:"836999548178",
+appId:"1:836999548178:web:8fc82fcf07289647c5f7cb"
 };
 
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
 
-// INITIALIZE
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const provider = new GoogleAuthProvider();
+const provider=new GoogleAuthProvider();
 
 let currentUser;
 let chatUser;
-let profileUser;
 
 
-// GOOGLE LOGIN
-window.googleLogin = function () {
-signInWithRedirect(auth, provider);
+// LOGIN
+window.googleLogin=function(){
+signInWithRedirect(auth,provider);
 };
 
 
-// AFTER REDIRECT LOGIN
-getRedirectResult(auth)
-.then((result) => {
+// AUTH STATE
+onAuthStateChanged(auth,async(user)=>{
 
-if (result) {
+if(user){
 
-currentUser = result.user;
+currentUser=user;
 
-document.getElementById("login").style.display = "none";
-document.getElementById("profile").style.display = "block";
+document.getElementById("login").style.display="none";
 
-loadRequests();
+await setDoc(doc(db,"users",user.uid),{
+online:true
+},{merge:true});
+
 loadFriends();
+
+showSection("friends");
+
+}else{
+
+showSection("login");
 
 }
 
-})
-.catch((error) => {
-console.log(error);
 });
 
 
 // LOGOUT
-window.logout = async function(){
+window.logout=async function(){
+
+await setDoc(doc(db,"users",currentUser.uid),{
+online:false
+},{merge:true});
 
 await signOut(auth);
 
@@ -85,19 +87,20 @@ location.reload();
 
 
 // SAVE PROFILE
-window.saveProfile = async function(){
+window.saveProfile=async function(){
 
-let name = document.getElementById("name").value;
-let school = document.getElementById("school").value;
-let year = document.getElementById("year").value;
-let city = document.getElementById("city").value;
+let name=document.getElementById("name").value;
+let school=document.getElementById("school").value;
+let year=document.getElementById("year").value;
+let city=document.getElementById("city").value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 
-name:name,
-school:school,
-year:year,
-city:city
+name,
+school,
+year,
+city,
+online:true
 
 });
 
@@ -107,34 +110,25 @@ showSection("find");
 
 
 // FIND USERS
-window.findUsers = async function(){
+window.findUsers=async function(){
 
-let school = document.getElementById("searchSchool").value.toLowerCase();
-let year = document.getElementById("searchYear").value;
-
-let snapshot = await getDocs(collection(db,"users"));
+let snapshot=await getDocs(collection(db,"users"));
 
 let html="";
 
 snapshot.forEach(docu=>{
 
-let d = docu.data();
+let d=docu.data();
 
-if(docu.id!==currentUser.uid && d.school.toLowerCase().includes(school) && d.year==year){
-
-let letter = d.name.charAt(0).toUpperCase();
+if(docu.id!==currentUser.uid){
 
 html+=`
 
 <div class="card">
 
-<div onclick="viewProfile('${docu.id}')">
+${d.name}
 
-${letter} ${d.name}
-
-</div>
-
-<button onclick="sendRequest('${docu.id}')">Add</button>
+<button onclick="startChat('${docu.id}','${d.name}')">Chat</button>
 
 </div>
 
@@ -149,75 +143,10 @@ document.getElementById("results").innerHTML=html;
 };
 
 
-// SEND FRIEND REQUEST
-window.sendRequest = async function(id){
-
-await addDoc(collection(db,"friendRequests"),{
-
-from:currentUser.uid,
-to:id,
-time:Date.now()
-
-});
-
-alert("Friend request sent");
-
-};
-
-
-// LOAD FRIEND REQUESTS
-function loadRequests(){
-
-const q = query(collection(db,"friendRequests"),where("to","==",currentUser.uid));
-
-onSnapshot(q,(snapshot)=>{
-
-let html="";
-
-snapshot.forEach(docu=>{
-
-let d=docu.data();
-
-html+=`
-
-<div class="card">
-
-${d.from}
-
-<button onclick="acceptRequest('${docu.id}','${d.from}')">Accept</button>
-
-</div>
-
-`;
-
-});
-
-document.getElementById("requestList").innerHTML=html;
-
-});
-
-}
-
-
-// ACCEPT REQUEST
-window.acceptRequest = async function(id,from){
-
-await addDoc(collection(db,"friends"),{
-
-user1:currentUser.uid,
-user2:from
-
-});
-
-await deleteDoc(doc(db,"friendRequests",id));
-
-};
-
-
 // LOAD FRIENDS
 function loadFriends(){
 
-const q=query(collection(db,"friends"));
+const q=query(collection(db,"users"));
 
 onSnapshot(q,(snapshot)=>{
 
@@ -227,18 +156,24 @@ snapshot.forEach(docu=>{
 
 let d=docu.data();
 
-let friend=null;
+if(docu.id!==currentUser.uid){
 
-if(d.user1==currentUser.uid) friend=d.user2;
-if(d.user2==currentUser.uid) friend=d.user1;
-
-if(friend){
+let status=d.online
+? "<span class='online'>Online</span>"
+: "<span class='offline'>Offline</span>";
 
 html+=`
 
-<div class="card" onclick="viewProfile('${friend}')">
+<div class="card" onclick="startChat('${docu.id}','${d.name}')">
 
-${friend}
+<div>
+
+<b>${d.name}</b><br>
+${status}
+
+</div>
+
+<span class="badge">•</span>
 
 </div>
 
@@ -255,31 +190,20 @@ document.getElementById("friendsList").innerHTML=html;
 }
 
 
-// VIEW PROFILE
-window.viewProfile = async function(id){
-
-profileUser=id;
-
-let docu=await getDoc(doc(db,"users",id));
-let d=docu.data();
-
-document.getElementById("pName").innerText=d.name;
-document.getElementById("pSchool").innerText="School: "+d.school;
-document.getElementById("pYear").innerText="Year: "+d.year;
-document.getElementById("pCity").innerText="City: "+d.city;
-
-showSection("profileView");
-
-};
-
-
 // START CHAT
-window.startChat=function(){
+window.startChat=async function(uid,name){
 
-chatUser=profileUser;
+chatUser=uid;
 
-document.getElementById("chatName").innerText =
-document.getElementById("pName").innerText;
+document.getElementById("chatName").innerText=name;
+
+let docSnap=await getDoc(doc(db,"users",uid));
+
+let status=docSnap.data().online
+? "Online"
+: "Offline";
+
+document.getElementById("chatStatus").innerText=status;
 
 showSection("chatScreen");
 
@@ -297,7 +221,7 @@ await addDoc(collection(db,"messages"),{
 
 from:currentUser.uid,
 to:chatUser,
-text:text,
+text,
 time:Date.now()
 
 });
@@ -325,16 +249,12 @@ if(
 (m.from===chatUser && m.to===currentUser.uid)
 ){
 
-let time=new Date(m.time).toLocaleTimeString();
+let cls=m.from===currentUser.uid?"msg me":"msg other";
 
 html+=`
 
-<div>
-
+<div class="${cls}">
 ${m.text}
-
-<div>${time}</div>
-
 </div>
 
 `;
