@@ -60,17 +60,6 @@ border-radius:6px;
 width:100%;
 }
 
-.logout{
-background:red;
-color:white;
-border:none;
-padding:8px;
-border-radius:6px;
-position:absolute;
-right:10px;
-top:10px;
-}
-
 .card{
 background:white;
 padding:12px;
@@ -82,28 +71,22 @@ align-items:center;
 box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
-.row{
-display:flex;
-align-items:center;
-}
-
-.avatar{
-width:40px;
-height:40px;
-border-radius:50%;
-background:#1976d2;
+.badge{
+background:red;
 color:white;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-margin-right:10px;
+border-radius:50%;
+padding:4px 8px;
+font-size:12px;
 }
 
-.profileBox{
-background:white;
-padding:20px;
-border-radius:10px;
+.online{
+color:green;
+font-size:12px;
+}
+
+.offline{
+color:gray;
+font-size:12px;
 }
 
 .chatBox{
@@ -129,11 +112,6 @@ margin-left:auto;
 background:#eeeeee;
 }
 
-.time{
-font-size:10px;
-color:gray;
-}
-
 </style>
 
 </head>
@@ -142,15 +120,13 @@ color:gray;
 
 <header>
 Classmate Connect
-<button class="logout" onclick="logout()">Logout</button>
+<button onclick="logout()">Logout</button>
 </header>
 
 <nav>
 
 <button onclick="showSection('find')">Find</button>
-<button onclick="showSection('requests')">Requests</button>
 <button onclick="showSection('friends')">Friends</button>
-<button onclick="showSection('chats')">Chats</button>
 
 </nav>
 
@@ -159,7 +135,9 @@ Classmate Connect
 
 <h3>Login</h3>
 
-<button class="primary" onclick="googleLogin()">Login with Google</button>
+<button class="primary" onclick="googleLogin()">
+Login with Google
+</button>
 
 </div>
 
@@ -192,15 +170,6 @@ Classmate Connect
 </div>
 
 
-<div id="requests" class="section">
-
-<h3>Friend Requests</h3>
-
-<div id="requestList"></div>
-
-</div>
-
-
 <div id="friends" class="section">
 
 <h3>Friends</h3>
@@ -210,27 +179,11 @@ Classmate Connect
 </div>
 
 
-<div id="profileView" class="section">
-
-<h3>User Profile</h3>
-
-<div class="profileBox">
-
-<h3 id="pName"></h3>
-<p id="pSchool"></p>
-<p id="pYear"></p>
-<p id="pCity"></p>
-
-<button class="primary" onclick="startChat()">Message</button>
-
-</div>
-
-</div>
-
-
 <div id="chatScreen" class="section">
 
 <h3 id="chatName"></h3>
+
+<div id="chatStatus"></div>
 
 <div class="chatBox" id="chatBox"></div>
 
