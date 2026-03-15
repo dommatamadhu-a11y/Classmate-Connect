@@ -3,7 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
 getAuth,
 GoogleAuthProvider,
-signInWithPopup,
+signInWithRedirect,
+getRedirectResult,
 signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -22,45 +23,59 @@ onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-const firebaseConfig={
-apiKey:"AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
-authDomain:"classmate-connect-4ef14.firebaseapp.com",
-projectId:"classmate-connect-4ef14",
-storageBucket:"classmate-connect-4ef14.appspot.com",
-messagingSenderId:"836999548178",
-appId:"1:836999548178:web:8fc82fcf07289647c5f7cb"
+// FIREBASE CONFIG
+const firebaseConfig = {
+apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
+authDomain: "classmate-connect-4ef14.firebaseapp.com",
+projectId: "classmate-connect-4ef14",
+storageBucket: "classmate-connect-4ef14.appspot.com",
+messagingSenderId: "836999548178",
+appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
 };
 
-const app=initializeApp(firebaseConfig);
-const auth=getAuth(app);
-const db=getFirestore(app);
-const provider=new GoogleAuthProvider();
+
+// INITIALIZE
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
 
 let currentUser;
 let chatUser;
 let profileUser;
 
 
-window.googleLogin=function(){
+// GOOGLE LOGIN
+window.googleLogin = function () {
+signInWithRedirect(auth, provider);
+};
 
-signInWithPopup(auth,provider)
 
-.then((result)=>{
+// AFTER REDIRECT LOGIN
+getRedirectResult(auth)
+.then((result) => {
 
-currentUser=result.user;
+if (result) {
 
-document.getElementById("login").style.display="none";
-document.getElementById("profile").style.display="block";
+currentUser = result.user;
+
+document.getElementById("login").style.display = "none";
+document.getElementById("profile").style.display = "block";
 
 loadRequests();
 loadFriends();
 
+}
+
+})
+.catch((error) => {
+console.log(error);
 });
 
-};
 
-
-window.logout=async function(){
+// LOGOUT
+window.logout = async function(){
 
 await signOut(auth);
 
@@ -69,19 +84,20 @@ location.reload();
 };
 
 
-window.saveProfile=async function(){
+// SAVE PROFILE
+window.saveProfile = async function(){
 
-let name=document.getElementById("name").value;
-let school=document.getElementById("school").value;
-let year=document.getElementById("year").value;
-let city=document.getElementById("city").value;
+let name = document.getElementById("name").value;
+let school = document.getElementById("school").value;
+let year = document.getElementById("year").value;
+let city = document.getElementById("city").value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 
-name,
-school,
-year,
-city
+name:name,
+school:school,
+year:year,
+city:city
 
 });
 
@@ -90,37 +106,31 @@ showSection("find");
 };
 
 
-window.findUsers=async function(){
+// FIND USERS
+window.findUsers = async function(){
 
-let school=document.getElementById("searchSchool").value.toLowerCase();
-let year=document.getElementById("searchYear").value;
+let school = document.getElementById("searchSchool").value.toLowerCase();
+let year = document.getElementById("searchYear").value;
 
-let snapshot=await getDocs(collection(db,"users"));
+let snapshot = await getDocs(collection(db,"users"));
 
 let html="";
 
 snapshot.forEach(docu=>{
 
-let d=docu.data();
+let d = docu.data();
 
 if(docu.id!==currentUser.uid && d.school.toLowerCase().includes(school) && d.year==year){
 
-let letter=d.name.charAt(0).toUpperCase();
+let letter = d.name.charAt(0).toUpperCase();
 
 html+=`
 
 <div class="card">
 
-<div class="row" onclick="viewProfile('${docu.id}')">
+<div onclick="viewProfile('${docu.id}')">
 
-<div class="avatar">${letter}</div>
-
-<div>
-
-<div>${d.name}</div>
-<div>${d.city}</div>
-
-</div>
+${letter} ${d.name}
 
 </div>
 
@@ -139,7 +149,8 @@ document.getElementById("results").innerHTML=html;
 };
 
 
-window.sendRequest=async function(id){
+// SEND FRIEND REQUEST
+window.sendRequest = async function(id){
 
 await addDoc(collection(db,"friendRequests"),{
 
@@ -154,9 +165,10 @@ alert("Friend request sent");
 };
 
 
+// LOAD FRIEND REQUESTS
 function loadRequests(){
 
-const q=query(collection(db,"friendRequests"),where("to","==",currentUser.uid));
+const q = query(collection(db,"friendRequests"),where("to","==",currentUser.uid));
 
 onSnapshot(q,(snapshot)=>{
 
@@ -187,7 +199,8 @@ document.getElementById("requestList").innerHTML=html;
 }
 
 
-window.acceptRequest=async function(id,from){
+// ACCEPT REQUEST
+window.acceptRequest = async function(id,from){
 
 await addDoc(collection(db,"friends"),{
 
@@ -201,6 +214,7 @@ await deleteDoc(doc(db,"friendRequests",id));
 };
 
 
+// LOAD FRIENDS
 function loadFriends(){
 
 const q=query(collection(db,"friends"));
@@ -241,7 +255,8 @@ document.getElementById("friendsList").innerHTML=html;
 }
 
 
-window.viewProfile=async function(id){
+// VIEW PROFILE
+window.viewProfile = async function(id){
 
 profileUser=id;
 
@@ -258,11 +273,12 @@ showSection("profileView");
 };
 
 
+// START CHAT
 window.startChat=function(){
 
 chatUser=profileUser;
 
-document.getElementById("chatName").innerText=
+document.getElementById("chatName").innerText =
 document.getElementById("pName").innerText;
 
 showSection("chatScreen");
@@ -272,6 +288,7 @@ loadMessages();
 };
 
 
+// SEND MESSAGE
 window.sendMsg=async function(){
 
 let text=document.getElementById("msgInput").value;
@@ -280,7 +297,7 @@ await addDoc(collection(db,"messages"),{
 
 from:currentUser.uid,
 to:chatUser,
-text,
+text:text,
 time:Date.now()
 
 });
@@ -290,6 +307,7 @@ document.getElementById("msgInput").value="";
 };
 
 
+// LOAD MESSAGES
 function loadMessages(){
 
 const q=query(collection(db,"messages"));
@@ -307,15 +325,16 @@ if(
 (m.from===chatUser && m.to===currentUser.uid)
 ){
 
-let cls=m.from===currentUser.uid?"msg me":"msg other";
-
 let time=new Date(m.time).toLocaleTimeString();
 
 html+=`
 
-<div class="${cls}">
+<div>
+
 ${m.text}
-<div class="time">${time}</div>
+
+<div>${time}</div>
+
 </div>
 
 `;
@@ -331,6 +350,7 @@ document.getElementById("chatBox").innerHTML=html;
 }
 
 
+// SHOW SECTION
 window.showSection=function(id){
 
 document.querySelectorAll(".section").forEach(s=>s.style.display="none");
