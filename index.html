@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta charset="UTF-8">
@@ -43,23 +42,6 @@ display:none;
 padding:15px;
 }
 
-input{
-width:100%;
-padding:10px;
-margin:5px 0;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-button.primary{
-background:#1976d2;
-color:white;
-border:none;
-padding:10px;
-border-radius:6px;
-width:100%;
-}
-
 .card{
 background:white;
 padding:12px;
@@ -69,24 +51,6 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 box-shadow:0 2px 5px rgba(0,0,0,0.1);
-}
-
-.badge{
-background:red;
-color:white;
-border-radius:50%;
-padding:4px 8px;
-font-size:12px;
-}
-
-.online{
-color:green;
-font-size:12px;
-}
-
-.offline{
-color:gray;
-font-size:12px;
 }
 
 .chatBox{
@@ -100,7 +64,7 @@ padding:10px;
 padding:8px;
 border-radius:10px;
 margin:6px;
-max-width:60%;
+max-width:70%;
 }
 
 .me{
@@ -110,6 +74,11 @@ margin-left:auto;
 
 .other{
 background:#eeeeee;
+}
+
+.msg img{
+max-width:150px;
+border-radius:10px;
 }
 
 </style>
@@ -124,21 +93,16 @@ Classmate Connect
 </header>
 
 <nav>
-
 <button onclick="showSection('find')">Find</button>
 <button onclick="showSection('friends')">Friends</button>
-
+<button onclick="showSection('chats')">Chats</button>
+<button onclick="showSection('profile')">Profile</button>
 </nav>
 
 
 <div id="login" class="section" style="display:block">
-
 <h3>Login</h3>
-
-<button class="primary" onclick="googleLogin()">
-Login with Google
-</button>
-
+<button onclick="googleLogin()">Login with Google</button>
 </div>
 
 
@@ -146,36 +110,31 @@ Login with Google
 
 <h3>Create Profile</h3>
 
-<input id="name" placeholder="Name">
-<input id="school" placeholder="School">
-<input id="year" placeholder="Year">
-<input id="city" placeholder="City">
+<input id="name" placeholder="Name"><br><br>
+<input id="school" placeholder="School"><br><br>
+<input id="year" placeholder="Year"><br><br>
+<input id="city" placeholder="City"><br><br>
 
-<button class="primary" onclick="saveProfile()">Save Profile</button>
+<button onclick="saveProfile()">Save Profile</button>
 
 </div>
 
 
 <div id="find" class="section">
-
 <h3>Find Classmates</h3>
-
-<input id="searchSchool" placeholder="School">
-<input id="searchYear" placeholder="Year">
-
-<button class="primary" onclick="findUsers()">Search</button>
-
 <div id="results"></div>
-
 </div>
 
 
 <div id="friends" class="section">
-
 <h3>Friends</h3>
-
 <div id="friendsList"></div>
+</div>
 
+
+<div id="chats" class="section">
+<h3>Chats</h3>
+<div id="chatList"></div>
 </div>
 
 
@@ -183,13 +142,17 @@ Login with Google
 
 <h3 id="chatName"></h3>
 
-<div id="chatStatus"></div>
-
 <div class="chatBox" id="chatBox"></div>
+
+<br>
 
 <input id="msgInput" placeholder="Type message">
 
-<button class="primary" onclick="sendMsg()">Send</button>
+<input type="file" id="imgFile" style="display:none">
+
+<button onclick="pickImage()">📎</button>
+
+<button onclick="sendMsg()">Send</button>
 
 </div>
 
