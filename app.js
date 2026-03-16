@@ -19,6 +19,7 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+
 const firebaseConfig = {
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
@@ -51,7 +52,6 @@ currentUser=user;
 
 showSection("find");
 
-loadUsers();
 loadFriends();
 loadChats();
 loadGroups();
@@ -120,10 +120,12 @@ alert("Profile Saved");
 
 /* FIND BATCHMATES */
 
-async function loadUsers(){
+window.loadUsers = async ()=>{
+
+const institution=document.getElementById("searchInstitution").value;
+const year=document.getElementById("searchYear").value;
 
 const q=query(collection(db,"users"));
-
 const snapshot=await getDocs(q);
 
 let html="";
@@ -132,13 +134,19 @@ snapshot.forEach(d=>{
 
 let u=d.data();
 
-if(d.id!==currentUser.uid){
+if(
+d.id!==currentUser.uid &&
+u.institution &&
+u.year &&
+u.institution.toLowerCase()===institution.toLowerCase() &&
+u.year===year
+){
 
 let name=u.name || "User";
 
 html+=`<div class="card">
 
-${name}
+${name} (${u.nickname || ""})
 
 <button onclick="addFriend('${d.id}','${name}')">Add Friend</button>
 
@@ -150,7 +158,7 @@ ${name}
 
 document.getElementById("findList").innerHTML=html;
 
-}
+};
 
 /* ADD FRIEND */
 
