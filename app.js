@@ -19,8 +19,6 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIREBASE CONFIG */
-
 const firebaseConfig = {
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
@@ -35,29 +33,27 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-let currentUser = null;
-let currentChatUser = null;
-let currentGroup = null;
+let currentUser;
 
 /* LOGIN */
 
 window.googleLogin = () => {
-
 signInWithRedirect(auth, provider);
-
 };
 
 /* AUTH STATE */
 
-onAuthStateChanged(auth,(user)=>{
+onAuthStateChanged(auth,user=>{
 
 if(user){
 
-currentUser = user;
+currentUser=user;
 
-showSection("chats");
+showSection("find");
 
 loadUsers();
+loadFriends();
+loadChats();
 loadGroups();
 loadMemories();
 loadNotifications();
@@ -72,7 +68,7 @@ showSection("login");
 
 /* LOGOUT */
 
-window.logout = async ()=>{
+window.logout = async () => {
 
 await signOut(auth);
 location.reload();
@@ -108,12 +104,12 @@ const city=document.getElementById("city").value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 
-name,
-nickname,
-institution,
-course,
-year,
-city,
+name:name,
+nickname:nickname,
+institution:institution,
+course:course,
+year:year,
+city:city,
 email:currentUser.email
 
 });
@@ -122,7 +118,7 @@ alert("Profile Saved");
 
 };
 
-/* LOAD USERS (FIND BATCHMATES) */
+/* FIND BATCHMATES */
 
 async function loadUsers(){
 
@@ -138,11 +134,13 @@ let u=d.data();
 
 if(d.id!==currentUser.uid){
 
+let name=u.name || "User";
+
 html+=`<div class="card">
 
-${u.name} (${u.nickname || ""})
+${name}
 
-<button onclick="openChat('${d.id}','${u.name}')">Chat</button>
+<button onclick="addFriend('${d.id}','${name}')">Add Friend</button>
 
 </div>`;
 
@@ -150,27 +148,63 @@ ${u.name} (${u.nickname || ""})
 
 });
 
-document.getElementById("chatList").innerHTML=html;
+document.getElementById("findList").innerHTML=html;
 
 }
 
-/* OPEN CHAT */
+/* ADD FRIEND */
 
-window.openChat=(uid,name)=>{
+window.addFriend = async(uid,name)=>{
 
-currentChatUser=uid;
+await addDoc(collection(db,"friends"),{
 
-document.getElementById("chatName").innerText=name;
+user1:currentUser.uid,
+user2:uid,
+time:Date.now()
 
-showSection("chatScreen");
+});
 
-loadMessages();
+alert("Friend Added");
+
+loadFriends();
 
 };
 
-/* LOAD MESSAGES */
+/* LOAD FRIENDS */
 
-function loadMessages(){
+async function loadFriends(){
+
+const q=query(collection(db,"friends"));
+
+const snapshot=await getDocs(q);
+
+let html="";
+
+snapshot.forEach(d=>{
+
+let f=d.data();
+
+if(f.user1===currentUser.uid){
+
+html+=`<div class="card">
+
+Friend
+
+<button onclick="openChat('${f.user2}')">Chat</button>
+
+</div>`;
+
+}
+
+});
+
+document.getElementById("friendsList").innerHTML=html;
+
+}
+
+/* CHATS */
+
+function loadChats(){
 
 const q=query(collection(db,"messages"));
 
@@ -182,46 +216,38 @@ snapshot.forEach(d=>{
 
 let m=d.data();
 
-if(
+if(m.to===currentUser.uid){
 
-(m.from===currentUser.uid && m.to===currentChatUser) ||
-
-(m.from===currentChatUser && m.to===currentUser.uid)
-
-){
-
-let cls=m.from===currentUser.uid?"me":"other";
-
-html+=`<div class="msg ${cls}">${m.text}</div>`;
+html+=`<div class="card">${m.text}</div>`;
 
 }
 
 });
 
-document.getElementById("chatBox").innerHTML=html;
+document.getElementById("chatList").innerHTML=html;
 
 });
 
 }
 
-/* SEND MESSAGE */
+/* OPEN CHAT */
 
-window.sendMsg=async()=>{
+window.openChat=(uid)=>{
 
-let text=document.getElementById("msgInput").value;
+let text=prompt("Send message");
 
-if(text==="") return;
+if(text){
 
-await addDoc(collection(db,"messages"),{
+addDoc(collection(db,"messages"),{
 
 from:currentUser.uid,
-to:currentChatUser,
+to:uid,
 text:text,
 time:Date.now()
 
 });
 
-document.getElementById("msgInput").value="";
+}
 
 };
 
@@ -239,13 +265,7 @@ snapshot.forEach(d=>{
 
 let g=d.data();
 
-html+=`<div class="card">
-
-${g.name}
-
-<button onclick="openGroup('${d.id}','${g.name}')">Open</button>
-
-</div>`;
+html+=`<div class="card">${g.name}</div>`;
 
 });
 
@@ -253,53 +273,13 @@ document.getElementById("groupList").innerHTML=html;
 
 }
 
-/* OPEN GROUP */
-
-window.openGroup=(gid,name)=>{
-
-currentGroup=gid;
-
-document.getElementById("chatName").innerText=name;
-
-showSection("chatScreen");
-
-loadGroupMessages();
-
-};
-
-/* GROUP MESSAGES */
-
-function loadGroupMessages(){
-
-const q=query(collection(db,"groupMessages"));
-
-onSnapshot(q,snapshot=>{
-
-let html="";
-
-snapshot.forEach(d=>{
-
-let m=d.data();
-
-if(m.groupId===currentGroup){
-
-html+=`<div class="msg">${m.text}</div>`;
-
-}
-
-});
-
-document.getElementById("chatBox").innerHTML=html;
-
-});
-
-}
-
 /* MEMORIES */
 
-window.uploadMemory=async()=>{
+window.uploadMemory = async ()=>{
 
 let caption=document.getElementById("memoryCaption").value;
+
+if(caption==="") return;
 
 await addDoc(collection(db,"memories"),{
 
@@ -331,7 +311,7 @@ html+=`<div class="card">
 
 ${m.caption}
 
-<button onclick="likeMemory('${d.id}','${m.userId}')">Like</button>
+<button onclick="likeMemory('${d.id}')">Like</button>
 
 </div>`;
 
@@ -345,31 +325,12 @@ document.getElementById("memoriesList").innerHTML=html;
 
 /* LIKE MEMORY */
 
-window.likeMemory=async(memoryId,ownerId)=>{
+window.likeMemory = async(memoryId)=>{
 
 await addDoc(collection(db,"memoryLikes"),{
 
 memoryId:memoryId,
 userId:currentUser.uid
-
-});
-
-};
-
-/* COMMENT MEMORY */
-
-window.commentMemory=async(memoryId)=>{
-
-let comment=document.getElementById("commentInput").value;
-
-if(comment==="") return;
-
-await addDoc(collection(db,"memoryComments"),{
-
-memoryId:memoryId,
-userName:currentUser.displayName,
-comment:comment,
-time:Date.now()
 
 });
 
