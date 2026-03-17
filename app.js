@@ -19,7 +19,6 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-
 const firebaseConfig = {
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
@@ -42,7 +41,7 @@ window.googleLogin = () => {
 signInWithRedirect(auth, provider);
 };
 
-/* AUTH STATE */
+/* AUTH */
 
 onAuthStateChanged(auth,user=>{
 
@@ -68,30 +67,24 @@ showSection("login");
 
 /* LOGOUT */
 
-window.logout = async () => {
-
+window.logout = async ()=>{
 await signOut(auth);
 location.reload();
-
 };
 
-/* SHOW SECTION */
+/* UI */
 
 window.showSection = (id)=>{
 
-document.querySelectorAll(".section").forEach(sec=>{
-sec.style.display="none";
+document.querySelectorAll(".section").forEach(s=>{
+s.style.display="none";
 });
 
-let el=document.getElementById(id);
-
-if(el){
-el.style.display="block";
-}
+document.getElementById(id).style.display="block";
 
 };
 
-/* SAVE PROFILE */
+/* PROFILE + AUTO GROUP */
 
 window.saveProfile = async ()=>{
 
@@ -102,19 +95,55 @@ const course=document.getElementById("course").value;
 const year=document.getElementById("year").value;
 const city=document.getElementById("city").value;
 
+/* SAVE USER */
+
 await setDoc(doc(db,"users",currentUser.uid),{
-
-name:name,
-nickname:nickname,
-institution:institution,
-course:course,
-year:year,
-city:city,
+name,
+nickname,
+institution,
+course,
+year,
+city,
 email:currentUser.email
-
 });
 
-alert("Profile Saved");
+/* GROUP NAME */
+
+const groupName = institution + " - " + year;
+
+/* CHECK GROUP */
+
+const gSnap = await getDocs(collection(db,"groups"));
+
+let groupId = null;
+
+gSnap.forEach(d=>{
+if(d.data().name === groupName){
+groupId = d.id;
+}
+});
+
+/* CREATE IF NOT EXISTS */
+
+if(!groupId){
+
+const newGroup = await addDoc(collection(db,"groups"),{
+name:groupName,
+time:Date.now()
+});
+
+groupId = newGroup.id;
+
+}
+
+/* ADD MEMBER */
+
+await addDoc(collection(db,"groupMembers"),{
+groupId,
+userId:currentUser.uid
+});
+
+alert("Profile Saved & Group Joined");
 
 };
 
@@ -125,12 +154,11 @@ window.loadUsers = async ()=>{
 const institution=document.getElementById("searchInstitution").value;
 const year=document.getElementById("searchYear").value;
 
-const q=query(collection(db,"users"));
-const snapshot=await getDocs(q);
+const snap = await getDocs(collection(db,"users"));
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
 
 let u=d.data();
 
@@ -142,15 +170,12 @@ u.institution.toLowerCase()===institution.toLowerCase() &&
 u.year===year
 ){
 
-let name=u.name || "User";
-
-html+=`<div class="card">
-
-${name} (${u.nickname || ""})
-
-<button onclick="addFriend('${d.id}','${name}')">Add Friend</button>
-
-</div>`;
+html+=`
+<div class="card">
+${u.name} (${u.nickname || ""})
+<button onclick="addFriend('${d.id}')">Add Friend</button>
+</div>
+`;
 
 }
 
@@ -160,47 +185,39 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* ADD FRIEND */
+/* FRIENDS */
 
-window.addFriend = async(uid,name)=>{
+window.addFriend = async(uid)=>{
 
 await addDoc(collection(db,"friends"),{
-
 user1:currentUser.uid,
 user2:uid,
 time:Date.now()
-
 });
 
 alert("Friend Added");
-
 loadFriends();
 
 };
 
-/* LOAD FRIENDS */
-
 async function loadFriends(){
 
-const q=query(collection(db,"friends"));
-
-const snapshot=await getDocs(q);
+const snap = await getDocs(collection(db,"friends"));
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
 
 let f=d.data();
 
 if(f.user1===currentUser.uid){
 
-html+=`<div class="card">
-
+html+=`
+<div class="card">
 Friend
-
 <button onclick="openChat('${f.user2}')">Chat</button>
-
-</div>`;
+</div>
+`;
 
 }
 
@@ -210,17 +227,15 @@ document.getElementById("friendsList").innerHTML=html;
 
 }
 
-/* CHATS */
+/* CHAT */
 
 function loadChats(){
 
-const q=query(collection(db,"messages"));
-
-onSnapshot(q,snapshot=>{
+onSnapshot(collection(db,"messages"),snap=>{
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
 
 let m=d.data();
 
@@ -238,21 +253,17 @@ document.getElementById("chatList").innerHTML=html;
 
 }
 
-/* OPEN CHAT */
+window.openChat = (uid)=>{
 
-window.openChat=(uid)=>{
-
-let text=prompt("Send message");
+let text = prompt("Send message");
 
 if(text){
 
 addDoc(collection(db,"messages"),{
-
 from:currentUser.uid,
 to:uid,
-text:text,
+text,
 time:Date.now()
-
 });
 
 }
@@ -263,17 +274,28 @@ time:Date.now()
 
 async function loadGroups(){
 
-const q=query(collection(db,"groups"));
-
-const snapshot=await getDocs(q);
+const members = await getDocs(collection(db,"groupMembers"));
+const groups = await getDocs(collection(db,"groups"));
 
 let html="";
 
-snapshot.forEach(d=>{
+members.forEach(m=>{
 
-let g=d.data();
+let mem=m.data();
 
-html+=`<div class="card">${g.name}</div>`;
+if(mem.userId===currentUser.uid){
+
+groups.forEach(g=>{
+
+if(g.id===mem.groupId){
+
+html+=`<div class="card">${g.data().name}</div>`;
+
+}
+
+});
+
+}
 
 });
 
@@ -287,41 +309,34 @@ window.uploadMemory = async ()=>{
 
 let caption=document.getElementById("memoryCaption").value;
 
-if(caption==="") return;
+if(!caption) return;
 
 await addDoc(collection(db,"memories"),{
-
 userId:currentUser.uid,
-caption:caption,
+caption,
 time:Date.now()
-
 });
 
 document.getElementById("memoryCaption").value="";
 
 };
 
-/* LOAD MEMORIES */
-
 function loadMemories(){
 
-const q=query(collection(db,"memories"));
-
-onSnapshot(q,snapshot=>{
+onSnapshot(collection(db,"memories"),snap=>{
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
 
 let m=d.data();
 
-html+=`<div class="card">
-
+html+=`
+<div class="card">
 ${m.caption}
-
 <button onclick="likeMemory('${d.id}')">Like</button>
-
-</div>`;
+</div>
+`;
 
 });
 
@@ -331,15 +346,11 @@ document.getElementById("memoriesList").innerHTML=html;
 
 }
 
-/* LIKE MEMORY */
-
-window.likeMemory = async(memoryId)=>{
+window.likeMemory = async(id)=>{
 
 await addDoc(collection(db,"memoryLikes"),{
-
-memoryId:memoryId,
+memoryId:id,
 userId:currentUser.uid
-
 });
 
 };
@@ -348,13 +359,11 @@ userId:currentUser.uid
 
 function loadNotifications(){
 
-const q=query(collection(db,"notifications"));
-
-onSnapshot(q,snapshot=>{
+onSnapshot(collection(db,"notifications"),snap=>{
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
 
 let n=d.data();
 
