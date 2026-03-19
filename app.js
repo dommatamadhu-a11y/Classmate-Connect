@@ -18,6 +18,15 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+/* FIX: Screen OFF → ON issue */
+document.addEventListener("visibilitychange", () => {
+if (document.visibilityState === "visible") {
+location.reload();
+}
+});
+
+/* CONFIG */
+
 const firebaseConfig = {
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
@@ -69,9 +78,11 @@ document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE */
+/* PROFILE SAVE */
 
 window.saveProfile = async ()=>{
+
+try{
 
 const name=document.getElementById("name").value;
 const nickname=document.getElementById("nickname").value;
@@ -84,33 +95,39 @@ await setDoc(doc(db,"users",currentUser.uid),{
 name,nickname,institution,course,year,city,email:currentUser.email
 });
 
-/* GROUP */
-
 const groupName = institution+" - "+year;
-
-const groups = await getDocs(collection(db,"groups"));
 
 let groupId=null;
 
-groups.forEach(d=>{
+const groupsSnap = await getDocs(collection(db,"groups"));
+
+groupsSnap.forEach(d=>{
 if(d.data().name===groupName){
 groupId=d.id;
 }
 });
 
 if(!groupId){
-const g=await addDoc(collection(db,"groups"),{
-name:groupName,time:Date.now()
+const g = await addDoc(collection(db,"groups"),{
+name:groupName,
+time:Date.now()
 });
-groupId=g.id;
+groupId = g.id;
 }
 
+if(groupId){
 await addDoc(collection(db,"groupMembers"),{
-groupId,
+groupId:groupId,
 userId:currentUser.uid
 });
+}
 
-alert("Profile Saved");
+alert("Profile Saved ✅");
+
+}catch(e){
+console.error(e);
+alert("Error: "+e.message);
+}
 
 };
 
@@ -146,7 +163,7 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* FRIENDS */
+/* ADD FRIEND */
 
 window.addFriend = async(uid)=>{
 await addDoc(collection(db,"friends"),{
@@ -158,6 +175,8 @@ alert("Friend Added");
 loadFriends();
 };
 
+/* LOAD FRIENDS */
+
 async function loadFriends(){
 
 const snap=await getDocs(collection(db,"friends"));
@@ -165,12 +184,21 @@ let html="";
 
 snap.forEach(d=>{
 let f=d.data();
+
 if(f.user1===currentUser.uid){
 html+=`<div class="card">
 Friend
 <button onclick="openChat('${f.user2}')">Chat</button>
 </div>`;
 }
+
+if(f.user2===currentUser.uid){
+html+=`<div class="card">
+Friend
+<button onclick="openChat('${f.user1}')">Chat</button>
+</div>`;
+}
+
 });
 
 document.getElementById("friendsList").innerHTML=html;
@@ -258,8 +286,6 @@ for(const d of snap.docs){
 
 let m=d.data();
 
-/* COUNT LIKES */
-
 let likesSnap = await getDocs(collection(db,"memoryLikes"));
 let likeCount=0;
 
@@ -268,8 +294,6 @@ if(l.data().memoryId===d.id){
 likeCount++;
 }
 });
-
-/* LOAD COMMENTS */
 
 let commentsSnap = await getDocs(collection(db,"memoryComments"));
 let commentsHTML="";
