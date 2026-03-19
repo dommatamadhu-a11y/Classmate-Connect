@@ -78,7 +78,7 @@ document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE */
+/* PROFILE + GROUP FIX */
 
 window.saveProfile = async ()=>{
 
@@ -91,29 +91,42 @@ const course=document.getElementById("course").value;
 const year=document.getElementById("year").value;
 const city=document.getElementById("city").value;
 
+/* SAVE USER */
+
 await setDoc(doc(db,"users",currentUser.uid),{
 name,nickname,institution,course,year,city,email:currentUser.email
 });
 
-const groupName = institution+" - "+year;
+/* GROUP FIX */
+
+const cleanInstitution = institution.trim().toLowerCase();
+const cleanYear = year.trim();
+
+const groupName = cleanInstitution + "-" + cleanYear;
 
 let groupId=null;
 
 const groupsSnap = await getDocs(collection(db,"groups"));
 
 groupsSnap.forEach(d=>{
-if(d.data().name===groupName){
-groupId=d.id;
+let g=d.data();
+if(g.name === groupName){
+groupId = d.id;
 }
 });
+
+/* CREATE GROUP */
 
 if(!groupId){
 const g = await addDoc(collection(db,"groups"),{
 name:groupName,
+displayName: institution + " - " + year,
 time:Date.now()
 });
 groupId = g.id;
 }
+
+/* ADD MEMBER */
 
 if(groupId){
 await addDoc(collection(db,"groupMembers"),{
@@ -162,7 +175,7 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* FRIEND REQUEST SEND */
+/* FRIEND REQUEST */
 
 window.addFriend = async(uid)=>{
 await addDoc(collection(db,"friendRequests"),{
@@ -174,7 +187,7 @@ time:Date.now()
 alert("Friend Request Sent ✅");
 };
 
-/* LOAD FRIENDS + REQUESTS */
+/* LOAD FRIENDS */
 
 async function loadFriends(){
 
@@ -287,7 +300,7 @@ time:Date.now()
 }
 };
 
-/* GROUPS */
+/* GROUPS DISPLAY FIX */
 
 async function loadGroups(){
 
@@ -303,7 +316,9 @@ if(mem.userId===currentUser.uid){
 
 groups.forEach(g=>{
 if(g.id===mem.groupId){
-html+=`<div class="card">${g.data().name}</div>`;
+html+=`<div class="card">
+${g.data().displayName || g.data().name}
+</div>`;
 }
 });
 
