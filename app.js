@@ -14,20 +14,17 @@ doc,
 setDoc,
 collection,
 addDoc,
-query,
 getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
 projectId: "classmate-connect-4ef14",
 storageBucket: "classmate-connect-4ef14.appspot.com",
 messagingSenderId: "836999548178",
 appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
-
 };
 
 const app = initializeApp(firebaseConfig);
@@ -36,63 +33,45 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser;
-let currentGroupId=null;
 
 /* LOGIN */
 
-window.googleLogin=()=>{
-
+window.googleLogin = ()=>{
 signInWithRedirect(auth,provider);
-
 };
 
 /* AUTH */
 
 onAuthStateChanged(auth,user=>{
-
 if(user){
-
 currentUser=user;
-
 showSection("find");
-
 loadFriends();
 loadChats();
 loadGroups();
 loadMemories();
-
 }else{
-
 showSection("login");
-
 }
-
 });
 
 /* LOGOUT */
 
-window.logout=async()=>{
-
+window.logout = async ()=>{
 await signOut(auth);
 location.reload();
-
 };
 
-/* SHOW SECTION */
+/* UI */
 
-window.showSection=(id)=>{
-
-document.querySelectorAll(".section").forEach(s=>{
-s.style.display="none";
-});
-
+window.showSection = (id)=>{
+document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
-
 };
 
-/* PROFILE SAVE */
+/* PROFILE */
 
-window.saveProfile=async()=>{
+window.saveProfile = async ()=>{
 
 const name=document.getElementById("name").value;
 const nickname=document.getElementById("nickname").value;
@@ -102,64 +81,44 @@ const year=document.getElementById("year").value;
 const city=document.getElementById("city").value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
-
-name,
-nickname,
-institution,
-course,
-year,
-city,
-email:currentUser.email
-
+name,nickname,institution,course,year,city,email:currentUser.email
 });
 
-/* AUTO GROUP */
+/* GROUP */
 
-const groupName=institution+" - "+year;
+const groupName = institution+" - "+year;
 
-const gSnap=await getDocs(collection(db,"groups"));
+const groups = await getDocs(collection(db,"groups"));
 
 let groupId=null;
 
-gSnap.forEach(d=>{
-
+groups.forEach(d=>{
 if(d.data().name===groupName){
-
 groupId=d.id;
-
 }
-
 });
 
 if(!groupId){
-
-const newGroup=await addDoc(collection(db,"groups"),{
-
-name:groupName,
-time:Date.now()
-
+const g=await addDoc(collection(db,"groups"),{
+name:groupName,time:Date.now()
 });
-
-groupId=newGroup.id;
-
+groupId=g.id;
 }
 
 await addDoc(collection(db,"groupMembers"),{
-
 groupId,
 userId:currentUser.uid
-
 });
 
 alert("Profile Saved");
 
 };
 
-/* FIND USERS */
+/* FIND */
 
-window.loadUsers=async()=>{
+window.loadUsers = async ()=>{
 
-const institution=document.getElementById("searchInstitution").value;
+const inst=document.getElementById("searchInstitution").value;
 const year=document.getElementById("searchYear").value;
 
 const snap=await getDocs(collection(db,"users"));
@@ -167,132 +126,82 @@ const snap=await getDocs(collection(db,"users"));
 let html="";
 
 snap.forEach(d=>{
-
 let u=d.data();
 
 if(
 d.id!==currentUser.uid &&
 u.institution &&
 u.year &&
-u.institution.toLowerCase()===institution.toLowerCase() &&
+u.institution.toLowerCase()===inst.toLowerCase() &&
 u.year===year
 ){
-
-html+=`
-
-<div class="card">
-
+html+=`<div class="card">
 ${u.name}
-
 <button onclick="addFriend('${d.id}')">Add Friend</button>
-
-</div>
-
-`;
-
+</div>`;
 }
-
 });
 
 document.getElementById("findList").innerHTML=html;
 
 };
 
-/* ADD FRIEND */
+/* FRIENDS */
 
-window.addFriend=async(uid)=>{
-
+window.addFriend = async(uid)=>{
 await addDoc(collection(db,"friends"),{
-
 user1:currentUser.uid,
 user2:uid,
 time:Date.now()
-
 });
-
 alert("Friend Added");
-
 loadFriends();
-
 };
-
-/* LOAD FRIENDS */
 
 async function loadFriends(){
 
 const snap=await getDocs(collection(db,"friends"));
-
 let html="";
 
 snap.forEach(d=>{
-
 let f=d.data();
-
 if(f.user1===currentUser.uid){
-
-html+=`
-
-<div class="card">
-
+html+=`<div class="card">
 Friend
-
 <button onclick="openChat('${f.user2}')">Chat</button>
-
-</div>
-
-`;
-
+</div>`;
 }
-
 });
 
 document.getElementById("friendsList").innerHTML=html;
 
 }
 
-/* PRIVATE CHAT */
+/* CHAT */
 
 function loadChats(){
-
 onSnapshot(collection(db,"messages"),snap=>{
-
 let html="";
-
 snap.forEach(d=>{
-
 let m=d.data();
-
 if(m.to===currentUser.uid){
-
 html+=`<div class="card">${m.text}</div>`;
-
 }
-
 });
-
 document.getElementById("chatList").innerHTML=html;
-
 });
-
 }
 
-window.openChat=(uid)=>{
-
+window.openChat = (uid)=>{
 let text=prompt("Send message");
-
 if(text){
-
 addDoc(collection(db,"messages"),{
-
 from:currentUser.uid,
 to:uid,
 text,
 time:Date.now()
-
 });
-
 }
-
 };
 
 /* GROUPS */
@@ -305,29 +214,14 @@ const groups=await getDocs(collection(db,"groups"));
 let html="";
 
 members.forEach(m=>{
-
 let mem=m.data();
 
 if(mem.userId===currentUser.uid){
 
 groups.forEach(g=>{
-
 if(g.id===mem.groupId){
-
-html+=`
-
-<div class="card">
-
-${g.data().name}
-
-<button onclick="openGroup('${g.id}')">Open</button>
-
-</div>
-
-`;
-
+html+=`<div class="card">${g.data().name}</div>`;
 }
-
 });
 
 }
@@ -338,115 +232,100 @@ document.getElementById("groupList").innerHTML=html;
 
 }
 
-/* OPEN GROUP */
-
-window.openGroup=(id)=>{
-
-currentGroupId=id;
-
-loadGroupMessages();
-
-};
-
-/* SEND GROUP MESSAGE */
-
-window.sendGroupMessage=async()=>{
-
-let text=document.getElementById("groupMessageInput").value;
-
-if(!text||!currentGroupId)return;
-
-await addDoc(collection(db,"groupMessages"),{
-
-groupId:currentGroupId,
-userName:currentUser.displayName,
-text,
-time:Date.now()
-
-});
-
-document.getElementById("groupMessageInput").value="";
-
-};
-
-/* LOAD GROUP CHAT */
-
-function loadGroupMessages(){
-
-onSnapshot(collection(db,"groupMessages"),snap=>{
-
-let html="";
-
-snap.forEach(d=>{
-
-let m=d.data();
-
-if(m.groupId===currentGroupId){
-
-html+=`
-
-<div class="card">
-
-<b>${m.userName}</b>: ${m.text}
-
-</div>
-
-`;
-
-}
-
-});
-
-document.getElementById("groupChatList").innerHTML=html;
-
-});
-
-}
-
 /* MEMORIES */
 
-window.uploadMemory=async()=>{
+window.uploadMemory = async ()=>{
 
 let caption=document.getElementById("memoryCaption").value;
-
-if(!caption)return;
+if(!caption) return;
 
 await addDoc(collection(db,"memories"),{
-
 userId:currentUser.uid,
 caption,
 time:Date.now()
-
 });
 
 document.getElementById("memoryCaption").value="";
-
 };
 
 function loadMemories(){
 
-onSnapshot(collection(db,"memories"),snap=>{
+onSnapshot(collection(db,"memories"),async snap=>{
 
 let html="";
 
-snap.forEach(d=>{
+for(const d of snap.docs){
 
 let m=d.data();
 
-html+=`
+/* COUNT LIKES */
 
-<div class="card">
+let likesSnap = await getDocs(collection(db,"memoryLikes"));
+let likeCount=0;
+
+likesSnap.forEach(l=>{
+if(l.data().memoryId===d.id){
+likeCount++;
+}
+});
+
+/* LOAD COMMENTS */
+
+let commentsSnap = await getDocs(collection(db,"memoryComments"));
+let commentsHTML="";
+
+commentsSnap.forEach(c=>{
+let cm=c.data();
+if(cm.memoryId===d.id){
+commentsHTML+=`<div>${cm.userName}: ${cm.comment}</div>`;
+}
+});
+
+html+=`<div class="card">
 
 ${m.caption}
 
-</div>
+<br>❤️ ${likeCount}
 
-`;
+<br><button onclick="likeMemory('${d.id}')">Like</button>
 
-});
+<br><input id="c-${d.id}" placeholder="Comment">
+<button onclick="commentMemory('${d.id}')">Send</button>
+
+${commentsHTML}
+
+</div>`;
+}
 
 document.getElementById("memoriesList").innerHTML=html;
 
 });
 
 }
+
+/* LIKE */
+
+window.likeMemory = async(id)=>{
+await addDoc(collection(db,"memoryLikes"),{
+memoryId:id,
+userId:currentUser.uid
+});
+};
+
+/* COMMENT */
+
+window.commentMemory = async(id)=>{
+
+let text=document.getElementById("c-"+id).value;
+if(!text) return;
+
+await addDoc(collection(db,"memoryComments"),{
+memoryId:id,
+userName:currentUser.displayName,
+comment:text,
+time:Date.now()
+});
+
+document.getElementById("c-"+id).value="";
+
+};
