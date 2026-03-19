@@ -18,7 +18,7 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIX: Screen OFF → ON issue */
+/* SCREEN FIX */
 document.addEventListener("visibilitychange", () => {
 if (document.visibilityState === "visible") {
 location.reload();
@@ -78,7 +78,7 @@ document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE SAVE */
+/* PROFILE */
 
 window.saveProfile = async ()=>{
 
@@ -125,7 +125,6 @@ userId:currentUser.uid
 alert("Profile Saved ✅");
 
 }catch(e){
-console.error(e);
 alert("Error: "+e.message);
 }
 
@@ -163,24 +162,27 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* ADD FRIEND */
+/* FRIEND REQUEST SEND */
 
 window.addFriend = async(uid)=>{
-await addDoc(collection(db,"friends"),{
-user1:currentUser.uid,
-user2:uid,
+await addDoc(collection(db,"friendRequests"),{
+from:currentUser.uid,
+to:uid,
+status:"pending",
 time:Date.now()
 });
-alert("Friend Added");
-loadFriends();
+alert("Friend Request Sent ✅");
 };
 
-/* LOAD FRIENDS */
+/* LOAD FRIENDS + REQUESTS */
 
 async function loadFriends(){
 
-const snap=await getDocs(collection(db,"friends"));
 let html="";
+
+/* FRIENDS */
+
+const snap=await getDocs(collection(db,"friends"));
 
 snap.forEach(d=>{
 let f=d.data();
@@ -201,9 +203,62 @@ Friend
 
 });
 
+/* REQUESTS */
+
+const req=await getDocs(collection(db,"friendRequests"));
+
+req.forEach(d=>{
+let r=d.data();
+
+if(r.to===currentUser.uid && r.status==="pending"){
+
+html+=`<div class="card">
+Friend Request
+<button onclick="acceptRequest('${d.id}','${r.from}')">Accept</button>
+<button onclick="rejectRequest('${d.id}')">Reject</button>
+</div>`;
+
+}
+
+});
+
 document.getElementById("friendsList").innerHTML=html;
 
 }
+
+/* ACCEPT */
+
+window.acceptRequest = async(id,fromUid)=>{
+
+await addDoc(collection(db,"friends"),{
+user1:currentUser.uid,
+user2:fromUid,
+time:Date.now()
+});
+
+await setDoc(doc(db,"friendRequests",id),{
+status:"accepted"
+});
+
+alert("Friend Added ✅");
+
+loadFriends();
+
+};
+
+/* REJECT */
+
+window.rejectRequest = async(id)=>{
+
+await setDoc(doc(db,"friendRequests",id),{
+status:"rejected"
+});
+
+alert("Rejected");
+
+loadFriends();
+
+};
 
 /* CHAT */
 
