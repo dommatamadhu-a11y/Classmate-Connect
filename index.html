@@ -56,6 +56,7 @@ margin:5px 0;
 
 button{
 padding:6px 10px;
+margin-top:5px;
 }
 
 #login{
@@ -75,15 +76,10 @@ Classmate Connect
 <div class="nav">
 
 <button onclick="showSection('find')">Find Batchmates</button>
-
 <button onclick="showSection('friends')">Friends</button>
-
 <button onclick="showSection('chats')">Chats</button>
-
 <button onclick="showSection('groups')">Groups</button>
-
 <button onclick="showSection('memories')">Memories</button>
-
 <button onclick="showSection('profile')">Profile</button>
 
 </div>
@@ -105,7 +101,6 @@ Classmate Connect
 <h3>Find Batchmates</h3>
 
 <input id="searchInstitution" placeholder="Institution">
-
 <input id="searchYear" placeholder="Year">
 
 <button onclick="loadUsers()">Search</button>
@@ -142,16 +137,6 @@ Classmate Connect
 
 <div id="groupList"></div>
 
-<hr>
-
-<h3>Group Chat</h3>
-
-<div id="groupChatList"></div>
-
-<input id="groupMessageInput" placeholder="Type message">
-
-<button onclick="sendGroupMessage()">Send</button>
-
 </div>
 
 <!-- MEMORIES -->
@@ -175,19 +160,13 @@ Classmate Connect
 <h3>Profile</h3>
 
 <input id="name" placeholder="Name">
-
 <input id="nickname" placeholder="Nickname">
-
 <input id="institution" placeholder="School / College">
-
 <input id="course" placeholder="Course">
-
 <input id="year" placeholder="Year">
-
 <input id="city" placeholder="City">
 
 <button onclick="saveProfile()">Save</button>
-
 <button onclick="logout()">Logout</button>
 
 </div>
