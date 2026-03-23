@@ -18,13 +18,6 @@ getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* SCREEN FIX */
-document.addEventListener("visibilitychange", () => {
-if (document.visibilityState === "visible") {
-location.reload();
-}
-});
-
 /* CONFIG */
 
 const firebaseConfig = {
@@ -39,16 +32,21 @@ appId: "1:836999548178:web:8fc82fcf07289647c5f7cb"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 const provider = new GoogleAuthProvider();
+
+/* 🔥 FORCE ACCOUNT PICKER */
+provider.setCustomParameters({
+prompt: "select_account"
+});
 
 let currentUser;
 
-/* LOGIN (POPUP) */
+/* LOGIN */
 
 window.googleLogin = async ()=>{
 try{
-const result = await signInWithPopup(auth,provider);
-console.log("Login:", result.user.email);
+await signInWithPopup(auth,provider);
 }catch(e){
 alert(e.message);
 }
@@ -59,12 +57,21 @@ alert(e.message);
 onAuthStateChanged(auth,user=>{
 if(user){
 currentUser=user;
+
+/* SHOW EMAIL */
+if(document.getElementById("userInfo")){
+document.getElementById("userInfo").innerText =
+"Logged in as: " + user.email;
+}
+
 showSection("find");
+
 loadFriends();
 loadChats();
 loadGroups();
 loadMemories();
 loadNotifications();
+
 }else{
 showSection("login");
 }
@@ -74,7 +81,8 @@ showSection("login");
 
 window.logout = async ()=>{
 await signOut(auth);
-location.reload();
+currentUser=null;
+showSection("login");
 };
 
 /* UI */
@@ -84,11 +92,9 @@ document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE + GROUP FIX */
+/* PROFILE + GROUP */
 
 window.saveProfile = async ()=>{
-
-try{
 
 const name=document.getElementById("name").value.trim();
 const institution=document.getElementById("institution").value.trim();
@@ -125,8 +131,6 @@ displayName: institution+" - "+year
 groupId=g.id;
 }
 
-/* MEMBER CHECK */
-
 let exists=false;
 
 const members=await getDocs(collection(db,"groupMembers"));
@@ -146,10 +150,6 @@ userId:currentUser.uid
 }
 
 alert("Profile Saved ✅");
-
-}catch(e){
-alert(e.message);
-}
 
 };
 
@@ -185,7 +185,7 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* FRIEND REQUEST + NOTIFICATION */
+/* FRIEND REQUEST */
 
 window.addFriend = async(uid)=>{
 
@@ -210,8 +210,6 @@ async function loadFriends(){
 
 let html="";
 
-/* FRIENDS */
-
 const f=await getDocs(collection(db,"friends"));
 
 f.forEach(d=>{
@@ -233,8 +231,6 @@ Friend
 
 });
 
-/* REQUESTS */
-
 const r=await getDocs(collection(db,"friendRequests"));
 
 r.forEach(d=>{
@@ -251,7 +247,7 @@ Request
 
 document.getElementById("friendsList").innerHTML=html;
 
-};
+}
 
 /* ACCEPT */
 
