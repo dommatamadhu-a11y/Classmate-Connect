@@ -3,10 +3,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
 getAuth,
 GoogleAuthProvider,
-signInWithRedirect,
+signInWithPopup,
 onAuthStateChanged,
-signOut,
-getRedirectResult
+signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -44,13 +43,15 @@ const provider = new GoogleAuthProvider();
 
 let currentUser;
 
-/* 🔥 REDIRECT FIX */
-getRedirectResult(auth).catch(e=>console.log(e));
+/* LOGIN (POPUP) */
 
-/* LOGIN */
-
-window.googleLogin = ()=>{
-signInWithRedirect(auth,provider);
+window.googleLogin = async ()=>{
+try{
+const result = await signInWithPopup(auth,provider);
+console.log("Login:", result.user.email);
+}catch(e){
+alert(e.message);
+}
 };
 
 /* AUTH */
@@ -94,7 +95,7 @@ const institution=document.getElementById("institution").value.trim();
 const year=document.getElementById("year").value.trim();
 
 if(!name || !institution || !year){
-alert("Fill all required fields");
+alert("Fill all fields");
 return;
 }
 
@@ -102,29 +103,29 @@ await setDoc(doc(db,"users",currentUser.uid),{
 name,institution,year,email:currentUser.email
 });
 
-/* GROUP LOGIC */
+/* GROUP */
 
 const groupName = institution.toLowerCase()+"-"+year;
 
 let groupId=null;
 
-const groupsSnap = await getDocs(collection(db,"groups"));
+const groups=await getDocs(collection(db,"groups"));
 
-groupsSnap.forEach(d=>{
+groups.forEach(d=>{
 if(d.data().name===groupName){
 groupId=d.id;
 }
 });
 
 if(!groupId){
-const g = await addDoc(collection(db,"groups"),{
+const g=await addDoc(collection(db,"groups"),{
 name:groupName,
 displayName: institution+" - "+year
 });
-groupId = g.id;
+groupId=g.id;
 }
 
-/* CHECK MEMBER */
+/* MEMBER CHECK */
 
 let exists=false;
 
@@ -191,17 +192,15 @@ window.addFriend = async(uid)=>{
 await addDoc(collection(db,"friendRequests"),{
 from:currentUser.uid,
 to:uid,
-status:"pending",
-time:Date.now()
+status:"pending"
 });
 
 await addDoc(collection(db,"notifications"),{
 userId:uid,
-text: currentUser.displayName + " sent you a friend request",
-time:Date.now()
+text: currentUser.displayName+" sent you request"
 });
 
-alert("Request Sent ✅");
+alert("Request Sent");
 
 };
 
@@ -213,22 +212,22 @@ let html="";
 
 /* FRIENDS */
 
-const snap=await getDocs(collection(db,"friends"));
+const f=await getDocs(collection(db,"friends"));
 
-snap.forEach(d=>{
-let f=d.data();
+f.forEach(d=>{
+let data=d.data();
 
-if(f.user1===currentUser.uid){
+if(data.user1===currentUser.uid){
 html+=`<div class="card">
 Friend
-<button onclick="openChat('${f.user2}')">Chat</button>
+<button onclick="openChat('${data.user2}')">Chat</button>
 </div>`;
 }
 
-if(f.user2===currentUser.uid){
+if(data.user2===currentUser.uid){
 html+=`<div class="card">
 Friend
-<button onclick="openChat('${f.user1}')">Chat</button>
+<button onclick="openChat('${data.user1}')">Chat</button>
 </div>`;
 }
 
@@ -236,15 +235,15 @@ Friend
 
 /* REQUESTS */
 
-const req=await getDocs(collection(db,"friendRequests"));
+const r=await getDocs(collection(db,"friendRequests"));
 
-req.forEach(d=>{
-let r=d.data();
+r.forEach(d=>{
+let data=d.data();
 
-if(r.to===currentUser.uid && r.status==="pending"){
+if(data.to===currentUser.uid && data.status==="pending"){
 html+=`<div class="card">
-Friend Request
-<button onclick="acceptRequest('${d.id}','${r.from}')">Accept</button>
+Request
+<button onclick="acceptRequest('${d.id}','${data.from}')">Accept</button>
 <button onclick="rejectRequest('${d.id}')">Reject</button>
 </div>`;
 }
@@ -269,10 +268,8 @@ status:"accepted"
 
 await addDoc(collection(db,"notifications"),{
 userId:fromUid,
-text: currentUser.displayName + " accepted your request"
+text: currentUser.displayName+" accepted your request"
 });
-
-alert("Friend Added");
 
 loadFriends();
 
@@ -333,7 +330,7 @@ document.getElementById("chatList").innerHTML=html;
 
 window.openChat = (uid)=>{
 
-let text=prompt("Send message");
+let text=prompt("Message");
 
 if(text){
 addDoc(collection(db,"messages"),{
@@ -349,20 +346,20 @@ text
 
 async function loadGroups(){
 
-const members=await getDocs(collection(db,"groupMembers"));
-const groups=await getDocs(collection(db,"groups"));
+const m=await getDocs(collection(db,"groupMembers"));
+const g=await getDocs(collection(db,"groups"));
 
 let html="";
 
-members.forEach(m=>{
-let mem=m.data();
+m.forEach(mem=>{
+let data=mem.data();
 
-if(mem.userId===currentUser.uid){
+if(data.userId===currentUser.uid){
 
-groups.forEach(g=>{
-if(g.id===mem.groupId){
+g.forEach(gr=>{
+if(gr.id===data.groupId){
 html+=`<div class="card">
-${g.data().displayName || g.data().name}
+${gr.data().displayName || gr.data().name}
 </div>`;
 }
 });
@@ -401,36 +398,17 @@ for(const d of snap.docs){
 
 let m=d.data();
 
-/* LIKE COUNT */
-
-let likesSnap=await getDocs(collection(db,"memoryLikes"));
+let likes=await getDocs(collection(db,"memoryLikes"));
 let count=0;
 
-likesSnap.forEach(l=>{
-if(l.data().memoryId===d.id){
-count++;
-}
-});
-
-/* COMMENTS */
-
-let commentsSnap=await getDocs(collection(db,"memoryComments"));
-let comments="";
-
-commentsSnap.forEach(c=>{
-let cm=c.data();
-if(cm.memoryId===d.id){
-comments+=`<div>${cm.userName}: ${cm.comment}</div>`;
-}
+likes.forEach(l=>{
+if(l.data().memoryId===d.id) count++;
 });
 
 html+=`<div class="card">
 ${m.caption}
 <br>❤️ ${count}
 <br><button onclick="likeMemory('${d.id}')">Like</button>
-<br><input id="c-${d.id}">
-<button onclick="commentMemory('${d.id}')">Send</button>
-${comments}
 </div>`;
 }
 
@@ -447,21 +425,4 @@ await addDoc(collection(db,"memoryLikes"),{
 memoryId:id,
 userId:currentUser.uid
 });
-};
-
-/* COMMENT */
-
-window.commentMemory = async(id)=>{
-
-let text=document.getElementById("c-"+id).value;
-
-if(!text) return;
-
-await addDoc(collection(db,"memoryComments"),{
-memoryId:id,
-userName:currentUser.displayName,
-comment:text
-});
-
-document.getElementById("c-"+id).value="";
 };
