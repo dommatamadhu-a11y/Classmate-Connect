@@ -5,7 +5,8 @@ getAuth,
 GoogleAuthProvider,
 signInWithRedirect,
 onAuthStateChanged,
-signOut
+signOut,
+getRedirectResult
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -43,6 +44,9 @@ const provider = new GoogleAuthProvider();
 
 let currentUser;
 
+/* 🔥 REDIRECT FIX */
+getRedirectResult(auth).catch(e=>console.log(e));
+
 /* LOGIN */
 
 window.googleLogin = ()=>{
@@ -59,7 +63,7 @@ loadFriends();
 loadChats();
 loadGroups();
 loadMemories();
-loadNotifications(); // 🔔
+loadNotifications();
 }else{
 showSection("login");
 }
@@ -85,47 +89,57 @@ window.saveProfile = async ()=>{
 
 try{
 
-const name=document.getElementById("name").value;
-const nickname=document.getElementById("nickname").value;
-const institution=document.getElementById("institution").value;
-const course=document.getElementById("course").value;
-const year=document.getElementById("year").value;
-const city=document.getElementById("city").value;
+const name=document.getElementById("name").value.trim();
+const institution=document.getElementById("institution").value.trim();
+const year=document.getElementById("year").value.trim();
+
+if(!name || !institution || !year){
+alert("Fill all required fields");
+return;
+}
 
 await setDoc(doc(db,"users",currentUser.uid),{
-name,nickname,institution,course,year,city,email:currentUser.email
+name,institution,year,email:currentUser.email
 });
 
-/* GROUP FIX */
+/* GROUP LOGIC */
 
-const cleanInstitution = institution.trim().toLowerCase();
-const cleanYear = year.trim();
-
-const groupName = cleanInstitution + "-" + cleanYear;
+const groupName = institution.toLowerCase()+"-"+year;
 
 let groupId=null;
 
 const groupsSnap = await getDocs(collection(db,"groups"));
 
 groupsSnap.forEach(d=>{
-let g=d.data();
-if(g.name === groupName){
-groupId = d.id;
+if(d.data().name===groupName){
+groupId=d.id;
 }
 });
 
 if(!groupId){
 const g = await addDoc(collection(db,"groups"),{
 name:groupName,
-displayName: institution + " - " + year,
-time:Date.now()
+displayName: institution+" - "+year
 });
 groupId = g.id;
 }
 
-if(groupId){
+/* CHECK MEMBER */
+
+let exists=false;
+
+const members=await getDocs(collection(db,"groupMembers"));
+
+members.forEach(m=>{
+let data=m.data();
+if(data.userId===currentUser.uid && data.groupId===groupId){
+exists=true;
+}
+});
+
+if(!exists){
 await addDoc(collection(db,"groupMembers"),{
-groupId:groupId,
+groupId,
 userId:currentUser.uid
 });
 }
@@ -133,7 +147,7 @@ userId:currentUser.uid
 alert("Profile Saved ✅");
 
 }catch(e){
-alert("Error: "+e.message);
+alert(e.message);
 }
 
 };
@@ -181,19 +195,17 @@ status:"pending",
 time:Date.now()
 });
 
-/* NOTIFICATION */
-
 await addDoc(collection(db,"notifications"),{
 userId:uid,
 text: currentUser.displayName + " sent you a friend request",
 time:Date.now()
 });
 
-alert("Friend Request Sent ✅");
+alert("Request Sent ✅");
 
 };
 
-/* LOAD FRIENDS + REQUESTS */
+/* LOAD FRIENDS */
 
 async function loadFriends(){
 
@@ -230,20 +242,17 @@ req.forEach(d=>{
 let r=d.data();
 
 if(r.to===currentUser.uid && r.status==="pending"){
-
 html+=`<div class="card">
 Friend Request
 <button onclick="acceptRequest('${d.id}','${r.from}')">Accept</button>
 <button onclick="rejectRequest('${d.id}')">Reject</button>
 </div>`;
-
 }
-
 });
 
 document.getElementById("friendsList").innerHTML=html;
 
-}
+};
 
 /* ACCEPT */
 
@@ -251,23 +260,19 @@ window.acceptRequest = async(id,fromUid)=>{
 
 await addDoc(collection(db,"friends"),{
 user1:currentUser.uid,
-user2:fromUid,
-time:Date.now()
+user2:fromUid
 });
 
 await setDoc(doc(db,"friendRequests",id),{
 status:"accepted"
 });
 
-/* NOTIFY SENDER */
-
 await addDoc(collection(db,"notifications"),{
 userId:fromUid,
-text: currentUser.displayName + " accepted your request",
-time:Date.now()
+text: currentUser.displayName + " accepted your request"
 });
 
-alert("Friend Added ✅");
+alert("Friend Added");
 
 loadFriends();
 
@@ -276,18 +281,13 @@ loadFriends();
 /* REJECT */
 
 window.rejectRequest = async(id)=>{
-
 await setDoc(doc(db,"friendRequests",id),{
 status:"rejected"
 });
-
-alert("Rejected");
-
 loadFriends();
-
 };
 
-/* NOTIFICATIONS LOAD */
+/* NOTIFICATIONS */
 
 function loadNotifications(){
 
@@ -298,13 +298,12 @@ let html="";
 snap.forEach(d=>{
 let n=d.data();
 
-if(n.userId === currentUser.uid){
+if(n.userId===currentUser.uid){
 html+=`<div class="card">${n.text}</div>`;
 }
-
 });
 
-document.getElementById("notificationsList").innerHTML = html;
+document.getElementById("notificationsList").innerHTML=html;
 
 });
 
@@ -313,28 +312,37 @@ document.getElementById("notificationsList").innerHTML = html;
 /* CHAT */
 
 function loadChats(){
+
 onSnapshot(collection(db,"messages"),snap=>{
+
 let html="";
+
 snap.forEach(d=>{
 let m=d.data();
+
 if(m.to===currentUser.uid){
 html+=`<div class="card">${m.text}</div>`;
 }
 });
+
 document.getElementById("chatList").innerHTML=html;
+
 });
+
 }
 
 window.openChat = (uid)=>{
+
 let text=prompt("Send message");
+
 if(text){
 addDoc(collection(db,"messages"),{
 from:currentUser.uid,
 to:uid,
-text,
-time:Date.now()
+text
 });
 }
+
 };
 
 /* GROUPS */
@@ -372,12 +380,12 @@ document.getElementById("groupList").innerHTML=html;
 window.uploadMemory = async ()=>{
 
 let caption=document.getElementById("memoryCaption").value;
+
 if(!caption) return;
 
 await addDoc(collection(db,"memories"),{
 userId:currentUser.uid,
-caption,
-time:Date.now()
+caption
 });
 
 document.getElementById("memoryCaption").value="";
@@ -393,38 +401,36 @@ for(const d of snap.docs){
 
 let m=d.data();
 
-let likesSnap = await getDocs(collection(db,"memoryLikes"));
-let likeCount=0;
+/* LIKE COUNT */
+
+let likesSnap=await getDocs(collection(db,"memoryLikes"));
+let count=0;
 
 likesSnap.forEach(l=>{
 if(l.data().memoryId===d.id){
-likeCount++;
+count++;
 }
 });
 
-let commentsSnap = await getDocs(collection(db,"memoryComments"));
-let commentsHTML="";
+/* COMMENTS */
+
+let commentsSnap=await getDocs(collection(db,"memoryComments"));
+let comments="";
 
 commentsSnap.forEach(c=>{
 let cm=c.data();
 if(cm.memoryId===d.id){
-commentsHTML+=`<div>${cm.userName}: ${cm.comment}</div>`;
+comments+=`<div>${cm.userName}: ${cm.comment}</div>`;
 }
 });
 
 html+=`<div class="card">
-
 ${m.caption}
-
-<br>❤️ ${likeCount}
-
+<br>❤️ ${count}
 <br><button onclick="likeMemory('${d.id}')">Like</button>
-
-<br><input id="c-${d.id}" placeholder="Comment">
+<br><input id="c-${d.id}">
 <button onclick="commentMemory('${d.id}')">Send</button>
-
-${commentsHTML}
-
+${comments}
 </div>`;
 }
 
@@ -448,15 +454,14 @@ userId:currentUser.uid
 window.commentMemory = async(id)=>{
 
 let text=document.getElementById("c-"+id).value;
+
 if(!text) return;
 
 await addDoc(collection(db,"memoryComments"),{
 memoryId:id,
 userName:currentUser.displayName,
-comment:text,
-time:Date.now()
+comment:text
 });
 
 document.getElementById("c-"+id).value="";
-
 };
