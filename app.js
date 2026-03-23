@@ -59,6 +59,7 @@ loadFriends();
 loadChats();
 loadGroups();
 loadMemories();
+loadNotifications(); // 🔔
 }else{
 showSection("login");
 }
@@ -91,8 +92,6 @@ const course=document.getElementById("course").value;
 const year=document.getElementById("year").value;
 const city=document.getElementById("city").value;
 
-/* SAVE USER */
-
 await setDoc(doc(db,"users",currentUser.uid),{
 name,nickname,institution,course,year,city,email:currentUser.email
 });
@@ -115,8 +114,6 @@ groupId = d.id;
 }
 });
 
-/* CREATE GROUP */
-
 if(!groupId){
 const g = await addDoc(collection(db,"groups"),{
 name:groupName,
@@ -125,8 +122,6 @@ time:Date.now()
 });
 groupId = g.id;
 }
-
-/* ADD MEMBER */
 
 if(groupId){
 await addDoc(collection(db,"groupMembers"),{
@@ -175,19 +170,30 @@ document.getElementById("findList").innerHTML=html;
 
 };
 
-/* FRIEND REQUEST */
+/* FRIEND REQUEST + NOTIFICATION */
 
 window.addFriend = async(uid)=>{
+
 await addDoc(collection(db,"friendRequests"),{
 from:currentUser.uid,
 to:uid,
 status:"pending",
 time:Date.now()
 });
+
+/* NOTIFICATION */
+
+await addDoc(collection(db,"notifications"),{
+userId:uid,
+text: currentUser.displayName + " sent you a friend request",
+time:Date.now()
+});
+
 alert("Friend Request Sent ✅");
+
 };
 
-/* LOAD FRIENDS */
+/* LOAD FRIENDS + REQUESTS */
 
 async function loadFriends(){
 
@@ -253,6 +259,14 @@ await setDoc(doc(db,"friendRequests",id),{
 status:"accepted"
 });
 
+/* NOTIFY SENDER */
+
+await addDoc(collection(db,"notifications"),{
+userId:fromUid,
+text: currentUser.displayName + " accepted your request",
+time:Date.now()
+});
+
 alert("Friend Added ✅");
 
 loadFriends();
@@ -272,6 +286,29 @@ alert("Rejected");
 loadFriends();
 
 };
+
+/* NOTIFICATIONS LOAD */
+
+function loadNotifications(){
+
+onSnapshot(collection(db,"notifications"),snap=>{
+
+let html="";
+
+snap.forEach(d=>{
+let n=d.data();
+
+if(n.userId === currentUser.uid){
+html+=`<div class="card">${n.text}</div>`;
+}
+
+});
+
+document.getElementById("notificationsList").innerHTML = html;
+
+});
+
+}
 
 /* CHAT */
 
@@ -300,7 +337,7 @@ time:Date.now()
 }
 };
 
-/* GROUPS DISPLAY FIX */
+/* GROUPS */
 
 async function loadGroups(){
 
