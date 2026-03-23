@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -61,6 +60,8 @@ margin-top:5px;
 
 #login{
 display:block;
+text-align:center;
+margin-top:50px;
 }
 
 </style>
@@ -76,10 +77,17 @@ Classmate Connect
 <div class="nav">
 
 <button onclick="showSection('find')">Find Batchmates</button>
+
 <button onclick="showSection('friends')">Friends</button>
+
 <button onclick="showSection('chats')">Chats</button>
+
 <button onclick="showSection('groups')">Groups</button>
+
 <button onclick="showSection('memories')">Memories</button>
+
+<button onclick="showSection('notifications')">Notifications</button>
+
 <button onclick="showSection('profile')">Profile</button>
 
 </div>
@@ -88,19 +96,22 @@ Classmate Connect
 
 <div id="login" class="section">
 
-<h3>Login</h3>
+<h2>Welcome 👋</h2>
 
-<button onclick="googleLogin()">Login with Google</button>
+<p id="userInfo"></p>
+
+<button onclick="googleLogin()">Continue with Google</button>
 
 </div>
 
-<!-- FIND -->
+<!-- FIND BATCHMATES -->
 
 <div id="find" class="section">
 
 <h3>Find Batchmates</h3>
 
-<input id="searchInstitution" placeholder="Institution">
+<input id="searchInstitution" placeholder="School / College">
+
 <input id="searchYear" placeholder="Year">
 
 <button onclick="loadUsers()">Search</button>
@@ -145,11 +156,21 @@ Classmate Connect
 
 <h3>Memories</h3>
 
-<input id="memoryCaption" placeholder="Write memory">
+<input id="memoryCaption" placeholder="Write your memory">
 
 <button onclick="uploadMemory()">Post</button>
 
 <div id="memoriesList"></div>
+
+</div>
+
+<!-- NOTIFICATIONS -->
+
+<div id="notifications" class="section">
+
+<h3>Notifications 🔔</h3>
+
+<div id="notificationsList"></div>
 
 </div>
 
@@ -160,13 +181,13 @@ Classmate Connect
 <h3>Profile</h3>
 
 <input id="name" placeholder="Name">
-<input id="nickname" placeholder="Nickname">
-<input id="institution" placeholder="School / College">
-<input id="course" placeholder="Course">
-<input id="year" placeholder="Year">
-<input id="city" placeholder="City">
 
-<button onclick="saveProfile()">Save</button>
+<input id="institution" placeholder="School / College">
+
+<input id="year" placeholder="Year">
+
+<button onclick="saveProfile()">Save Profile</button>
+
 <button onclick="logout()">Logout</button>
 
 </div>
