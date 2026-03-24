@@ -15,9 +15,11 @@ setDoc,
 collection,
 addDoc,
 getDocs,
-onSnapshot
+onSnapshot,
+updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+/* FIREBASE CONFIG */
 const firebaseConfig = {
 apiKey: "AIzaSyAK01_ZKFoPQQrpFqoRnlvuH0iVXLF7mqA",
 authDomain: "classmate-connect-4ef14.firebaseapp.com",
@@ -35,16 +37,18 @@ const provider = new GoogleAuthProvider();
 let currentUser;
 
 /* LOGIN */
-window.googleLogin = ()=>{
-signInWithRedirect(auth,provider);
+window.googleLogin = () => {
+signInWithRedirect(auth, provider);
 };
 
 /* AUTH */
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth, user => {
 if(user){
-currentUser=user;
+currentUser = user;
 showSection("find");
 loadNotifications();
+loadFriends();
+loadChats();
 }else{
 showSection("login");
 }
@@ -56,34 +60,35 @@ await signOut(auth);
 location.reload();
 };
 
-/* UI */
+/* SECTION SWITCH */
 window.showSection = (id)=>{
-if(!currentUser && id!=="login") return;
+if(!currentUser && id !== "login") return;
+
 document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE */
+/* PROFILE SAVE */
 window.saveProfile = async ()=>{
-const name=nameInput.value;
-const institution=institutionInput.value;
-const year=yearInput.value;
-const city=cityInput.value;
+const name = nameInput.value;
+const institution = institutionInput.value;
+const year = yearInput.value;
+const city = cityInput.value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 name,institution,year,city,email:currentUser.email
 });
 
-alert("Profile saved");
+alert("Profile Saved ✅");
 };
 
 /* FIND USERS */
 window.loadUsers = async ()=>{
-const inst=searchInstitution.value;
-const year=searchYear.value;
-const city=searchCity.value;
+const inst = searchInstitution.value;
+const year = searchYear.value;
+const city = searchCity.value;
 
-const snap=await getDocs(collection(db,"users"));
+const snap = await getDocs(collection(db,"users"));
 
 let html="";
 
@@ -109,24 +114,109 @@ Send Friend Request
 findList.innerHTML=html;
 };
 
-/* SEND REQUEST */
+/* SEND FRIEND REQUEST */
 window.sendFriendRequest = async(uid)=>{
 
 await addDoc(collection(db,"friendRequests"),{
 from:currentUser.uid,
 to:uid,
-status:"pending"
+status:"pending",
+time:Date.now()
 });
 
 /* NOTIFICATION */
 await addDoc(collection(db,"notifications"),{
 userId:uid,
-text: currentUser.displayName+" sent you request"
+text: currentUser.displayName + " sent you a friend request",
+time:Date.now()
 });
 
-alert("Request sent ✅");
+alert("Friend request sent ✅");
+};
+
+/* LOAD FRIEND REQUESTS */
+function loadFriends(){
+
+onSnapshot(collection(db,"friendRequests"),snap=>{
+
+let html="";
+
+snap.forEach(docSnap=>{
+let r=docSnap.data();
+
+if(r.to===currentUser.uid && r.status==="pending"){
+
+html+=`
+<div class="card">
+Friend Request
+<button onclick="acceptRequest('${docSnap.id}','${r.from}')">Accept</button>
+<button onclick="rejectRequest('${docSnap.id}')">Reject</button>
+</div>`;
+}
+
+});
+
+friendsList.innerHTML=html;
+
+});
+}
+
+/* ACCEPT */
+window.acceptRequest = async(id,fromUid)=>{
+
+await addDoc(collection(db,"friends"),{
+user1:currentUser.uid,
+user2:fromUid
+});
+
+await updateDoc(doc(db,"friendRequests",id),{
+status:"accepted"
+});
+
+alert("Friend added ✅");
+};
+
+/* REJECT */
+window.rejectRequest = async(id)=>{
+
+await updateDoc(doc(db,"friendRequests",id),{
+status:"rejected"
+});
 
 };
+
+/* CHAT SEND */
+window.sendMessage = async ()=>{
+const text = chatText.value;
+if(!text) return;
+
+await addDoc(collection(db,"messages"),{
+from:currentUser.uid,
+text,
+time:Date.now()
+});
+
+chatText.value="";
+};
+
+/* LOAD CHATS */
+function loadChats(){
+
+onSnapshot(collection(db,"messages"),snap=>{
+
+let html="";
+
+snap.forEach(d=>{
+let m=d.data();
+let cls = m.from===currentUser.uid?"me":"other";
+
+html+=`<div class="chat-bubble ${cls}">${m.text}</div>`;
+});
+
+chatList.innerHTML=html;
+
+});
+}
 
 /* NOTIFICATIONS */
 function loadNotifications(){
