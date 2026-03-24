@@ -24,12 +24,29 @@ font-size:20px;
 text-align:center;
 }
 
+/* TOP NAV */
+
+.top-nav{
+display:flex;
+overflow-x:auto;
+background:#1565c0;
+}
+
+.top-nav button{
+flex:1;
+min-width:90px;
+border:none;
+background:#1565c0;
+color:white;
+padding:12px;
+font-size:14px;
+}
+
 /* SECTION */
 
 .section{
 display:none;
 padding:15px;
-padding-bottom:70px;
 }
 
 /* CARD */
@@ -71,25 +88,6 @@ text-align:center;
 margin-top:100px;
 }
 
-/* BOTTOM NAV */
-
-.bottom-nav{
-position:fixed;
-bottom:0;
-width:100%;
-display:flex;
-background:white;
-border-top:1px solid #ccc;
-}
-
-.bottom-nav button{
-flex:1;
-background:none;
-color:#1976d2;
-font-size:12px;
-padding:10px;
-}
-
 </style>
 
 </head>
@@ -98,6 +96,20 @@ padding:10px;
 
 <div class="header">
 Classmate Connect
+</div>
+
+<!-- TOP NAV -->
+
+<div class="top-nav">
+
+<button onclick="showSection('find')">Find</button>
+<button onclick="showSection('friends')">Friends</button>
+<button onclick="showSection('chats')">Chat</button>
+<button onclick="showSection('groups')">Groups</button>
+<button onclick="showSection('memories')">Memories</button>
+<button onclick="showSection('notifications')">🔔</button>
+<button onclick="showSection('profile')">Profile</button>
+
 </div>
 
 <!-- LOGIN -->
@@ -179,18 +191,6 @@ Classmate Connect
 
 <button onclick="saveProfile()">Save</button>
 <button onclick="logout()">Logout</button>
-
-</div>
-
-<!-- BOTTOM NAV -->
-
-<div class="bottom-nav">
-
-<button onclick="showSection('find')">🏠 Home</button>
-<button onclick="showSection('friends')">👥 Friends</button>
-<button onclick="showSection('chats')">💬 Chat</button>
-<button onclick="showSection('groups')">👨‍🎓 Groups</button>
-<button onclick="showSection('profile')">👤 Profile</button>
 
 </div>
 
