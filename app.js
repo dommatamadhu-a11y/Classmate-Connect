@@ -12,10 +12,8 @@ import {
 getFirestore,
 doc,
 setDoc,
-getDoc,
 collection,
 addDoc,
-query,
 getDocs,
 onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -37,271 +35,115 @@ const provider = new GoogleAuthProvider();
 let currentUser;
 
 /* LOGIN */
-
-window.googleLogin = () => {
-signInWithRedirect(auth, provider);
+window.googleLogin = ()=>{
+signInWithRedirect(auth,provider);
 };
 
 /* AUTH */
-
-onAuthStateChanged(auth, async user => {
-
+onAuthStateChanged(auth,user=>{
 if(user){
-currentUser = user;
-
+currentUser=user;
 showSection("find");
-
-loadUsers();
-loadFriends();
-loadChats();
 loadNotifications();
-
 }else{
 showSection("login");
 }
-
 });
 
 /* LOGOUT */
-
-window.logout = async () => {
+window.logout = async ()=>{
 await signOut(auth);
 location.reload();
 };
 
-/* SECTION */
-
+/* UI */
 window.showSection = (id)=>{
-
-if(!currentUser && id !== "login") return;
-
-document.querySelectorAll(".section").forEach(s=>{
-s.style.display="none";
-});
-
+if(!currentUser && id!=="login") return;
+document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
-
 };
 
-/* PROFILE SAVE */
-
+/* PROFILE */
 window.saveProfile = async ()=>{
-
-const name = document.getElementById("name").value;
-const institution = document.getElementById("institution").value;
-const year = document.getElementById("year").value;
+const name=nameInput.value;
+const institution=institutionInput.value;
+const year=yearInput.value;
+const city=cityInput.value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
-name,
-institution,
-year,
-email:currentUser.email
+name,institution,year,city,email:currentUser.email
 });
 
 alert("Profile saved");
-
-createAutoGroup(institution,year);
-
 };
-
-/* AUTO GROUP */
-
-async function createAutoGroup(institution,year){
-
-const groupId = institution + "_" + year;
-
-await setDoc(doc(db,"groups",groupId),{
-institution,
-year,
-created:Date.now()
-});
-
-}
 
 /* FIND USERS */
-
 window.loadUsers = async ()=>{
+const inst=searchInstitution.value;
+const year=searchYear.value;
+const city=searchCity.value;
 
-const inst = document.getElementById("searchInstitution").value;
-const year = document.getElementById("searchYear").value;
-
-const snapshot = await getDocs(collection(db,"users"));
-
-let html="";
-
-snapshot.forEach(d=>{
-
-let u = d.data();
-
-if(d.id !== currentUser.uid){
-
-if(
-(!inst || u.institution === inst) &&
-(!year || u.year === year)
-){
-
-html+=`
-<div class="card">
-${u.name || "User"}
-<button onclick="addFriend('${d.id}','${u.name}')">Add Friend</button>
-</div>
-`;
-
-}
-
-}
-
-});
-
-document.getElementById("findList").innerHTML = html;
-
-};
-
-/* ADD FRIEND + NOTIFICATION */
-
-window.addFriend = async (uid,name)=>{
-
-await addDoc(collection(db,"friends"),{
-from:currentUser.uid,
-to:uid,
-time:Date.now()
-});
-
-/* CREATE NOTIFICATION */
-
-await addDoc(collection(db,"notifications"),{
-userId:uid,
-text: currentUser.displayName + " sent you a friend request",
-time:Date.now(),
-read:false
-});
-
-alert("Friend request sent");
-
-};
-
-/* LOAD FRIENDS */
-
-async function loadFriends(){
-
-const snapshot = await getDocs(collection(db,"friends"));
-
-let html="";
-
-snapshot.forEach(d=>{
-
-let f = d.data();
-
-if(f.from === currentUser.uid){
-
-html+=`
-<div class="card">
-Friend
-</div>
-`;
-
-}
-
-});
-
-document.getElementById("friendsList").innerHTML = html;
-
-}
-
-/* CHAT SEND */
-
-window.sendMessage = async ()=>{
-
-const text = document.getElementById("chatText").value;
-
-if(!text) return;
-
-await addDoc(collection(db,"messages"),{
-from:currentUser.uid,
-text,
-time:Date.now()
-});
-
-document.getElementById("chatText").value="";
-
-};
-
-/* LOAD CHATS */
-
-function loadChats(){
-
-const q = query(collection(db,"messages"));
-
-onSnapshot(q,snap=>{
+const snap=await getDocs(collection(db,"users"));
 
 let html="";
 
 snap.forEach(d=>{
+let u=d.data();
 
-let m = d.data();
-
-let cls = m.from === currentUser.uid ? "me" : "other";
-
+if(
+d.id!==currentUser.uid &&
+u.institution===inst &&
+u.year===year &&
+u.city===city
+){
 html+=`
-<div class="chat-bubble ${cls}">
-${m.text}
-</div>
-`;
-
-});
-
-document.getElementById("chatList").innerHTML = html;
-
-});
-
+<div class="card">
+${u.name}
+<button onclick="sendFriendRequest('${d.id}')">
+Send Friend Request
+</button>
+</div>`;
 }
-
-/* MEMORIES */
-
-window.uploadMemory = async ()=>{
-
-const caption = document.getElementById("memoryCaption").value;
-
-if(!caption) return;
-
-await addDoc(collection(db,"memories"),{
-userId:currentUser.uid,
-caption,
-time:Date.now()
 });
 
-document.getElementById("memoryCaption").value="";
+findList.innerHTML=html;
+};
+
+/* SEND REQUEST */
+window.sendFriendRequest = async(uid)=>{
+
+await addDoc(collection(db,"friendRequests"),{
+from:currentUser.uid,
+to:uid,
+status:"pending"
+});
+
+/* NOTIFICATION */
+await addDoc(collection(db,"notifications"),{
+userId:uid,
+text: currentUser.displayName+" sent you request"
+});
+
+alert("Request sent ✅");
 
 };
 
 /* NOTIFICATIONS */
-
 function loadNotifications(){
 
-const q = query(collection(db,"notifications"));
-
-onSnapshot(q,snapshot=>{
+onSnapshot(collection(db,"notifications"),snap=>{
 
 let html="";
 
-snapshot.forEach(d=>{
+snap.forEach(d=>{
+let n=d.data();
 
-let n = d.data();
-
-if(n.userId === currentUser.uid){
-
-html+=`
-<div class="card">
-${n.text}
-</div>
-`;
-
+if(n.userId===currentUser.uid){
+html+=`<div class="card">🔔 ${n.text}</div>`;
 }
-
 });
 
-document.getElementById("notificationsList").innerHTML = html;
+notificationsList.innerHTML=html;
 
 });
-
 }
