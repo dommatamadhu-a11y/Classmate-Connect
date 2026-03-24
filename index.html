@@ -6,113 +6,36 @@
 <title>Classmate Connect</title>
 
 <style>
-
-/* THEME */
-
-body{
-margin:0;
-font-family:Arial;
-background:#f5f5f5;
-transition:0.3s;
-}
-
-body.dark{
-background:#121212;
-color:white;
-}
-
-/* HEADER */
+body{margin:0;font-family:Arial;background:#f5f5f5;}
 
 .header{
 background:#1976d2;
 color:white;
 padding:15px;
-font-size:20px;
 text-align:center;
-display:flex;
-justify-content:space-between;
-align-items:center;
 }
-
-/* DARK BUTTON */
-
-.theme-btn{
-background:white;
-color:#1976d2;
-border:none;
-padding:5px 10px;
-border-radius:6px;
-}
-
-/* TOP NAV */
 
 .top-nav{
 display:flex;
-overflow-x:auto;
 background:#1565c0;
 }
 
 .top-nav button{
 flex:1;
-min-width:90px;
 border:none;
 background:#1565c0;
 color:white;
-padding:12px;
-font-size:14px;
+padding:10px;
 }
 
-/* ACTIVE TAB */
-
-.top-nav button.active{
-background:white;
-color:#1565c0;
-font-weight:bold;
-}
-
-/* SECTION */
-
-.section{
-display:none;
-padding:15px;
-}
-
-/* CARD */
+.section{display:none;padding:15px;}
 
 .card{
 background:white;
-padding:12px;
-margin:10px 0;
-border-radius:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
-}
-
-body.dark .card{
-background:#1e1e1e;
-}
-
-/* INPUT */
-
-input{
-width:100%;
 padding:10px;
-margin:5px 0;
+margin:10px 0;
 border-radius:8px;
-border:1px solid #ccc;
 }
-
-/* BUTTON */
-
-button{
-background:#1976d2;
-color:white;
-border:none;
-padding:8px 12px;
-border-radius:6px;
-margin-top:5px;
-}
-
-/* LOGIN */
 
 #login{
 display:block;
@@ -120,176 +43,71 @@ text-align:center;
 margin-top:100px;
 }
 
-/* CHAT BUBBLES */
-
-.chat-bubble{
-padding:10px;
-border-radius:10px;
+input{
+width:100%;
+padding:8px;
 margin:5px 0;
-max-width:70%;
 }
 
-.me{
-background:#1976d2;
-color:white;
-margin-left:auto;
+button{
+padding:6px;
+margin-top:5px;
 }
-
-.other{
-background:#e0e0e0;
-}
-
-body.dark .other{
-background:#333;
-color:white;
-}
-
 </style>
 
 </head>
 
 <body>
 
-<div class="header">
-<span>Classmate Connect</span>
-<button class="theme-btn" onclick="toggleTheme()">🌙</button>
-</div>
-
-<!-- TOP NAV -->
+<div class="header">Classmate Connect</div>
 
 <div class="top-nav">
-
-<button onclick="changeTab(this,'find')" class="active">Find</button>
-<button onclick="changeTab(this,'friends')">Friends</button>
-<button onclick="changeTab(this,'chats')">Chat</button>
-<button onclick="changeTab(this,'groups')">Groups</button>
-<button onclick="changeTab(this,'memories')">Memories</button>
-<button onclick="changeTab(this,'notifications')">🔔</button>
-<button onclick="changeTab(this,'profile')">Profile</button>
-
+<button onclick="showSection('find')">Find</button>
+<button onclick="showSection('notifications')">🔔</button>
+<button onclick="showSection('profile')">Profile</button>
 </div>
 
 <!-- LOGIN -->
-
 <div id="login" class="section">
-
-<h2>Welcome 👋</h2>
-<p id="userInfo"></p>
-
-<button onclick="googleLogin()">Continue with Google</button>
-
+<h2>Login</h2>
+<button onclick="googleLogin()">Login with Google</button>
 </div>
 
 <!-- FIND -->
-
 <div id="find" class="section">
-<h3>Find Batchmates</h3>
-<input id="searchInstitution" placeholder="School / College">
+<h3>Find</h3>
+
+<input id="searchInstitution" placeholder="Institution">
 <input id="searchYear" placeholder="Year">
+<input id="searchCity" placeholder="City">
+
 <button onclick="loadUsers()">Search</button>
+
 <div id="findList"></div>
 </div>
 
-<!-- FRIENDS -->
-
-<div id="friends" class="section">
-<h3>Friends</h3>
-<div id="friendsList"></div>
-</div>
-
-<!-- CHATS -->
-
-<div id="chats" class="section">
-<h3>Chats</h3>
-<div id="chatList"></div>
-</div>
-
-<!-- GROUPS -->
-
-<div id="groups" class="section">
-<h3>Groups</h3>
-<div id="groupList"></div>
-</div>
-
-<!-- MEMORIES -->
-
-<div id="memories" class="section">
-<h3>Memories</h3>
-<input id="memoryCaption" placeholder="Write memory">
-<button onclick="uploadMemory()">Post</button>
-<div id="memoriesList"></div>
-</div>
-
 <!-- NOTIFICATIONS -->
-
 <div id="notifications" class="section">
 <h3>Notifications</h3>
 <div id="notificationsList"></div>
 </div>
 
 <!-- PROFILE -->
-
 <div id="profile" class="section">
+
 <h3>Profile</h3>
-<input id="name" placeholder="Name">
-<input id="institution" placeholder="School / College">
-<input id="year" placeholder="Year">
+
+<input id="nameInput" placeholder="Name">
+<input id="institutionInput" placeholder="Institution">
+<input id="yearInput" placeholder="Year">
+<input id="cityInput" placeholder="City">
+
 <button onclick="saveProfile()">Save</button>
 <button onclick="logout()">Logout</button>
+
 </div>
 
 <script type="module" src="app.js"></script>
-
-<script>
-
-/* TAB SWITCH + ACTIVE */
-
-function changeTab(btn,id){
-
-document.querySelectorAll(".top-nav button").forEach(b=>{
-b.classList.remove("active");
-});
-
-btn.classList.add("active");
-
-showSection(id);
-}
-
-/* DARK MODE */
-
-function toggleTheme(){
-document.body.classList.toggle("dark");
-}
-
-/* CHAT STYLE APPLY */
-
-const oldLoadChats = window.loadChats;
-
-window.loadChats = function(){
-
-onSnapshot(collection(db,"messages"),snap=>{
-
-let html="";
-
-snap.forEach(d=>{
-
-let m=d.data();
-
-let cls = m.from === currentUser.uid ? "me" : "other";
-
-if(m.text){
-html+=`<div class="chat-bubble ${cls}">${m.text}</div>`;
-}
-
-});
-
-document.getElementById("chatList").innerHTML=html;
-
-});
-
-};
-
-</script>
 
 </body>
 </html>
