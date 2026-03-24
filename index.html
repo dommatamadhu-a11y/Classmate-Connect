@@ -3,15 +3,22 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Classmate Connect</title>
 
 <style>
+
+/* THEME */
 
 body{
 margin:0;
 font-family:Arial;
 background:#f5f5f5;
+transition:0.3s;
+}
+
+body.dark{
+background:#121212;
+color:white;
 }
 
 /* HEADER */
@@ -22,6 +29,19 @@ color:white;
 padding:15px;
 font-size:20px;
 text-align:center;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+/* DARK BUTTON */
+
+.theme-btn{
+background:white;
+color:#1976d2;
+border:none;
+padding:5px 10px;
+border-radius:6px;
 }
 
 /* TOP NAV */
@@ -42,6 +62,14 @@ padding:12px;
 font-size:14px;
 }
 
+/* ACTIVE TAB */
+
+.top-nav button.active{
+background:white;
+color:#1565c0;
+font-weight:bold;
+}
+
 /* SECTION */
 
 .section{
@@ -57,6 +85,10 @@ padding:12px;
 margin:10px 0;
 border-radius:10px;
 box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+body.dark .card{
+background:#1e1e1e;
 }
 
 /* INPUT */
@@ -88,6 +120,30 @@ text-align:center;
 margin-top:100px;
 }
 
+/* CHAT BUBBLES */
+
+.chat-bubble{
+padding:10px;
+border-radius:10px;
+margin:5px 0;
+max-width:70%;
+}
+
+.me{
+background:#1976d2;
+color:white;
+margin-left:auto;
+}
+
+.other{
+background:#e0e0e0;
+}
+
+body.dark .other{
+background:#333;
+color:white;
+}
+
 </style>
 
 </head>
@@ -95,20 +151,21 @@ margin-top:100px;
 <body>
 
 <div class="header">
-Classmate Connect
+<span>Classmate Connect</span>
+<button class="theme-btn" onclick="toggleTheme()">🌙</button>
 </div>
 
 <!-- TOP NAV -->
 
 <div class="top-nav">
 
-<button onclick="showSection('find')">Find</button>
-<button onclick="showSection('friends')">Friends</button>
-<button onclick="showSection('chats')">Chat</button>
-<button onclick="showSection('groups')">Groups</button>
-<button onclick="showSection('memories')">Memories</button>
-<button onclick="showSection('notifications')">🔔</button>
-<button onclick="showSection('profile')">Profile</button>
+<button onclick="changeTab(this,'find')" class="active">Find</button>
+<button onclick="changeTab(this,'friends')">Friends</button>
+<button onclick="changeTab(this,'chats')">Chat</button>
+<button onclick="changeTab(this,'groups')">Groups</button>
+<button onclick="changeTab(this,'memories')">Memories</button>
+<button onclick="changeTab(this,'notifications')">🔔</button>
+<button onclick="changeTab(this,'profile')">Profile</button>
 
 </div>
 
@@ -126,16 +183,11 @@ Classmate Connect
 <!-- FIND -->
 
 <div id="find" class="section">
-
 <h3>Find Batchmates</h3>
-
 <input id="searchInstitution" placeholder="School / College">
 <input id="searchYear" placeholder="Year">
-
 <button onclick="loadUsers()">Search</button>
-
 <div id="findList"></div>
-
 </div>
 
 <!-- FRIENDS -->
@@ -162,14 +214,10 @@ Classmate Connect
 <!-- MEMORIES -->
 
 <div id="memories" class="section">
-
 <h3>Memories</h3>
-
 <input id="memoryCaption" placeholder="Write memory">
 <button onclick="uploadMemory()">Post</button>
-
 <div id="memoriesList"></div>
-
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -182,19 +230,66 @@ Classmate Connect
 <!-- PROFILE -->
 
 <div id="profile" class="section">
-
 <h3>Profile</h3>
-
 <input id="name" placeholder="Name">
 <input id="institution" placeholder="School / College">
 <input id="year" placeholder="Year">
-
 <button onclick="saveProfile()">Save</button>
 <button onclick="logout()">Logout</button>
-
 </div>
 
 <script type="module" src="app.js"></script>
+
+<script>
+
+/* TAB SWITCH + ACTIVE */
+
+function changeTab(btn,id){
+
+document.querySelectorAll(".top-nav button").forEach(b=>{
+b.classList.remove("active");
+});
+
+btn.classList.add("active");
+
+showSection(id);
+}
+
+/* DARK MODE */
+
+function toggleTheme(){
+document.body.classList.toggle("dark");
+}
+
+/* CHAT STYLE APPLY */
+
+const oldLoadChats = window.loadChats;
+
+window.loadChats = function(){
+
+onSnapshot(collection(db,"messages"),snap=>{
+
+let html="";
+
+snap.forEach(d=>{
+
+let m=d.data();
+
+let cls = m.from === currentUser.uid ? "me" : "other";
+
+if(m.text){
+html+=`<div class="chat-bubble ${cls}">${m.text}</div>`;
+}
+
+});
+
+document.getElementById("chatList").innerHTML=html;
+
+});
+
+};
+
+</script>
 
 </body>
 </html>
