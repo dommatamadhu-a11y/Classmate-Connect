@@ -35,21 +35,29 @@ const db = getFirestore(app);
 
 const provider = new GoogleAuthProvider();
 
-/* 🔥 FORCE ACCOUNT PICKER */
+/* 🔥 ACCOUNT PICKER */
 provider.setCustomParameters({
 prompt: "select_account"
 });
 
 let currentUser;
 
-/* LOGIN */
+/* 🔥 LOGIN FIX */
 
 window.googleLogin = async ()=>{
+
+const btn = event.target;
+btn.disabled = true;
+btn.innerText = "Loading...";
+
 try{
 await signInWithPopup(auth,provider);
 }catch(e){
 alert(e.message);
+btn.disabled = false;
+btn.innerText = "Continue with Google";
 }
+
 };
 
 /* AUTH */
@@ -58,7 +66,6 @@ onAuthStateChanged(auth,user=>{
 if(user){
 currentUser=user;
 
-/* SHOW EMAIL */
 if(document.getElementById("userInfo")){
 document.getElementById("userInfo").innerText =
 "Logged in as: " + user.email;
@@ -92,7 +99,7 @@ document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE + GROUP */
+/* PROFILE */
 
 window.saveProfile = async ()=>{
 
@@ -149,7 +156,7 @@ userId:currentUser.uid
 });
 }
 
-alert("Profile Saved ✅");
+alert("Profile Saved");
 
 };
 
@@ -280,28 +287,6 @@ status:"rejected"
 loadFriends();
 };
 
-/* NOTIFICATIONS */
-
-function loadNotifications(){
-
-onSnapshot(collection(db,"notifications"),snap=>{
-
-let html="";
-
-snap.forEach(d=>{
-let n=d.data();
-
-if(n.userId===currentUser.uid){
-html+=`<div class="card">${n.text}</div>`;
-}
-});
-
-document.getElementById("notificationsList").innerHTML=html;
-
-});
-
-}
-
 /* CHAT */
 
 function loadChats(){
@@ -311,11 +296,13 @@ onSnapshot(collection(db,"messages"),snap=>{
 let html="";
 
 snap.forEach(d=>{
+
 let m=d.data();
 
-if(m.to===currentUser.uid){
+if(m.text){
 html+=`<div class="card">${m.text}</div>`;
 }
+
 });
 
 document.getElementById("chatList").innerHTML=html;
@@ -422,3 +409,25 @@ memoryId:id,
 userId:currentUser.uid
 });
 };
+
+/* NOTIFICATIONS */
+
+function loadNotifications(){
+
+onSnapshot(collection(db,"notifications"),snap=>{
+
+let html="";
+
+snap.forEach(d=>{
+let n=d.data();
+
+if(n.userId===currentUser.uid){
+html+=`<div class="card">${n.text}</div>`;
+}
+});
+
+document.getElementById("notificationsList").innerHTML=html;
+
+});
+
+}
