@@ -38,14 +38,14 @@ const provider = new GoogleAuthProvider();
 let currentUser;
 
 /* LOGIN */
-window.googleLogin = ()=>{
-signInWithRedirect(auth,provider);
+window.googleLogin = () => {
+signInWithRedirect(auth, provider);
 };
 
 /* AUTH */
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth, user => {
 if(user){
-currentUser=user;
+currentUser = user;
 showSection("find");
 
 loadNotifications();
@@ -64,15 +64,14 @@ await signOut(auth);
 location.reload();
 };
 
-/* SECTION */
+/* SECTION SWITCH */
 window.showSection = (id)=>{
-if(!currentUser && id!=="login") return;
-
+if(!currentUser && id !== "login") return;
 document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE + AUTO GROUP */
+/* PROFILE SAVE + AUTO GROUP */
 window.saveProfile = async ()=>{
 const name = nameInput.value;
 const institution = institutionInput.value;
@@ -83,7 +82,7 @@ await setDoc(doc(db,"users",currentUser.uid),{
 name,institution,year,city,email:currentUser.email
 });
 
-/* AUTO GROUP */
+/* AUTO GROUP CREATE */
 const groupId = institution + "_" + year;
 const groupRef = doc(db,"groups",groupId);
 const groupSnap = await getDoc(groupRef);
@@ -235,7 +234,7 @@ chatList.innerHTML=html;
 });
 }
 
-/* GROUPS */
+/* GROUPS LOAD */
 function loadGroups(){
 
 onSnapshot(collection(db,"groups"),snap=>{
