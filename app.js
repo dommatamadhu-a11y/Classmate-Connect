@@ -38,20 +38,24 @@ const provider = new GoogleAuthProvider();
 let currentUser;
 
 /* LOGIN */
-window.googleLogin = () => {
-signInWithRedirect(auth, provider);
-};
+window.googleLogin = ()=> signInWithRedirect(auth,provider);
 
 /* AUTH */
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth,user=>{
 if(user){
-currentUser = user;
+currentUser=user;
 showSection("find");
 
 loadNotifications();
 loadFriends();
 loadChats();
 loadGroups();
+
+/* APPLY SAVED THEME */
+const theme = localStorage.getItem("theme");
+if(theme==="dark"){
+document.body.classList.add("dark");
+}
 
 }else{
 showSection("login");
@@ -64,65 +68,68 @@ await signOut(auth);
 location.reload();
 };
 
-/* SECTION SWITCH */
+/* SECTION */
 window.showSection = (id)=>{
-if(!currentUser && id !== "login") return;
+if(!currentUser && id!=="login") return;
 document.querySelectorAll(".section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 };
 
-/* PROFILE SAVE + AUTO GROUP */
+/* DARK MODE TOGGLE */
+window.toggleTheme = ()=>{
+document.body.classList.toggle("dark");
+
+if(document.body.classList.contains("dark")){
+localStorage.setItem("theme","dark");
+}else{
+localStorage.setItem("theme","light");
+}
+};
+
+/* PROFILE + AUTO GROUP */
 window.saveProfile = async ()=>{
-const name = nameInput.value;
-const institution = institutionInput.value;
-const year = yearInput.value;
-const city = cityInput.value;
+const name=nameInput.value;
+const institution=institutionInput.value;
+const year=yearInput.value;
+const city=cityInput.value;
 
 await setDoc(doc(db,"users",currentUser.uid),{
 name,institution,year,city,email:currentUser.email
 });
 
-/* AUTO GROUP CREATE */
-const groupId = institution + "_" + year;
-const groupRef = doc(db,"groups",groupId);
-const groupSnap = await getDoc(groupRef);
+/* GROUP */
+const groupId=institution+"_"+year;
+const ref=doc(db,"groups",groupId);
+const snap=await getDoc(ref);
 
-if(!groupSnap.exists()){
-await setDoc(groupRef,{
-institution,
-year,
-created:Date.now()
-});
+if(!snap.exists()){
+await setDoc(ref,{institution,year});
 }
 
-alert("Profile Saved + Group Created ✅");
+alert("Profile Saved ✅");
 };
 
-/* FIND USERS */
+/* FIND */
 window.loadUsers = async ()=>{
-const inst = searchInstitution.value;
-const year = searchYear.value;
-const city = searchCity.value;
+const inst=searchInstitution.value;
+const year=searchYear.value;
+const city=searchCity.value;
 
-const snap = await getDocs(collection(db,"users"));
+const snap=await getDocs(collection(db,"users"));
 
 let html="";
 
 snap.forEach(d=>{
 let u=d.data();
 
-if(
-d.id!==currentUser.uid &&
+if(d.id!==currentUser.uid &&
 u.institution===inst &&
 u.year===year &&
-u.city===city
-){
+u.city===city){
 html+=`
 <div class="card">
 ${u.name}
-<button onclick="sendFriendRequest('${d.id}')">
-Send Friend Request
-</button>
+<button onclick="sendFriendRequest('${d.id}')">Send Friend Request</button>
 </div>`;
 }
 });
@@ -130,149 +137,99 @@ Send Friend Request
 findList.innerHTML=html;
 };
 
-/* SEND FRIEND REQUEST */
+/* REQUEST */
 window.sendFriendRequest = async(uid)=>{
-
 await addDoc(collection(db,"friendRequests"),{
-from:currentUser.uid,
-to:uid,
-status:"pending",
-time:Date.now()
+from:currentUser.uid,to:uid,status:"pending"
 });
 
-/* NOTIFICATION */
 await addDoc(collection(db,"notifications"),{
 userId:uid,
-text: currentUser.displayName + " sent you a friend request",
-time:Date.now()
+text: currentUser.displayName+" sent request"
 });
 
-alert("Friend request sent ✅");
+alert("Request sent ✅");
 };
 
-/* LOAD FRIEND REQUESTS */
+/* FRIENDS */
 function loadFriends(){
-
 onSnapshot(collection(db,"friendRequests"),snap=>{
-
 let html="";
-
-snap.forEach(docSnap=>{
-let r=docSnap.data();
-
+snap.forEach(d=>{
+let r=d.data();
 if(r.to===currentUser.uid && r.status==="pending"){
-
 html+=`
 <div class="card">
-Friend Request
-<button onclick="acceptRequest('${docSnap.id}','${r.from}')">Accept</button>
-<button onclick="rejectRequest('${docSnap.id}')">Reject</button>
+Request
+<button onclick="acceptRequest('${d.id}','${r.from}')">Accept</button>
+<button onclick="rejectRequest('${d.id}')">Reject</button>
 </div>`;
 }
-
 });
-
 friendsList.innerHTML=html;
-
 });
 }
 
-/* ACCEPT */
 window.acceptRequest = async(id,fromUid)=>{
-
 await addDoc(collection(db,"friends"),{
-user1:currentUser.uid,
-user2:fromUid
+user1:currentUser.uid,user2:fromUid
 });
-
-await updateDoc(doc(db,"friendRequests",id),{
-status:"accepted"
-});
-
-alert("Friend added ✅");
+await updateDoc(doc(db,"friendRequests",id),{status:"accepted"});
+alert("Friend added");
 };
 
-/* REJECT */
 window.rejectRequest = async(id)=>{
-
-await updateDoc(doc(db,"friendRequests",id),{
-status:"rejected"
-});
-
+await updateDoc(doc(db,"friendRequests",id),{status:"rejected"});
 };
 
-/* CHAT SEND */
+/* CHAT */
 window.sendMessage = async ()=>{
-const text = chatText.value;
-if(!text) return;
+if(!chatText.value) return;
 
 await addDoc(collection(db,"messages"),{
 from:currentUser.uid,
-text,
-time:Date.now()
+text:chatText.value
 });
 
 chatText.value="";
 };
 
-/* LOAD CHATS */
 function loadChats(){
-
 onSnapshot(collection(db,"messages"),snap=>{
-
 let html="";
-
 snap.forEach(d=>{
 let m=d.data();
-let cls = m.from===currentUser.uid?"me":"other";
-
+let cls=m.from===currentUser.uid?"me":"other";
 html+=`<div class="chat-bubble ${cls}">${m.text}</div>`;
 });
-
 chatList.innerHTML=html;
-
 });
 }
 
-/* GROUPS LOAD */
+/* GROUPS */
 function loadGroups(){
-
 onSnapshot(collection(db,"groups"),snap=>{
-
 let html="";
-
 snap.forEach(d=>{
 let g=d.data();
-
-if(g.institution === institutionInput.value && g.year === yearInput.value){
-html+=`
-<div class="card">
-Group: ${g.institution} (${g.year})
-</div>`;
+if(g.institution===institutionInput.value && g.year===yearInput.value){
+html+=`<div class="card">${g.institution} (${g.year})</div>`;
 }
 });
-
 groupList.innerHTML=html;
-
 });
 }
 
 /* NOTIFICATIONS */
 function loadNotifications(){
-
 onSnapshot(collection(db,"notifications"),snap=>{
-
 let html="";
-
 snap.forEach(d=>{
 let n=d.data();
-
 if(n.userId===currentUser.uid){
 html+=`<div class="card">🔔 ${n.text}</div>`;
 }
 });
-
 notificationsList.innerHTML=html;
-
 });
 }
