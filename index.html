@@ -3,50 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alumni Connect - Global</title>
+    <title>Alumni Connect 🎓</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: auto; }
-        .header { background: #007bff; color: white; padding: 25px; text-align: center; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .post-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .feed-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; color: #007bff; border-bottom: 2px solid #eef; padding-bottom: 5px; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus, textarea:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.2); }
-        button { background: #28a745; color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; width: 100%; font-size: 16px; font-weight: 600; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
-        button:active { transform: scale(0.98); }
-        .feed { margin-top: 10px; }
-        .post { background: white; padding: 18px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 6px solid #007bff; }
-        .post h4 { margin: 0; color: #007bff; font-size: 17px; display: flex; align-items: center; }
-        .post p { margin: 10px 0 0; line-height: 1.5; color: #444; }
-        .timestamp { font-size: 11px; color: #999; margin-top: 8px; display: block; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: auto; }
+        .header { background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 20px; text-align: center; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .post-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        button { background-color: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #218838; }
+        .feed-title { font-weight: bold; color: #444; margin-bottom: 10px; display: block; border-left: 4px solid #007bff; padding-left: 10px; }
+        .post { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .post h4 { margin: 0 0 5px 0; color: #007bff; font-size: 16px; }
+        .post p { margin: 5px 0; color: #333; line-height: 1.4; }
+        .time { font-size: 10px; color: #999; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Alumni Connect 🎓</h1>
-        <p>Connecting India to the World</p>
+        <h1>Alumni Connect</h1>
+        <p>Stay Connected Forever</p>
     </div>
 
     <div class="post-box">
-        <div class="feed-title">Share an Update</div>
-        <input type="text" id="name" placeholder="Your Name">
-        <textarea id="message" rows="3" placeholder="Write a message for your friends..."></textarea>
+        <span class="feed-title">New Post</span>
+        <input type="text" id="name" placeholder="Enter your name">
+        <textarea id="message" rows="3" placeholder="What's on your mind?"></textarea>
         <button onclick="sendData()">Post to Wall</button>
     </div>
 
-    <div class="feed-title">Community Updates</div>
-    <div class="feed" id="post-feed">
-        <p style="text-align: center; color: #888;">Fetching latest updates...</p>
+    <span class="feed-title">Recent Updates</span>
+    <div id="post-feed">
+        <p style="text-align:center; color:#888;">Loading posts...</p>
     </div>
 </div>
 
 <script>
-    // Your Firebase Configuration (Already integrated)
+    // YOUR CORRECT FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
         authDomain: "class-connect-b58f0.firebaseapp.com",
@@ -61,48 +59,47 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Send Data Function
+    // Function to Send Data
     function sendData() {
-        const nameInput = document.getElementById('name');
-        const msgInput = document.getElementById('message');
-        const name = nameInput.value.trim();
-        const msg = msgInput.value.trim();
+        const name = document.getElementById('name').value;
+        const msg = document.getElementById('message').value;
 
-        if(name && msg) {
+        if (name !== "" && msg !== "") {
             database.ref('posts').push({
                 username: name,
                 text: msg,
                 time: new Date().toLocaleString()
+            }).then(() => {
+                document.getElementById('message').value = ""; // Clear message box
+            }).catch((error) => {
+                alert("Error: " + error.message);
             });
-            msgInput.value = ""; // Clear text box
         } else {
-            alert("Please enter both your name and message.");
+            alert("Please fill both fields!");
         }
     }
 
-    // Load Data Function (Realtime)
-    database.ref('posts').limitToLast(30).on('value', (snapshot) => {
+    // Function to Listen for Data (Real-time)
+    database.ref('posts').on('value', (snapshot) => {
         const feed = document.getElementById('post-feed');
-        feed.innerHTML = ""; 
+        feed.innerHTML = "";
+        const data = snapshot.val();
         
-        let posts = [];
-        snapshot.forEach((child) => {
-            posts.push(child.val());
-        });
-
-        posts.reverse().forEach((data) => {
-            const postHTML = `
-                <div class="post">
-                    <h4>👤 ${data.username}</h4>
-                    <p>${data.text}</p>
-                    <span class="timestamp">${data.time}</span>
-                </div>
-            `;
-            feed.insertAdjacentHTML('beforeend', postHTML);
-        });
-
-        if(posts.length === 0) {
-            feed.innerHTML = "<p style='text-align:center; color:#999;'>No posts yet. Start the conversation!</p>";
+        if (data) {
+            // Convert object to array and reverse to show latest first
+            const posts = Object.values(data).reverse();
+            posts.forEach(post => {
+                const postDiv = `
+                    <div class="post">
+                        <h4>👤 ${post.username}</h4>
+                        <p>${post.text}</p>
+                        <span class="time">${post.time}</span>
+                    </div>
+                `;
+                feed.innerHTML += postDiv;
+            });
+        } else {
+            feed.innerHTML = "<p style='text-align:center; color:#888;'>No posts yet. Be the first!</p>";
         }
     });
 </script>
