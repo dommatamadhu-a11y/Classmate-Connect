@@ -14,15 +14,16 @@
         .active { display: block; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
         input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn { border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn { border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
         .btn-blue { background: #007bff; color: white; }
         .btn-green { background: #28a745; color: white; margin-top: 5px; }
         .btn-red { background: #ff4d4d; color: white; width: auto; padding: 5px 10px; font-size: 11px; float: right; }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
-        .nav-item { border: none; background: none; color: #666; font-size: 12px; position: relative; }
+        .nav-item { border: none; background: none; color: #666; font-size: 12px; position: relative; cursor: pointer; }
         .active-nav { color: #007bff; font-weight: bold; }
-        .dot { height: 8px; width: 8px; background-color: red; border-radius: 50%; display: none; position: absolute; top: 0; right: 5px; }
+        .dot { height: 10px; width: 10px; background-color: red; border-radius: 50%; display: none; position: absolute; top: -2px; right: 5px; border: 2px solid white; }
         .req-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        #search-results, #my-friends-list { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -33,39 +34,50 @@
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="Post to your group..."></textarea>
-        <button class="btn btn-green" onclick="sendPost()">Post</button>
+        <textarea id="msgInput" rows="2" placeholder="Post to your group wall..."></textarea>
+        <button class="btn btn-green" onclick="sendPost()">Post Message</button>
     </div>
-    <div id="post-container"></div>
+    <div id="post-container">Loading wall...</div>
 </div>
 
 <div id="friends" class="section">
-    <div id="notifications-area">
-        <h4>Friend Requests</h4>
-        <div id="request-list">No new requests</div>
+    <div id="notifications-area" class="card" style="display:none; border-left: 5px solid #ffc107;">
+        <h4 style="margin-top:0;">Friend Requests</h4>
+        <div id="request-list"></div>
     </div>
+
+    <div class="card">
+        <h4>🔍 Find Alumni</h4>
+        <input type="text" id="s-inst" placeholder="Institution (e.g., ZPSS)">
+        <input type="text" id="s-year" placeholder="Year (e.g., 2010)">
+        <input type="text" id="s-city" placeholder="City">
+        <button class="btn btn-blue" onclick="searchAlumni()">Search</button>
+    </div>
+
+    <div id="search-results"></div>
+    
     <hr>
-    <h4>People in your Batch</h4>
-    <div id="friends-list"></div>
+    <h4>Your Connections</h4>
+    <div id="my-friends-list">Add friends to start chatting!</div>
 </div>
 
 <div id="profile" class="section">
     <div class="card">
-        <h3>Profile Settings</h3>
-        <input type="text" id="p-name" placeholder="Full Name">
-        <input type="text" id="p-inst" placeholder="Institution">
+        <h3>My Profile</h3>
+        <input type="text" id="p-name" placeholder="Your Full Name">
+        <input type="text" id="p-inst" placeholder="Institution Name">
         <input type="text" id="p-year" placeholder="Passout Year">
-        <input type="text" id="p-city" placeholder="City">
-        <button class="btn btn-blue" onclick="saveProfile()">Update Profile</button>
+        <input type="text" id="p-city" placeholder="City/Village">
+        <button class="btn btn-blue" onclick="saveProfile()">Save Profile</button>
     </div>
 </div>
 
 <div class="nav-bar">
     <button class="nav-item active-nav" onclick="show('feed', 'Home Feed', this)">🏠<br>Feed</button>
-    <button class="nav-item" id="nav-friends" onclick="show('friends', 'Friends', this)">
+    <button class="nav-item" id="nav-friends" onclick="show('friends', 'Find Alumni', this)">
         <span class="dot" id="notif-dot"></span>👥<br>Friends
     </button>
-    <button class="nav-item" onclick="show('profile', 'Profile', this)">👤<br>Profile</button>
+    <button class="nav-item" onclick="show('profile', 'My Profile', this)">👤<br>Profile</button>
 </div>
 
 <script src="app.js"></script>
