@@ -3,114 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alumni Connect - Secure Login</title>
+    <title>Alumni Connect Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: auto; }
-        .auth-box { text-align: center; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 50px; }
-        .post-box { background: white; padding: 20px; border-radius: 12px; margin-top: 20px; display: none; }
-        button { background-color: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        .post { background: white; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 5px solid #007bff; }
-        .user-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .profile-pic { width: 30px; height: 30px; border-radius: 50%; }
+        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; }
+        .header { background: #007bff; color: white; padding: 15px; text-align: center; position: sticky; top: 0; }
+        .section { display: none; padding: 20px; }
+        .active { display: block; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+        .nav-item { border: none; background: none; font-size: 14px; color: #555; cursor: pointer; }
+        .post-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="login-ui" class="auth-box">
-        <h1>Alumni Connect 🎓</h1>
-        <p>Please login to join the wall</p>
-        <button onclick="googleLogin()">Login with Google</button>
-    </div>
+<div class="header">
+    <h2 id="page-title">Home Feed</h2>
+</div>
 
-    <div id="post-ui" class="post-box">
-        <div class="user-info">
-            <span id="user-name">Welcome!</span>
-            <button onclick="logout()" style="width: auto; padding: 5px 10px; background: #dc3545; font-size: 12px;">Logout</button>
-        </div>
-        <textarea id="message" rows="3" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="Write a message..."></textarea>
-        <button onclick="sendData()" style="background:#28a745;">Post to Wall</button>
-    </div>
+<div id="feed" class="section active">
+    <textarea id="msg" placeholder="Share a memory..." style="width:100%; border-radius:8px; padding:10px;"></textarea>
+    <button onclick="postMsg()" style="width:100%; background:#28a745; color:white; border:none; padding:10px; border-radius:8px; margin-top:10px;">Post to Wall</button>
+    <div id="load-posts">Loading...</div>
+</div>
 
-    <div id="post-feed"></div>
+<div id="friends" class="section">
+    <h3>Find Friends</h3>
+    <p style="color:#888;">Feature coming soon...</p>
+</div>
+
+<div id="profile" class="section">
+    <h3>My Profile</h3>
+    <div style="background:white; padding:20px; border-radius:10px; text-align:center;">
+        <div style="width:80px; height:80px; background:#ddd; border-radius:50%; margin:auto;"></div>
+        <h4>Madhu</h4>
+        <p>madhu@example.com</p>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <button class="nav-item" onclick="show('feed', 'Home Feed')">🏠<br>Feed</button>
+    <button class="nav-item" onclick="show('friends', 'Find Friends')">👥<br>Friends</button>
+    <button class="nav-item" onclick="show('profile', 'Profile')">👤<br>Profile</button>
 </div>
 
 <script>
     const firebaseConfig = {
-        apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
-        authDomain: "class-connect-b58f0.firebaseapp.com",
-        projectId: "class-connect-b58f0",
-        databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app/",
-        storageBucket: "class-connect-b58f0.firebasestorage.app",
-        messagingSenderId: "836461719745",
-        appId: "1:836461719745:web:f827862e4db4954626a440"
+        databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
-
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const database = firebase.database();
-    let currentUser = null;
+    const db = firebase.database();
 
-    // Google Login Function
-    function googleLogin() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(error => alert(error.message));
+    function show(id, title) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('page-title').innerText = title;
     }
 
-    // Logout Function
-    function logout() {
-        auth.signOut();
-    }
-
-    // Check Login Status
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('login-ui').style.display = 'none';
-            document.getElementById('post-ui').style.display = 'block';
-            document.getElementById('user-name').innerText = "Hello, " + user.displayName;
-        } else {
-            currentUser = null;
-            document.getElementById('login-ui').style.display = 'block';
-            document.getElementById('post-ui').style.display = 'none';
-        }
-    });
-
-    // Send Message
-    function sendData() {
-        const msg = document.getElementById('message').value;
-        if (msg && currentUser) {
-            database.ref('posts').push({
-                username: currentUser.displayName,
-                text: msg,
-                email: currentUser.email,
-                time: new Date().toLocaleString()
-            }).then(() => {
-                document.getElementById('message').value = "";
-            });
+    function postMsg() {
+        const text = document.getElementById('msg').value;
+        if(text) {
+            db.ref('posts').push({ user: "Madhu", text: text, time: new Date().toLocaleString() });
+            document.getElementById('msg').value = "";
         }
     }
 
-    // Feed Sync
-    database.ref('posts').on('value', (snapshot) => {
-        const feed = document.getElementById('post-feed');
-        feed.innerHTML = "";
-        const data = snapshot.val();
-        if (data) {
-            Object.values(data).reverse().forEach(post => {
-                feed.innerHTML += `
-                    <div class="post">
-                        <strong>${post.username}</strong>
-                        <p>${post.text}</p>
-                        <small style="color:#999">${post.time}</small>
-                    </div>`;
-            });
-        }
+    db.ref('posts').on('value', snap => {
+        const div = document.getElementById('load-posts');
+        div.innerHTML = "";
+        snap.forEach(child => {
+            const data = child.val();
+            div.innerHTML = `<div class="post-card"><b>${data.user}:</b><p>${data.text}</p></div>` + div.innerHTML;
+        });
     });
 </script>
 
