@@ -5,18 +5,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Load User Data from Local Storage
-let user = JSON.parse(localStorage.getItem("alumniUser")) || { name: "Anonymous", inst: "", year: "", city: "" };
+// User Data from Local Storage
+let user = JSON.parse(localStorage.getItem("alumniUser")) || { name: "Anonymous", inst: "", year: "", city: "", groupKey: "" };
 
-// Sync Profile Fields
 window.onload = () => {
-    document.getElementById('p-name').value = user.name;
-    document.getElementById('p-inst').value = user.inst;
-    document.getElementById('p-year').value = user.year;
-    document.getElementById('p-city').value = user.city;
+    document.getElementById('p-name').value = user.name || "";
+    document.getElementById('p-inst').value = user.inst || "";
+    document.getElementById('p-year').value = user.year || "";
+    document.getElementById('p-city').value = user.city || "";
 };
 
-// Navigation Function
 function show(id, title, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
@@ -26,7 +24,7 @@ function show(id, title, el) {
     if(id === 'friends') loadFriends();
 }
 
-// Save Profile Logic
+// Save Profile & Generate Group Key
 function saveProfile() {
     const name = document.getElementById('p-name').value;
     const inst = document.getElementById('p-inst').value;
@@ -34,7 +32,7 @@ function saveProfile() {
     const city = document.getElementById('p-city').value;
 
     if(!name || !inst || !year) {
-        alert("Please fill name, institution and year!");
+        alert("Please fill Name, Institution and Year!");
         return;
     }
 
@@ -48,65 +46,79 @@ function saveProfile() {
 
     localStorage.setItem("alumniUser", JSON.stringify(user));
     db.ref('users/' + user.name).set(user);
-    alert("Profile Updated Successfully!");
-    show('friends', 'Batchmates', document.getElementById('nav-friends'));
+    alert("Profile Updated & Group Joined!");
+    location.reload(); // Refresh to apply group filter
 }
 
-// Send Post Logic
+// Send Post with Group Key
 function sendPost() {
     const msg = document.getElementById('msgInput').value;
+    if(!user.groupKey) {
+        alert("Please set your profile first!");
+        return;
+    }
     if(msg) {
         db.ref('posts').push({
             name: user.name,
             msg: msg,
-            group: user.inst || "General",
+            groupKey: user.groupKey, // Only same group can see
             time: new Date().toLocaleTimeString()
         });
         document.getElementById('msgInput').value = "";
     }
 }
 
-// Load Friends with same Group Key
+// Delete Post Function
+function deletePost(postId) {
+    if(confirm("Do you want to delete this post?")) {
+        db.ref('posts/' + postId).remove();
+    }
+}
+
+// Load Friends
 function loadFriends() {
     const list = document.getElementById('friends-list');
     const info = document.getElementById('group-info');
-    
-    if(!user.inst) {
-        list.innerHTML = "Update profile to see your batchmates.";
+    if(!user.groupKey) {
+        list.innerHTML = "Complete your profile to see batchmates.";
         return;
     }
-
     info.innerHTML = `Group: <b>${user.inst} (${user.year})</b>`;
     
     db.ref('users').on('value', snap => {
         list.innerHTML = "";
-        let found = false;
         snap.forEach(child => {
             const u = child.val();
             if(u.groupKey === user.groupKey && u.name !== user.name) {
-                found = true;
-                list.innerHTML += `
-                    <div class="card">
-                        <b>👤 ${u.name}</b><br>
-                        <span class="group-tag">📍 ${u.city}</span>
-                    </div>`;
+                list.innerHTML += `<div class="card"><b>👤 ${u.name}</b><br><span class="group-tag">📍 ${u.city}</span></div>`;
             }
         });
-        if(!found) list.innerHTML = "No batchmates found yet in this group.";
     });
 }
 
-// Listen for Posts (Real-time)
-db.ref('posts').limitToLast(20).on('value', snap => {
+// Real-time Posts with Group Filtering & Delete Button
+db.ref('posts').on('value', snap => {
     const cont = document.getElementById('post-container');
     cont.innerHTML = "";
     snap.forEach(c => {
         const p = c.val();
-        cont.innerHTML = `
-            <div class="card">
-                <b style="color:#007bff;">${p.name}</b> <small style="color:#999">@ ${p.group}</small><br>
-                <p style="margin:5px 0;">${p.msg}</p>
-                <small style="color:#ccc; font-size:10px;">${p.time}</small>
-            </div>` + cont.innerHTML;
+        const postId = c.key;
+        
+        // Show only posts from the user's specific group
+        if(p.groupKey === user.groupKey) {
+            let deleteBtn = "";
+            // Only show delete button if the post belongs to the current user
+            if(p.name === user.name) {
+                deleteBtn = `<button onclick="deletePost('${postId}')" style="float:right; background:none; border:none; color:red; cursor:pointer;">🗑️</button>`;
+            }
+
+            cont.innerHTML = `
+                <div class="card">
+                    ${deleteBtn}
+                    <b style="color:#007bff;">${p.name}</b><br>
+                    <p style="margin:5px 0;">${p.msg}</p>
+                    <small style="color:#ccc; font-size:10px;">${p.time}</small>
+                </div>` + cont.innerHTML;
+        }
     });
 });
