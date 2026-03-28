@@ -1,3 +1,4 @@
+// Firebase Configuration
 const firebaseConfig = { databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app/" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -12,9 +13,19 @@ window.onload = () => {
         document.getElementById('p-year').value = user.year || "";
         document.getElementById('p-city').value = user.city || "";
         listenToRequests();
+        listenForChatNotifications();
     }
 };
 
+// Logout Function
+function logout() {
+    if(confirm("Are you sure you want to logout?")) {
+        localStorage.removeItem("alumniUser");
+        location.reload();
+    }
+}
+
+// Navigation
 function show(id, title, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
@@ -24,22 +35,23 @@ function show(id, title, el) {
     if(id === 'friends') loadMyFriends();
 }
 
+// Profile Logic
 function saveProfile() {
     const name = document.getElementById('p-name').value.trim();
     const inst = document.getElementById('p-inst').value.trim();
     const year = document.getElementById('p-year').value.trim();
     const city = document.getElementById('p-city').value.trim();
-    if(!name || !inst || !year) return alert("Fill essential details!");
+    if(!name || !inst || !year) return alert("Please fill Name, Institution and Year!");
 
     const groupKey = `${inst}_${year}_${city}`.replace(/\s+/g, '').toUpperCase();
     user = { name, inst, year, city, groupKey };
     localStorage.setItem("alumniUser", JSON.stringify(user));
     db.ref('users/' + name).set(user);
-    alert("Profile Saved!");
+    alert("Profile Updated!");
     location.reload();
 }
 
-// --- SEARCH & FRIENDS ---
+// Search Logic
 function searchAlumni() {
     const sInst = document.getElementById('s-inst').value.trim().toUpperCase();
     const sYear = document.getElementById('s-year').value.trim();
@@ -67,6 +79,7 @@ function checkFriendStatus(uData, container) {
     });
 }
 
+// Request & Notifications
 function sendRequest(target) {
     db.ref('requests/' + target + '/' + user.name).set({ from: user.name });
     alert("Request Sent!");
@@ -81,7 +94,7 @@ function listenToRequests() {
             area.style.display = "block";
             document.getElementById('notif-dot').style.display = "block";
             snap.forEach(c => {
-                list.innerHTML += `<div class="req-box"><span>${c.key}</span><button class="btn btn-green" style="width:auto;" onclick="accept('${c.key}')">Accept</button></div>`;
+                list.innerHTML += `<div class="req-box"><span>${c.key}</span><button class="btn-green" style="width:auto;" onclick="accept('${c.key}')">Accept</button></div>`;
             });
         } else { area.style.display = "none"; }
     });
@@ -103,11 +116,12 @@ function loadMyFriends() {
     });
 }
 
-// --- PRIVATE CHAT LOGIC ---
+// --- PRIVATE CHAT WITH GREEN DOT LOGIC ---
 function openChat(friendName) {
     currentChatFriend = friendName;
     document.getElementById('chat-with-name').innerText = friendName;
     document.getElementById('chat-window').style.display = "block";
+    db.ref('chat_notifications/' + user.name + '/' + friendName).remove();
     loadPrivateMessages();
 }
 
@@ -125,9 +139,17 @@ function sendPrivateMessage() {
     const msg = document.getElementById('privateMsgInput').value.trim();
     if(msg && currentChatFriend) {
         const chatId = getChatId(user.name, currentChatFriend);
-        db.ref('private_messages/' + chatId).push({ sender: user.name, text: msg });
+        db.ref('private_messages/' + chatId).push({ sender: user.name, text: msg, time: new Date().getTime() });
+        db.ref('chat_notifications/' + currentChatFriend + '/' + user.name).set(true);
         document.getElementById('privateMsgInput').value = "";
     }
+}
+
+function listenForChatNotifications() {
+    db.ref('chat_notifications/' + user.name).on('value', snap => {
+        const dot = document.getElementById('notif-dot');
+        dot.style.display = snap.exists() ? "block" : "none";
+    });
 }
 
 function loadPrivateMessages() {
@@ -138,14 +160,13 @@ function loadPrivateMessages() {
         snap.forEach(c => {
             const m = c.val();
             const isMine = m.sender === user.name;
-            const bubble = `<div class="msg-bubble" style="align-self:${isMine?'flex-end':'flex-start'}; background:${isMine?'#dcf8c6':'white'};">${m.text}</div>`;
-            container.innerHTML += bubble;
+            container.innerHTML += `<div class="msg-bubble" style="align-self:${isMine?'flex-end':'flex-start'}; background:${isMine?'#dcf8c6':'white'};">${m.text}</div>`;
         });
         container.scrollTop = container.scrollHeight;
     });
 }
 
-// --- GROUP WALL FEED ---
+// Group Feed Logic
 function sendPost() {
     const msg = document.getElementById('msgInput').value;
     if(msg && user.groupKey) {
