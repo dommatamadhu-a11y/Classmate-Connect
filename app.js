@@ -8,9 +8,11 @@ let currentChatFriend = "";
 window.onload = () => {
     updateHeaderUI();
     if(user && user.name) {
-        document.getElementById('p-name').value = user.name;
-        document.getElementById('p-inst').value = user.inst;
-        document.getElementById('p-year').value = user.year;
+        document.getElementById('p-name').value = user.name || "";
+        document.getElementById('p-inst').value = user.inst || "";
+        document.getElementById('p-year').value = user.year || "";
+        document.getElementById('p-class').value = user.uClass || "";
+        document.getElementById('p-city').value = user.city || "";
         listenToRequests();
         listenForChatNotifications();
     }
@@ -50,11 +52,18 @@ function saveProfile() {
     const name = document.getElementById('p-name').value.trim();
     const inst = document.getElementById('p-inst').value.trim();
     const year = document.getElementById('p-year').value.trim();
-    if(!name || !inst || !year) return alert("All fields are required!");
+    const uClass = document.getElementById('p-class').value.trim();
+    const city = document.getElementById('p-city').value.trim();
+
+    if(!name || !inst || !year) return alert("Required fields: Name, Inst, Year");
+
     const groupKey = `${inst}_${year}`.replace(/\s+/g, '').toUpperCase();
-    user = { name, inst, year, groupKey };
+    user = { name, inst, year, uClass, city, groupKey };
     localStorage.setItem("alumniUser", JSON.stringify(user));
-    db.ref('users/' + name).set(user).then(() => location.reload());
+    db.ref('users/' + name).set(user).then(() => {
+        alert("Profile Saved!");
+        location.reload();
+    });
 }
 
 // --- FEED LOGIC ---
@@ -63,8 +72,8 @@ function handleFeedPost() {
     const file = document.getElementById('imageInput').files[0];
     const btn = document.getElementById('postBtn');
 
-    if(!user) return alert("Login first!");
-    if(!text && !file) return alert("Nothing to post!");
+    if(!user || !user.groupKey) return alert("Setup profile first!");
+    if(!text && !file) return alert("Post is empty!");
 
     btn.disabled = true; btn.innerText = "Posting...";
 
@@ -110,7 +119,6 @@ function openChat(friend) {
 }
 
 function closeChat() { document.getElementById('chat-window').style.display = "none"; }
-
 function cancelChatImage() {
     document.getElementById('chatImageInput').value = "";
     document.getElementById('chatPreviewContainer').style.display = "none";
@@ -119,8 +127,10 @@ function cancelChatImage() {
 function sendPrivateMessage() {
     const msg = document.getElementById('privateMsgInput').value.trim();
     const file = document.getElementById('chatImageInput').files[0];
+    const btn = document.getElementById('sendChatBtn');
     if(!msg && !file) return;
 
+    btn.disabled = true;
     if(file) {
         const reader = new FileReader();
         reader.onload = () => pushMsg(msg, reader.result);
@@ -133,10 +143,12 @@ function pushMsg(text, imageUrl) {
     db.ref('private_messages/' + chatId).push({
         sender: user.name, text, imageUrl, 
         time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    }).then(() => {
+        db.ref('chat_notifications/' + currentChatFriend + '/' + user.name).set(true);
+        document.getElementById('privateMsgInput').value = "";
+        document.getElementById('sendChatBtn').disabled = false;
+        cancelChatImage();
     });
-    db.ref('chat_notifications/' + currentChatFriend + '/' + user.name).set(true);
-    document.getElementById('privateMsgInput').value = "";
-    cancelChatImage();
 }
 
 function loadMessages() {
@@ -152,35 +164,47 @@ function loadMessages() {
     });
 }
 
-// --- FRIENDS & SYSTEM ---
+// --- UPDATED SEARCH LOGIC ---
 function searchAlumni() {
-    const inst = document.getElementById('s-inst').value.trim().toUpperCase();
-    const year = document.getElementById('s-year').value.trim();
-    const res = document.getElementById('search-results'); res.innerHTML = "Searching...";
+    const sInst = document.getElementById('s-inst').value.trim().toUpperCase();
+    const sYear = document.getElementById('s-year').value.trim();
+    const sCity = document.getElementById('s-city').value.trim().toUpperCase();
+    const sClass = document.getElementById('s-class').value.trim().toUpperCase();
+    const res = document.getElementById('search-results');
+    res.innerHTML = "Searching...";
+
     db.ref('users').once('value', snap => {
         res.innerHTML = "";
+        let count = 0;
         snap.forEach(c => {
             const u = c.val();
-            if(u.name !== user.name && (u.inst.toUpperCase() === inst || u.year === year)) {
+            const mInst = sInst && u.inst.toUpperCase().includes(sInst);
+            const mYear = sYear && u.year === sYear;
+            const mCity = sCity && u.city && u.city.toUpperCase().includes(sCity);
+            const mClass = sClass && u.uClass && u.uClass.toUpperCase().includes(sClass);
+
+            if(u.name !== user.name && (mInst || mYear || mCity || mClass)) {
+                count++;
                 db.ref('friends/' + user.name + '/' + u.name).once('value', f => {
                     let btn = f.exists() ? `<button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="openChat('${u.name}')">Message</button>` : `<button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="sendRequest('${u.name}')">Add</button>`;
-                    res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><b>${u.name}</b>${btn}</div>`;
+                    res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><b>${u.name}</b><br><small>${u.uClass || ''} | ${u.city || ''}</small></div>${btn}</div>`;
                 });
             }
         });
+        if(count === 0) res.innerHTML = "<p style='text-align:center;'>No matches found.</p>";
     });
 }
 
-function sendRequest(t) { db.ref('requests/' + t + '/' + user.name).set({from: user.name}); alert("Sent!"); }
+function sendRequest(t) { db.ref('requests/' + t + '/' + user.name).set({from: user.name}); alert("Request Sent!"); }
 
 function listenToRequests() {
     db.ref('requests/' + user.name).on('value', snap => {
         const area = document.getElementById('notifications-area');
         area.style.display = snap.exists() ? "block" : "none";
         document.getElementById('notif-dot').style.display = snap.exists() ? "block" : "none";
-        document.getElementById('request-list').innerHTML = "";
+        const list = document.getElementById('request-list'); list.innerHTML = "";
         snap.forEach(c => {
-            document.getElementById('request-list').innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><span><b>${c.key}</b></span><button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="accept('${c.key}')">Accept</button></div>`;
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><span><b>${c.key}</b></span><button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="accept('${c.key}')">Accept</button></div>`;
         });
     });
 }
@@ -195,6 +219,7 @@ function loadMyFriends() {
 }
 
 function listenForChatNotifications() {
+    if(!user) return;
     db.ref('chat_notifications/' + user.name).on('value', snap => {
         document.getElementById('notif-dot').style.display = snap.exists() ? "block" : "none";
     });
