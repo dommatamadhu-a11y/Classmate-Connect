@@ -6,43 +6,42 @@
     <title>Alumni Connect Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4361ee">
+    
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
     <style>
         :root { --primary: #4361ee; --secondary: #3f37c9; --bg: #f8f9fd; --white: #ffffff; --text: #2b2d42; --light-text: #8d99ae; --online: #2ec4b6; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); overflow-x: hidden; }
         
-        /* Header */
+        /* Login Overlay */
+        #login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:5000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
+        .login-card { background: white; padding: 40px 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 350px; width: 100%; }
+        
+        /* UI Elements */
         .header-container { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; position: sticky; top: 0; z-index: 1000; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .user-bar { background: rgba(255, 255, 255, 0.1); padding: 8px 15px; font-size: 11px; display: flex; justify-content: space-between; }
+        .user-bar { background: rgba(255, 255, 255, 0.1); padding: 8px 15px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+        .user-bar img { width: 20px; height: 20px; border-radius: 50%; border: 1px solid white; }
         .main-header { padding: 15px; text-align: center; }
         
-        /* Sections */
         .section { display: none; padding: 15px; max-width: 500px; margin: auto; animation: fadeIn 0.3s ease; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Cards */
         .card { background: var(--white); padding: 15px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #f0f0f0; position: relative; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: #fcfdfe; }
-        .btn { border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        .btn { border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-red { background: #ff4d6d; color: white; font-size: 10px; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+        .btn-outline { background: white; border: 1px solid #ddd; color: #555; width: 100%; }
         
-        /* Feed & Interactions */
         .feed-img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #eee; }
-        .post-footer { display: flex; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f1f1; }
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--light-text); display: flex; align-items: center; gap: 5px; }
-        .comments-area { background: #f9fafb; border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 12px; max-height: 100px; overflow-y: auto; }
-
-        /* Navigation */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { border: none; background: none; color: var(--light-text); font-size: 11px; cursor: pointer; text-align: center; position: relative; }
         .active-nav { color: var(--primary); font-weight: bold; }
         .notif-dot { height: 8px; width: 8px; background: #ff4d6d; border-radius: 50%; position: absolute; top: 0; right: 5px; display: none; border: 2px solid white; }
 
-        /* Toast & Chat */
-        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 10px; padding: 12px; position: fixed; z-index: 3000; left: 50%; bottom: 85px; transform: translateX(-50%); font-size: 13px; }
+        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 10px; padding: 12px; position: fixed; z-index: 6000; left: 50%; bottom: 85px; transform: translateX(-50%); font-size: 13px; }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 85px; opacity: 1;} }
         @keyframes fadeout { from {bottom: 85px; opacity: 1;} to {bottom: 0; opacity: 0;} }
@@ -56,21 +55,37 @@
 </head>
 <body>
 
+<div id="login-overlay">
+    <div class="login-card">
+        <h2 style="color:var(--primary); margin-top:0;">Alumni Connect</h2>
+        <p style="color:gray; font-size:14px; margin-bottom:30px;">చిన్ననాటి స్నేహితులతో మనసు విప్పి మాట్లాడండి. మానసిక ప్రశాంతతను పొందండి.</p>
+        <button class="btn btn-outline" onclick="loginWithGoogle()">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="18"> Google తో లాగిన్ అవ్వండి
+        </button>
+    </div>
+</div>
+
 <div id="toast">Action Successful!</div>
 
 <div class="header-container">
-    <div class="user-bar"><span id="header-user-name">Guest</span><span id="header-group-tag">Offline</span></div>
+    <div class="user-bar">
+        <div style="display:flex; align-items:center; gap:5px;">
+            <img id="header-user-img" src="" alt="">
+            <span id="header-user-name">Guest</span>
+        </div>
+        <span id="header-group-tag">Offline</span>
+    </div>
     <div class="main-header"><h3 id="page-title">Home Feed</h3></div>
 </div>
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="Share a memory..."></textarea>
+        <textarea id="msgInput" rows="2" placeholder="Share a happy memory..."></textarea>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <label for="imageInput" style="cursor:pointer; font-size:22px;">🖼️</label>
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="previewFile('imageInput', 'preview-post')">
             <img id="preview-post" style="width:40px; height:40px; display:none; border-radius:5px; object-fit:cover;">
-            <button id="postBtn" class="btn btn-blue" style="width:auto; padding:8px 25px;" onclick="handleFeedPost()">Post</button>
+            <button id="postBtn" class="btn btn-blue" style="width:auto; padding:8px 20px;" onclick="handleFeedPost()">Post</button>
         </div>
     </div>
     <div id="post-container">Loading...</div>
@@ -78,35 +93,30 @@
 
 <div id="friends" class="section">
     <div id="req-area" class="card" style="display:none; border-left:4px solid #ff4d6d;">
-        <h4 style="margin:0 0 10px 0;">New Requests</h4>
+        <h4 style="margin:0 0 10px 0;">Friend Requests</h4>
         <div id="req-list"></div>
     </div>
     <div class="card">
-        <h4>🔍 Find Alumni</h4>
+        <h4>🔍 Find Old Friends</h4>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <input type="text" id="s-inst" placeholder="Institution">
-            <input type="text" id="s-year" placeholder="Year">
-            <input type="text" id="s-city" placeholder="City">
-            <input type="text" id="s-class" placeholder="Class">
+            <input type="text" id="s-inst" placeholder="School/College">
+            <input type="text" id="s-year" placeholder="Passout Year">
         </div>
         <button class="btn btn-blue" style="margin-top:10px;" onclick="searchAlumni()">Search</button>
     </div>
-    <div id="search-results"></div>
     <div id="my-friends-list"></div>
 </div>
 
 <div id="settings" class="section">
-    <div class="card">
-        <h3>Edit Profile</h3>
-        <input type="text" id="p-name" placeholder="Full Name">
-        <input type="text" id="p-inst" placeholder="Institution">
-        <input type="text" id="p-year" placeholder="Year">
-        <input type="text" id="p-class" placeholder="Class/Sec">
-        <input type="text" id="p-city" placeholder="City">
-        <button class="btn btn-blue" onclick="saveProfile()">Update & Sync</button>
-    </div>
     <div class="card" style="text-align:center;">
-        <button class="btn" style="color:red; background:none; width:100%;" onclick="logout()">Logout</button>
+        <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px; border:3px solid var(--primary);">
+        <h3 id="p-name-display" style="margin:0;">User Name</h3>
+        <p id="p-email-display" style="color:gray; font-size:12px; margin:5px 0 20px 0;">email@gmail.com</p>
+        <input type="text" id="p-inst" placeholder="School/College Name">
+        <input type="text" id="p-year" placeholder="Passout Year">
+        <input type="text" id="p-city" placeholder="Current City">
+        <button class="btn btn-blue" onclick="saveProfile()">Update Profile</button>
+        <button class="btn" style="color:red; background:none; width:100%; margin-top:20px;" onclick="logout()">Logout</button>
     </div>
 </div>
 
@@ -114,14 +124,12 @@
     <div class="header-container">
         <div class="main-header" style="text-align:left; padding:10px; display:flex; align-items:center;">
             <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:24px; margin-right:15px;">←</button>
-            <div id="chat-title-container">
-                <span id="chat-with-name" style="font-weight:bold;">Chat</span>
-            </div>
+            <span id="chat-with-name" style="font-weight:bold;">Chat</span>
         </div>
     </div>
     <div id="chat-messages"></div>
     <div style="padding:15px; background:white; display:flex; gap:10px;">
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="margin:0;">
+        <input type="text" id="privateMsgInput" placeholder="Write a message..." style="margin:0;">
         <button class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
 </div>
