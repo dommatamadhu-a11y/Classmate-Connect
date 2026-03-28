@@ -6,87 +6,73 @@
     <title>Alumni Connect Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging-compat.js"></script>
-    
     <style>
         :root { --primary: #4361ee; --secondary: #3f37c9; --bg: #f8f9fd; --white: #ffffff; --text: #2b2d42; --light-text: #8d99ae; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
-        
-        /* Header */
         .header-container { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; position: sticky; top: 0; z-index: 1000; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .user-bar { background: rgba(255, 255, 255, 0.1); padding: 8px 15px; font-size: 11px; display: flex; justify-content: space-between; backdrop-filter: blur(5px); }
+        .user-bar { background: rgba(255, 255, 255, 0.1); padding: 8px 15px; font-size: 11px; display: flex; justify-content: space-between; }
         .main-header { padding: 15px; text-align: center; }
-        .main-header h3 { margin: 0; font-size: 18px; }
-
-        /* Layout */
         .section { display: none; padding: 15px; max-width: 500px; margin: auto; animation: fadeIn 0.3s ease; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Cards & Inputs */
-        .card { background: var(--white); padding: 15px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #f0f0f0; overflow: hidden; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: #fcfdfe; }
-        .btn { border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px; }
+        .card { background: var(--white); padding: 15px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #f0f0f0; position: relative; }
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 14px; }
+        .btn { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-red { background: #ff4d6d; color: white; font-size: 10px; padding: 5px 10px; border-radius: 8px; float: right; }
-
-        /* Images */
-        .feed-img { width: 100%; border-radius: 12px; margin-top: 10px; display: block; border: 1px solid #eee; }
-        .image-preview { width: 50px; height: 50px; border-radius: 8px; display: none; object-fit: cover; border: 2px solid var(--primary); }
+        .btn-red { background: #ff4d6d; color: white; font-size: 10px; padding: 5px 8px; border-radius: 5px; cursor: pointer; }
+        .feed-img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #eee; }
+        .image-preview { width: 50px; height: 50px; border-radius: 8px; display: none; object-fit: cover; }
+        
+        /* Like & Comment UI */
+        .post-footer { display: flex; gap: 15px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #f1f1f1; }
+        .like-btn, .comm-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--light-text); display: flex; align-items: center; gap: 5px; }
+        .like-btn.active-like { color: #ff4d6d; font-weight: bold; }
+        .comments-list { background: #f9fafb; border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 12px; max-height: 150px; overflow-y: auto; }
+        .comment-box { display: flex; gap: 5px; margin-top: 8px; }
 
         /* Navigation */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95); display: flex; justify-content: space-around; padding: 10px 0; backdrop-filter: blur(10px); border-top: 1px solid #eee; z-index: 1000; }
-        .nav-item { border: none; background: none; color: var(--light-text); font-size: 11px; cursor: pointer; text-align: center; position: relative; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 1000; }
+        .nav-item { border: none; background: none; color: var(--light-text); font-size: 11px; text-align: center; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: bold; }
-        .dot { height: 8px; width: 8px; background: #ff4d6d; border-radius: 50%; position: absolute; top: -2px; right: 0; display: none; border: 2px solid white; }
 
-        /* Chat Window */
+        /* Chat Overlay */
         #chat-window { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction: column; }
         #chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; background: #f0f2f5; }
-        .msg-bubble { padding: 10px 15px; border-radius: 15px; margin-bottom: 8px; max-width: 75%; font-size: 14px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
-        .theirs { align-self: flex-start; background: white; color: var(--text); border-bottom-left-radius: 2px; }
+        .msg-bubble { padding: 10px; border-radius: 12px; margin-bottom: 8px; max-width: 75%; font-size: 14px; }
+        .mine { align-self: flex-end; background: var(--primary); color: white; }
+        .theirs { align-self: flex-start; background: white; }
     </style>
 </head>
 <body>
 
 <div class="header-container">
-    <div class="user-bar">
-        <span id="header-user-name">Guest</span>
-        <span id="header-group-tag">Offline</span>
-    </div>
-    <div class="main-header">
-        <h3 id="page-title">Home Feed</h3>
-    </div>
+    <div class="user-bar"><span id="header-user-name">Guest</span><span id="header-group-tag">Offline</span></div>
+    <div class="main-header"><h3 id="page-title">Home Feed</h3></div>
 </div>
 
 <div id="feed" class="section active">
     <div class="card">
         <div style="display:flex; align-items:center; gap:10px;">
-            <textarea id="msgInput" rows="2" placeholder="Share a memory..." style="margin:0;"></textarea>
+            <textarea id="msgInput" rows="2" placeholder="Share something with alumni..."></textarea>
             <img id="imagePreview" class="image-preview">
         </div>
-        <div style="display:flex; gap:15px; align-items:center; margin-top:10px;">
+        <div style="display:flex; gap:15px; align-items:center;">
             <label for="imageInput" style="cursor:pointer; font-size:22px;">🖼️</label>
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="previewFile('imageInput', 'imagePreview')">
             <button id="postBtn" class="btn btn-blue" onclick="handleFeedPost()">Post to Wall</button>
         </div>
     </div>
-    <div id="post-container"></div>
+    <div id="post-container">Loading posts...</div>
 </div>
 
 <div id="friends" class="section">
-    <div id="notifications-area" class="card" style="display:none; border-left:4px solid var(--primary);">
-        <h4 style="margin:0 0 10px 0;">New Requests</h4>
-        <div id="request-list"></div>
-    </div>
     <div class="card">
-        <h4>🔍 Find Alumni</h4>
+        <h4>🔍 Find Friends</h4>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <input type="text" id="s-inst" placeholder="Institution">
             <input type="text" id="s-year" placeholder="Year">
             <input type="text" id="s-city" placeholder="City">
-            <input type="text" id="s-class" placeholder="Class/Sec">
+            <input type="text" id="s-class" placeholder="Class">
         </div>
         <button class="btn btn-blue" style="margin-top:10px;" onclick="searchAlumni()">Search</button>
     </div>
@@ -96,42 +82,29 @@
 
 <div id="profile" class="section">
     <div class="card">
-        <h3>Settings</h3>
-        <input type="text" id="p-name" placeholder="Full Name">
+        <h3>Profile Settings</h3>
+        <input type="text" id="p-name" placeholder="Your Name">
         <input type="text" id="p-inst" placeholder="Institution">
-        <input type="text" id="p-year" placeholder="Passout Year">
-        <input type="text" id="p-class" placeholder="Class / Section">
+        <input type="text" id="p-year" placeholder="Year">
+        <input type="text" id="p-class" placeholder="Class/Sec">
         <input type="text" id="p-city" placeholder="City">
         <button class="btn btn-blue" onclick="saveProfile()">Save Profile</button>
-        <button class="btn" style="background:#f1f3f5; color:red; margin-top:20px; width:100%;" onclick="logout()">Logout</button>
+        <button class="btn" style="margin-top:20px; width:100%; color:red;" onclick="logout()">Logout</button>
     </div>
 </div>
 
 <div id="chat-window">
-    <div class="header-container">
-        <div class="main-header" style="display:flex; align-items:center; text-align:left; padding:10px;">
-            <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:24px; margin-right:15px;">←</button>
-            <span id="chat-with-name">Chat</span>
-        </div>
-    </div>
+    <div class="header-container"><div class="main-header" style="text-align:left; padding:10px; display:flex; align-items:center;"><button onclick="closeChat()" style="background:none; border:none; color:white; font-size:24px; margin-right:15px;">←</button> <span id="chat-with-name">Chat</span></div></div>
     <div id="chat-messages"></div>
-    <div style="padding:10px; background:white; border-top:1px solid #eee;">
-        <div id="chatPreviewContainer" style="display:none; margin-bottom:10px;">
-            <img id="chatImagePreview" style="width:50px; height:50px; border-radius:8px; object-fit:cover;">
-            <button onclick="cancelChatImage()" style="color:red; border:none; background:none; font-size:12px;">Remove</button>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <label for="chatImageInput" style="cursor:pointer; font-size:20px;">🖼️</label>
-            <input type="file" id="chatImageInput" accept="image/*" style="display:none;" onchange="previewFile('chatImageInput', 'chatImagePreview', 'chatPreviewContainer')">
-            <input type="text" id="privateMsgInput" placeholder="Type a message..." style="margin:0; border-radius:25px; flex:1;">
-            <button id="sendChatBtn" class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
-        </div>
+    <div style="padding:10px; background:white; display:flex; gap:10px;">
+        <input type="text" id="privateMsgInput" placeholder="Type message..." style="margin:0;">
+        <button class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
 </div>
 
 <div class="nav-bar">
     <button class="nav-item active-nav" onclick="show('feed', 'Home Feed', this)">🏠<br>Feed</button>
-    <button class="nav-item" id="nav-friends" onclick="show('friends', 'Friends', this)"><span class="dot" id="notif-dot"></span>👥<br>Friends</button>
+    <button class="nav-item" onclick="show('friends', 'Friends', this)">👥<br>Friends</button>
     <button class="nav-item" onclick="show('profile', 'Profile', this)">⚙️<br>Profile</button>
 </div>
 
