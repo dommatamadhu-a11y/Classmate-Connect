@@ -1,4 +1,3 @@
-// Firebase Configuration
 const firebaseConfig = { databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app/" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -7,25 +6,33 @@ let user = JSON.parse(localStorage.getItem("alumniUser")) || { name: "" };
 let currentChatFriend = "";
 
 window.onload = () => {
+    updateHeader();
     if(user.name) {
-        document.getElementById('p-name').value = user.name || "";
-        document.getElementById('p-inst').value = user.inst || "";
-        document.getElementById('p-year').value = user.year || "";
-        document.getElementById('p-city').value = user.city || "";
+        document.getElementById('p-name').value = user.name;
+        document.getElementById('p-inst').value = user.inst;
+        document.getElementById('p-year').value = user.year;
+        document.getElementById('p-city').value = user.city;
         listenToRequests();
         listenForChatNotifications();
     }
 };
 
-// Logout Function
+function updateHeader() {
+    const nameLabel = document.getElementById('header-user-name');
+    const groupLabel = document.getElementById('header-group-tag');
+    if(user.name) {
+        nameLabel.innerText = "👤 Login as: " + user.name;
+        groupLabel.innerText = user.inst ? "🎓 " + user.inst : "No Group";
+    }
+}
+
 function logout() {
-    if(confirm("Are you sure you want to logout?")) {
+    if(confirm("Logout?")) {
         localStorage.removeItem("alumniUser");
         location.reload();
     }
 }
 
-// Navigation
 function show(id, title, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
@@ -35,68 +42,58 @@ function show(id, title, el) {
     if(id === 'friends') loadMyFriends();
 }
 
-// Profile Logic
 function saveProfile() {
     const name = document.getElementById('p-name').value.trim();
     const inst = document.getElementById('p-inst').value.trim();
     const year = document.getElementById('p-year').value.trim();
     const city = document.getElementById('p-city').value.trim();
-    if(!name || !inst || !year) return alert("Please fill Name, Institution and Year!");
+    if(!name || !inst || !year) return alert("Fill details!");
 
     const groupKey = `${inst}_${year}_${city}`.replace(/\s+/g, '').toUpperCase();
     user = { name, inst, year, city, groupKey };
     localStorage.setItem("alumniUser", JSON.stringify(user));
     db.ref('users/' + name).set(user);
-    alert("Profile Updated!");
+    alert("Saved!");
     location.reload();
 }
 
-// Search Logic
+// Search
 function searchAlumni() {
     const sInst = document.getElementById('s-inst').value.trim().toUpperCase();
     const sYear = document.getElementById('s-year').value.trim();
-    const sCity = document.getElementById('s-city').value.trim().toUpperCase();
     const resDiv = document.getElementById('search-results');
-    
     resDiv.innerHTML = "Searching...";
     db.ref('users').once('value', snap => {
-        resDiv.innerHTML = "<h4>Search Results:</h4>";
+        resDiv.innerHTML = "";
         snap.forEach(child => {
             const u = child.val();
-            if(u.name !== user.name && (u.inst.toUpperCase() === sInst || u.year === sYear || u.city.toUpperCase() === sCity)) {
-                checkFriendStatus(u, resDiv);
+            if(u.name !== user.name && (u.inst.toUpperCase() === sInst || u.year === sYear)) {
+                db.ref('friends/' + user.name + '/' + u.name).once('value', fSnap => {
+                    let btn = fSnap.exists() ? `<button class="btn btn-green" style="width:auto;" onclick="openChat('${u.name}')">Chat</button>` : `<button class="btn btn-blue" style="width:auto;" onclick="sendRequest('${u.name}')">Add</button>`;
+                    resDiv.innerHTML += `<div class="card"><b>${u.name}</b><br>${btn}</div>`;
+                });
             }
         });
     });
 }
 
-function checkFriendStatus(uData, container) {
-    db.ref('friends/' + user.name + '/' + uData.name).once('value', fSnap => {
-        let btn = fSnap.exists() ? 
-            `<button class="btn btn-green" style="width:auto;" onclick="openChat('${uData.name}')">💬 Message</button>` : 
-            `<button class="btn btn-blue" style="width:auto;" onclick="sendRequest('${uData.name}')">➕ Add Friend</button>`;
-        container.innerHTML += `<div class="card"><b>${uData.name}</b><br>${btn}</div>`;
-    });
-}
-
-// Request & Notifications
 function sendRequest(target) {
     db.ref('requests/' + target + '/' + user.name).set({ from: user.name });
-    alert("Request Sent!");
+    alert("Sent!");
 }
 
 function listenToRequests() {
     db.ref('requests/' + user.name).on('value', snap => {
-        const list = document.getElementById('request-list');
         const area = document.getElementById('notifications-area');
+        const list = document.getElementById('request-list');
         list.innerHTML = "";
         if(snap.exists()) {
             area.style.display = "block";
             document.getElementById('notif-dot').style.display = "block";
             snap.forEach(c => {
-                list.innerHTML += `<div class="req-box"><span>${c.key}</span><button class="btn-green" style="width:auto;" onclick="accept('${c.key}')">Accept</button></div>`;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${c.key}</span><button onclick="accept('${c.key}')">Accept</button></div>`;
             });
-        } else { area.style.display = "none"; }
+        } else area.style.display = "none";
     });
 }
 
@@ -111,12 +108,12 @@ function loadMyFriends() {
     db.ref('friends/' + user.name).on('value', snap => {
         list.innerHTML = "";
         snap.forEach(c => {
-            list.innerHTML += `<div class="card"><b>👤 ${c.key}</b> <button class="btn btn-green" style="float:right; width:auto;" onclick="openChat('${c.key}')">Chat</button></div>`;
+            list.innerHTML += `<div class="card"><b>${c.key}</b><button class="btn btn-green" style="float:right; width:auto;" onclick="openChat('${c.key}')">Chat</button></div>`;
         });
     });
 }
 
-// --- PRIVATE CHAT WITH GREEN DOT LOGIC ---
+// Chat
 function openChat(friendName) {
     currentChatFriend = friendName;
     document.getElementById('chat-with-name').innerText = friendName;
@@ -125,21 +122,17 @@ function openChat(friendName) {
     loadPrivateMessages();
 }
 
-function closeChat() {
-    document.getElementById('chat-window').style.display = "none";
-    const chatId = getChatId(user.name, currentChatFriend);
-    db.ref('private_messages/' + chatId).off();
+function closeChat() { 
+    document.getElementById('chat-window').style.display = "none"; 
+    db.ref('private_messages/' + getChatId(user.name, currentChatFriend)).off();
 }
 
-function getChatId(u1, u2) {
-    return u1 < u2 ? `${u1}_${u2}` : `${u2}_${u1}`;
-}
+function getChatId(u1, u2) { return u1 < u2 ? `${u1}_${u2}` : `${u2}_${u1}`; }
 
 function sendPrivateMessage() {
     const msg = document.getElementById('privateMsgInput').value.trim();
     if(msg && currentChatFriend) {
-        const chatId = getChatId(user.name, currentChatFriend);
-        db.ref('private_messages/' + chatId).push({ sender: user.name, text: msg, time: new Date().getTime() });
+        db.ref('private_messages/' + getChatId(user.name, currentChatFriend)).push({ sender: user.name, text: msg });
         db.ref('chat_notifications/' + currentChatFriend + '/' + user.name).set(true);
         document.getElementById('privateMsgInput').value = "";
     }
@@ -147,15 +140,13 @@ function sendPrivateMessage() {
 
 function listenForChatNotifications() {
     db.ref('chat_notifications/' + user.name).on('value', snap => {
-        const dot = document.getElementById('notif-dot');
-        dot.style.display = snap.exists() ? "block" : "none";
+        document.getElementById('notif-dot').style.display = snap.exists() ? "block" : "none";
     });
 }
 
 function loadPrivateMessages() {
-    const chatId = getChatId(user.name, currentChatFriend);
     const container = document.getElementById('chat-messages');
-    db.ref('private_messages/' + chatId).on('value', snap => {
+    db.ref('private_messages/' + getChatId(user.name, currentChatFriend)).on('value', snap => {
         container.innerHTML = "";
         snap.forEach(c => {
             const m = c.val();
@@ -166,7 +157,7 @@ function loadPrivateMessages() {
     });
 }
 
-// Group Feed Logic
+// Feed
 function sendPost() {
     const msg = document.getElementById('msgInput').value;
     if(msg && user.groupKey) {
