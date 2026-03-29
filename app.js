@@ -1,184 +1,223 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alumni Connect Pro</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+const firebaseConfig = {
+  apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
+  authDomain: "class-connect-b58f0.firebaseapp.com",
+  databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "class-connect-b58f0",
+  storageBucket: "class-connect-b58f0.appspot.com",
+  messagingSenderId: "836461719745",
+  appId: "1:836461719745:web:f827862e4db4954626a440",
+  measurementId: "G-8QT4VQ5YW5"
+};
 
-    <style>
-        :root { 
-            --primary: #6366f1; --accent: #f43f5e; --bg: #f8fafc; 
-            --card: #ffffff; --text: #1e293b; --sub: #64748b; --border: #e2e8f0;
-            --nav-bg: rgba(255, 255, 255, 0.85);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// Setting persistence to LOCAL so login stays active
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+let user = null;
+let currentChatFriendUID = "";
+let blockedList = [];
+
+// --- LOGIN FUNCTION (Back to Popup for Browser Support) ---
+function loginWithGoogle() {
+    auth.signInWithPopup(provider).then((result) => {
+        console.log("Login Successful");
+    }).catch((error) => {
+        console.error("Login Error:", error.message);
+        // If popup fails (like in some apps), try redirect as fallback
+        if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment') {
+            auth.signInWithRedirect(provider);
+        } else {
+            alert("Error: " + error.message);
         }
+    });
+}
 
-        body.dark-mode {
-            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; 
-            --sub: #94a3b8; --border: #334155; --nav-bg: rgba(30, 41, 59, 0.85);
+// Check for redirect result if popup was blocked
+auth.getRedirectResult().catch(err => console.log(err.message));
+
+auth.onAuthStateChanged((u) => {
+    if (u) {
+        document.getElementById('login-overlay').style.display = "none";
+        db.ref('users/' + u.uid).on('value', snap => {
+            const d = snap.val();
+            user = {
+                uid: u.uid, name: u.displayName, photo: u.photoURL,
+                inst: d?.inst || "", year: d?.year || "", city: d?.city || "", batch: d?.batch || "",
+                groupKey: d ? (d.inst + d.year).replace(/\s+/g,'').toUpperCase() : ""
+            };
+            blockedList = d?.blocked ? Object.keys(d.blocked) : [];
+            updateUI();
+            loadBlockedUsers();
+        });
+    } else {
+        document.getElementById('login-overlay').style.display = "flex";
+    }
+});
+
+// --- UI & OTHER FEATURES (English) ---
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+}
+if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+
+function updateUI() {
+    if(!user) return;
+    document.getElementById('header-user-img').src = user.photo;
+    document.getElementById('p-img-large').src = user.photo;
+    document.getElementById('p-name-display').innerText = user.name;
+    document.getElementById('p-inst').value = user.inst;
+    document.getElementById('p-year').value = user.year;
+    document.getElementById('p-class').value = user.batch;
+    document.getElementById('p-city').value = user.city;
+}
+
+async function handleFeedPost() {
+    const txt = document.getElementById('msgInput').value.trim();
+    const file = document.getElementById('feedPhotoInput').files[0];
+    if(!user.inst) return alert("Update profile first!");
+    if(!txt && !file) return;
+    showToast("Sharing...");
+    let b64 = file ? await toBase64(file) : "";
+    db.ref('posts').push({
+        uid: user.uid, name: user.name, msg: txt, img: b64, groupKey: user.groupKey,
+        likes: 0, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    });
+    document.getElementById('msgInput').value = "";
+    document.getElementById('feedPhotoInput').value = "";
+}
+
+db.ref('posts').on('value', snap => {
+    const cont = document.getElementById('post-container'); cont.innerHTML = "";
+    snap.forEach(s => {
+        const p = s.val();
+        if(p.groupKey === user.groupKey && !blockedList.includes(p.uid)) {
+            let id = s.key;
+            let imgTag = p.img ? `<img src="${p.img}" class="post-img">` : "";
+            let action = p.uid === user.uid ? `<span class="options-btn" onclick="deletePost('${id}')">🗑️ Delete</span>` : `<span class="options-btn" onclick="reportContent('${id}')">🚩 Report</span>`;
+            cont.innerHTML = `
+                <div class="card">
+                    ${action}
+                    <div style="font-size:14px; font-weight:600;">${p.name} <small style="color:var(--sub); font-weight:400;">• ${p.time}</small></div>
+                    <p style="font-size:14px; margin:10px 0;">${p.msg}</p>${imgTag}
+                    <div class="action-bar">
+                        <span class="action-item" onclick="likePost('${id}')">❤️ ${p.likes || 0}</span>
+                        <span class="action-item" onclick="addComment('${id}')">💬 Comment</span>
+                    </div>
+                    <div id="comments-${id}"></div>
+                </div>` + cont.innerHTML;
+            loadComments(id);
         }
+    });
+});
 
-        body { 
-            font-family: 'Poppins', sans-serif; background-color: var(--bg); 
-            margin: 0; color: var(--text); padding-bottom: 90px; transition: 0.3s;
-        }
+function deletePost(id) { if(confirm("Delete?")) db.ref('posts/' + id).remove(); }
+function likePost(id) { db.ref('posts/' + id + '/likes').transaction(c => (c || 0) + 1); }
+function addComment(id) {
+    let m = prompt("Comment:");
+    if(m) db.ref('comments/' + id).push({ name: user.name, msg: m, uid: user.uid });
+}
+function loadComments(id) {
+    db.ref('comments/' + id).limitToLast(3).on('value', snap => {
+        const d = document.getElementById('comments-' + id); d.innerHTML = "";
+        snap.forEach(s => { if(!blockedList.includes(s.val().uid)) d.innerHTML += `<div style="font-size:12px; margin-top:5px; color:var(--sub);"><b>${s.val().name}:</b> ${s.val().msg}</div>`; });
+    });
+}
 
-        #login-overlay { 
-            position: fixed; inset: 0; background: var(--bg); z-index: 9999; 
-            display: flex; align-items: center; justify-content: center; text-align: center; 
-        }
-        .login-title { font-size: 32px; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
+function getChatId(u1, u2) { return u1 < u2 ? `${u1}_${u2}` : `${u2}_${u1}`; }
+async function sendPhoto() {
+    const file = document.getElementById('chatPhotoInput').files[0];
+    if(file) {
+        const b64 = await toBase64(file);
+        db.ref('private_messages/' + getChatId(user.uid, currentChatFriendUID)).push({ sender: user.uid, img: b64 });
+    }
+}
+function sendPrivateMessage() {
+    const msg = document.getElementById('privateMsgInput').value.trim();
+    if(!msg) return;
+    db.ref('private_messages/' + getChatId(user.uid, currentChatFriendUID)).push({ sender: user.uid, text: msg });
+    document.getElementById('privateMsgInput').value = "";
+}
+function loadMessages() {
+    const chatId = getChatId(user.uid, currentChatFriendUID);
+    db.ref('private_messages/' + chatId).on('value', snap => {
+        const c = document.getElementById('chat-messages'); c.innerHTML = "";
+        snap.forEach(s => {
+            const m = s.val();
+            let body = m.img ? `<img src="${m.img}" style="width:100%; border-radius:10px;">` : m.text;
+            let del = m.sender === user.uid ? `<span class="del-chat" onclick="deleteMsg('${chatId}','${s.key}')">Delete</span>` : "";
+            c.innerHTML += `<div class="msg-bubble ${m.sender===user.uid?'mine':'theirs'}">${body}${del}</div>`;
+        });
+        c.scrollTop = c.scrollHeight;
+    });
+}
+function deleteMsg(cid, mid) { if(confirm("Delete?")) db.ref('private_messages/'+cid+'/'+mid).remove(); }
 
-        .header { 
-            background: var(--nav-bg); backdrop-filter: blur(12px);
-            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border);
-            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .header-right { display: flex; align-items: center; gap: 12px; }
-        .header-right img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
+function searchAlumni() {
+    const inst = document.getElementById('s-inst').value.toUpperCase();
+    const year = document.getElementById('s-year').value;
+    const city = document.getElementById('s-city').value.toUpperCase();
+    const batch = document.getElementById('s-class').value.toUpperCase();
+    const res = document.getElementById('my-friends-list');
+    res.innerHTML = "Searching...";
+    db.ref('users').once('value', snap => {
+        res.innerHTML = "";
+        snap.forEach(c => {
+            const u = c.val();
+            if(c.key !== user.uid && !blockedList.includes(c.key)) {
+                const match = (inst && u.inst?.toUpperCase().includes(inst)) || (year && u.year === year) || (city && u.city?.toUpperCase().includes(city)) || (batch && u.batch?.toUpperCase().includes(batch));
+                if(match) res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><b>${u.name}</b><br><small>${u.inst}</small></div><button class="btn btn-blue" style="width:auto; padding:5px 12px;" onclick="addFriend('${c.key}','${u.name}')">Connect</button></div>`;
+            }
+        });
+    });
+}
+function addFriend(uid, name) {
+    db.ref('friends/'+user.uid+'/'+uid).set({name: name});
+    db.ref('friends/'+uid+'/'+user.uid).set({name: user.name});
+    showToast("Connected!");
+}
+function loadMyFriends() {
+    db.ref('friends/' + user.uid).on('value', snap => {
+        const list = document.getElementById('my-friends-list'); list.innerHTML = "<h4>My Connections</h4>";
+        snap.forEach(c => {
+            if(!blockedList.includes(c.key)) list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><b>${c.val().name}</b><button class="btn btn-blue" style="width:auto; padding:5px 12px;" onclick="openChat('${c.key}','${c.val().name}')">Chat</button></div>`;
+        });
+    });
+}
+function handleBlockToggle() {
+    if(confirm("Block?")) { db.ref(`users/${user.uid}/blocked/${currentChatFriendUID}`).set(true); closeChat(); showToast("Blocked"); }
+}
+function loadBlockedUsers() {
+    const list = document.getElementById('blocked-users-list'); list.innerHTML = "";
+    blockedList.forEach(uid => {
+        db.ref('users/'+uid).once('value', s => {
+            if(s.exists()) list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border);"><span>${s.val().name}</span><button class="btn" style="color:var(--primary); padding:0;" onclick="unblock('${uid}')">Unblock</button></div>`;
+        });
+    });
+}
+function unblock(uid) { db.ref(`users/${user.uid}/blocked/${uid}`).remove(); }
+function reportContent(id) { prompt("Reason?"); showToast("Reported."); }
 
-        .section { padding: 15px; max-width: 500px; margin: auto; display: none; }
-        .active { display: block; animation: fadeInUp 0.4s ease; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-        .card { 
-            background: var(--card); border-radius: 20px; padding: 18px; 
-            margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            border: 1px solid var(--border); position: relative;
-        }
-
-        input, textarea { 
-            width: 100%; border: 1px solid var(--border); border-radius: 12px; 
-            padding: 12px; font-family: inherit; margin: 8px 0;
-            background: var(--bg); color: var(--text); outline: none; box-sizing: border-box;
-        }
-
-        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-danger { background: var(--accent); color: white; width: 100%; }
-
-        .post-img { width: calc(100% + 36px); margin: 12px -18px; max-height: 350px; object-fit: cover; }
-        .action-bar { display: flex; gap: 15px; border-top: 1px solid var(--border); padding-top: 12px; }
-        .action-item { cursor: pointer; color: var(--sub); font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .options-btn { position: absolute; top: 15px; right: 15px; color: var(--sub); cursor: pointer; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-
-        .nav-bar { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: var(--nav-bg); backdrop-filter: blur(15px);
-            display: flex; justify-content: space-around; padding: 12px; 
-            border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            border: 1px solid var(--border); z-index: 1000;
-        }
-        .nav-item { border: none; background: none; color: var(--sub); font-size: 20px; cursor: pointer; text-align: center; }
-        .active-nav { color: var(--primary); }
-        .nav-item span { display: block; font-size: 10px; font-weight: 600; }
-
-        #chat-window { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction: column; }
-        #chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
-        .msg-bubble { padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 14px; max-width: 75%; position: relative; }
-        .mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
-        .theirs { align-self: flex-start; background: var(--card); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-        .del-chat { font-size: 9px; opacity: 0.7; cursor: pointer; display: block; margin-top: 4px; text-align: right; text-decoration: underline; }
-
-        #toast { visibility: hidden; background: #1e293b; color: white; padding: 12px 25px; border-radius: 50px; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); z-index: 10000; font-size: 14px; }
-        #toast.show { visibility: visible; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    </style>
-</head>
-<body>
-
-<div id="login-overlay">
-    <div style="padding:30px;">
-        <div class="login-title">Alumni Connect</div>
-        <p style="color:var(--sub); margin-bottom:30px; font-size: 14px;">Connect with your batchmates</p>
-        <button class="btn btn-blue" onclick="loginWithGoogle()">Sign in with Google</button>
-    </div>
-</div>
-
-<div id="toast">Notification</div>
-
-<div class="header">
-    <div style="font-weight:700; font-size:18px; color:var(--primary);">Alumni Connect</div>
-    <div class="header-right">
-        <button onclick="toggleDarkMode()" style="background:none; border:none; font-size:18px; cursor:pointer;">🌓</button>
-        <img id="header-user-img" src="" alt="" onclick="show('settings', 'Profile', document.querySelector('.nav-item:last-child'))">
-    </div>
-</div>
-
-<div id="feed" class="section active">
-    <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="Write something..."></textarea>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label style="cursor:pointer; font-size:20px;">🖼️ <input type="file" id="feedPhotoInput" hidden accept="image/*"></label>
-            <button class="btn btn-blue" style="width:80px; padding:8px;" onclick="handleFeedPost()">Post</button>
-        </div>
-    </div>
-    <div id="post-container"></div>
-</div>
-
-<div id="friends" class="section">
-    <div class="card">
-        <h4 style="margin:0 0 10px 0;">🔍 Search People</h4>
-        <input type="text" id="s-inst" placeholder="Institution/Company">
-        <div class="grid-2">
-            <input type="text" id="s-year" placeholder="Year">
-            <input type="text" id="s-class" placeholder="Batch">
-        </div>
-        <input type="text" id="s-city" placeholder="City">
-        <button class="btn btn-blue" style="margin-top:10px;" onclick="searchAlumni()">Search</button>
-    </div>
-    <div id="my-friends-list"></div>
-</div>
-
-<div id="settings" class="section">
-    <div class="card" style="text-align:center;">
-        <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary); object-fit: cover;">
-        <h3 id="p-name-display" style="margin:10px 0;">User</h3>
-        <input type="text" id="p-inst" placeholder="Institution">
-        <div class="grid-2">
-            <input type="text" id="p-year" placeholder="Year">
-            <input type="text" id="p-class" placeholder="Batch">
-        </div>
-        <input type="text" id="p-city" placeholder="City">
-        <button class="btn btn-blue" style="margin-top:10px;" onclick="saveProfile()">Update Profile</button>
-        <button class="btn" style="margin-top:20px; color:gray;" onclick="logout()">Logout</button>
-        <button class="btn btn-danger" style="margin-top:10px;" onclick="deleteAccount()">Delete Account</button>
-    </div>
-    <div class="card">
-        <h4>Blocked List</h4>
-        <div id="blocked-users-list"></div>
-    </div>
-</div>
-
-<div id="chat-window">
-    <div class="header">
-        <div style="display:flex; align-items:center;">
-            <button onclick="closeChat()" style="background:none; border:none; color:var(--text); font-size:24px; margin-right:15px;">←</button>
-            <span id="chat-with-name" style="font-weight:600;">Chat</span>
-        </div>
-        <div style="display:flex; gap:10px;">
-            <button onclick="clearChat()" style="background:none; border:none; font-size:12px; color:var(--sub);">Clear</button>
-            <button onclick="handleBlockToggle()" style="background:var(--accent); color:white; border:none; font-size:10px; padding:4px 8px; border-radius:6px;">Block</button>
-        </div>
-    </div>
-    <div id="chat-messages"></div>
-    <div id="chat-input-area" style="padding:15px; background:var(--card); display:flex; gap:10px; border-top:1px solid var(--border);">
-        <label style="cursor:pointer; font-size:20px;">📷 <input type="file" id="chatPhotoInput" hidden accept="image/*" onchange="sendPhoto()"></label>
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="margin:0;">
-        <button class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
-    </div>
-</div>
-
-<div class="nav-bar">
-    <button class="nav-item active-nav" onclick="show('feed', 'Home', this)">🏠<span>Home</span></button>
-    <button class="nav-item" onclick="show('friends', 'Search', this)">👥<span>Search</span></button>
-    <button class="nav-item" onclick="show('settings', 'Profile', this)">⚙️<span>Profile</span></button>
-</div>
-
-<script src="app.js"></script>
-</body>
-</html>
+function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); }); }
+function show(id, title, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active-nav');
+    if(id === 'friends') loadMyFriends();
+}
+function saveProfile() {
+    db.ref('users/' + user.uid).update({
+        inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value,
+        batch: document.getElementById('p-class').value, city: document.getElementById('p-city').value
+    }).then(() => showToast("Saved!"));
+}
+function openChat(uid, name) { currentChatFriendUID = uid; document.getElementById('chat-with-name').innerText = name; document.getElementById('chat-window').style.display = "flex"; loadMessages(); }
+function closeChat() { document.getElementById('chat-window').style.display = "none"; }
+function showToast(m) { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => t.className = "", 3000); }
+function logout() { auth.signOut().then(() => location.reload()); }
+function deleteAccount() { if(confirm("Delete?")) { db.ref('users/'+user.uid).remove(); auth.currentUser.delete().then(()=>location.reload()); } }
