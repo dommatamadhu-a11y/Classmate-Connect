@@ -17,7 +17,6 @@
             --nav-bg: rgba(255, 255, 255, 0.85);
         }
 
-        /* Dark Mode Variables */
         body.dark-mode {
             --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; 
             --sub: #94a3b8; --border: #334155; --nav-bg: rgba(30, 41, 59, 0.85);
@@ -28,14 +27,20 @@
             margin: 0; color: var(--text); padding-bottom: 90px; transition: 0.3s;
         }
 
-        /* Glassmorphism Header */
+        /* Login Screen Fix */
+        #login-overlay { 
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999; 
+            display: flex; align-items: center; justify-content: center; text-align: center; 
+        }
+        .login-title { font-size: 32px; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
+
         .header { 
             background: var(--nav-bg); backdrop-filter: blur(12px);
             position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border);
             padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
         }
         .header-right { display: flex; align-items: center; gap: 12px; }
-        .header-right img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary); }
+        .header-right img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; }
 
         .section { padding: 15px; max-width: 500px; margin: auto; display: none; }
         .active { display: block; animation: fadeInUp 0.4s ease; }
@@ -50,19 +55,18 @@
         input, textarea { 
             width: 100%; border: 1px solid var(--border); border-radius: 12px; 
             padding: 12px; font-family: inherit; margin: 8px 0;
-            background: var(--bg); color: var(--text); outline: none;
+            background: var(--bg); color: var(--text); outline: none; box-sizing: border-box;
         }
 
         .btn { border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
-        
-        /* Post Elements */
+        .btn-danger { background: var(--accent); color: white; width: 100%; }
+
         .post-img { width: calc(100% + 36px); margin: 12px -18px; max-height: 350px; object-fit: cover; }
         .action-bar { display: flex; gap: 15px; border-top: 1px solid var(--border); padding-top: 12px; }
         .action-item { cursor: pointer; color: var(--sub); font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .options-btn { position: absolute; top: 15px; right: 15px; color: var(--sub); cursor: pointer; }
+        .options-btn { position: absolute; top: 15px; right: 15px; color: var(--sub); cursor: pointer; font-size: 14px; }
 
-        /* Floating Nav */
         .nav-bar { 
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px; background: var(--nav-bg); backdrop-filter: blur(15px);
@@ -80,7 +84,7 @@
         .msg-bubble { padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 14px; max-width: 75%; position: relative; }
         .mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: var(--card); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-        .del-chat { font-size: 9px; opacity: 0.7; cursor: pointer; display: block; margin-top: 4px; text-align: right; }
+        .del-chat { font-size: 9px; opacity: 0.7; cursor: pointer; display: block; margin-top: 4px; text-align: right; text-decoration: underline; }
 
         #toast { visibility: hidden; background: #1e293b; color: white; padding: 12px 25px; border-radius: 50px; position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); z-index: 10000; font-size: 14px; }
         #toast.show { visibility: visible; }
@@ -89,10 +93,10 @@
 </head>
 <body>
 
-<div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; align-items:center; justify-content:center; text-align:center;">
+<div id="login-overlay">
     <div style="padding:30px;">
-        <h1 style="color:var(--primary); font-size:32px; margin-bottom:10px;">Connect</h1>
-        <p style="color:gray; margin-bottom:30px;">Your old friends are waiting...</p>
+        <div class="login-title">Alumni Connect</div>
+        <p style="color:var(--sub); margin-bottom:30px; font-size: 14px;">Your old friends are waiting..</p>
         <button class="btn btn-blue" onclick="loginWithGoogle()">Sign in with Google</button>
     </div>
 </div>
@@ -100,11 +104,10 @@
 <div id="toast">Message!</div>
 
 <div class="header">
-    <div style="font-weight:700; font-size:20px; color:var(--primary);">Alumni</div>
+    <div style="font-weight:700; font-size:18px; color:var(--primary);">Alumni Connect</div>
     <div class="header-right">
         <button onclick="toggleDarkMode()" style="background:none; border:none; font-size:18px; cursor:pointer;">🌓</button>
-        <span id="header-user-name" style="font-size:12px; font-weight:600;">...</span>
-        <img id="header-user-img" src="" alt="">
+        <img id="header-user-img" src="" alt="" onclick="show('settings', 'Profile', document.querySelector('.nav-item:last-child'))">
     </div>
 </div>
 
@@ -128,14 +131,14 @@
             <input type="text" id="s-class" placeholder="Batch/Class">
         </div>
         <input type="text" id="s-city" placeholder="Current City">
-        <button class="btn btn-blue" style="margin-top:10px;" onclick="searchAlumni()">Filter</button>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="searchAlumni()">Search</button>
     </div>
     <div id="my-friends-list"></div>
 </div>
 
 <div id="settings" class="section">
     <div class="card" style="text-align:center;">
-        <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary);">
+        <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary); object-fit: cover;">
         <h3 id="p-name-display" style="margin:10px 0;">User Name</h3>
         <input type="text" id="p-inst" placeholder="Institution">
         <div class="grid-2">
