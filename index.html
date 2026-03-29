@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
-        :root { --primary: #4361ee; --secondary: #3f37c9; --bg: #f8f9fd; --white: #ffffff; --text: #2b2d42; --light-text: #8d99ae; --online: #2ec4b6; }
+        :root { --primary: #4361ee; --secondary: #3f37c9; --bg: #f8f9fd; --white: #ffffff; --text: #2b2d42; --light-text: #8d99ae; --online: #2ec4b6; --danger: #ef233c; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); overflow-x: hidden; }
         
         /* Login Overlay */
@@ -28,49 +28,45 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .card { background: var(--white); padding: 18px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.02); margin-bottom: 15px; border: 1px solid #f0f0f0; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: #fcfdfe; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: #fcfdfe; }
         
         .btn { border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-blue:hover { background: var(--secondary); }
+        .btn-danger { background: #fff1f2; color: var(--danger); width: 100%; border: 1px solid #ffe4e6; }
         .btn-google { background: white; border: 1px solid #ddd; color: #333; width: 100%; }
-
-        /* Feed Styling */
-        .post-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .post-info img { width: 35px; height: 35px; border-radius: 50%; }
-        .post-meta { font-size: 12px; color: gray; }
 
         /* Navigation */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { border: none; background: none; color: var(--light-text); font-size: 11px; text-align: center; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: bold; }
 
-        /* Chat Window */
+        /* Chat Window & Block Menu */
         #chat-window { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction: column; }
         #chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
         .msg-bubble { padding: 12px 16px; border-radius: 18px; margin-bottom: 8px; max-width: 75%; font-size: 14px; line-height: 1.4; }
         .mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
         .theirs { align-self: flex-start; background: white; border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-        #toast { visibility: hidden; min-width: 250px; background: #333; color: #fff; text-align: center; border-radius: 12px; padding: 14px; position: fixed; z-index: 10000; left: 50%; bottom: 90px; transform: translateX(-50%); font-size: 13px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 90px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 90px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        #block-menu { display:none; position:absolute; right:15px; top:65px; background:white; box-shadow:0 10px 30px rgba(0,0,0,0.15); border-radius:12px; z-index:3000; overflow: hidden; border: 1px solid #eee; }
+        #block-menu button { display:block; width:100%; padding:12px 20px; border:none; background:none; text-align:left; cursor:pointer; font-size:14px; }
+
+        #toast { visibility: hidden; min-width: 250px; background: #333; color: #fff; text-align: center; border-radius: 12px; padding: 14px; position: fixed; z-index: 10000; left: 50%; bottom: 90px; transform: translateX(-50%); font-size: 13px; }
+        #toast.show { visibility: visible; }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
     <div class="login-card">
-        <h2 style="color:var(--primary); margin-bottom:10px;">Alumni Connect</h2>
-        <p style="color:gray; font-size:14px; margin-bottom:30px;">Reconnect with your childhood besties and find mental peace.</p>
+        <h2 style="color:var(--primary);">Alumni Connect</h2>
+        <p style="color:gray; font-size:14px; margin-bottom:30px;">Find your childhood batchmates easily.</p>
         <button class="btn btn-google" onclick="loginWithGoogle()">
             <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="20"> Continue with Google
         </button>
     </div>
 </div>
 
-<div id="toast">Action successful!</div>
+<div id="toast">Message!</div>
 
 <div class="header-container">
     <div class="user-bar">
@@ -78,15 +74,15 @@
             <img id="header-user-img" src="" alt="">
             <span id="header-user-name">Welcome</span>
         </div>
-        <span id="header-group-tag" style="font-weight: 500;">Offline</span>
+        <span id="header-group-tag">Offline</span>
     </div>
     <div class="main-header"><h3 id="page-title" style="margin:0;">Home Feed</h3></div>
 </div>
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="What's on your mind today? Share a memory..."></textarea>
-        <button class="btn btn-blue" onclick="handleFeedPost()">Post to Batch</button>
+        <textarea id="msgInput" rows="2" placeholder="Share a memory..." style="width:100%; border:1px solid #eee; border-radius:12px; padding:10px; resize:none;"></textarea>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="handleFeedPost()">Post to Batch</button>
     </div>
     <div id="post-container"></div>
 </div>
@@ -94,50 +90,55 @@
 <div id="friends" class="section">
     <div class="card">
         <h4 style="margin-top:0;">🔍 Find Old Friends</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <input type="text" id="s-inst" placeholder="School/College">
             <input type="text" id="s-year" placeholder="Passout Year">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <input type="text" id="s-city" placeholder="City">
-            <input type="text" id="s-class" placeholder="Class (e.g. 10th)">
+            <input type="text" id="s-class" placeholder="Class">
         </div>
-        <button class="btn btn-blue" style="margin-top:5px;" onclick="searchAlumni()">Search Friends</button>
+        <button class="btn btn-blue" style="margin-top:5px;" onclick="searchAlumni()">Search</button>
     </div>
     <div id="my-friends-list"></div>
 </div>
 
 <div id="settings" class="section">
     <div class="card" style="text-align:center;">
-        <img id="p-img-large" style="width:85px; height:85px; border-radius:50%; margin-bottom:10px; border:3px solid var(--primary);">
-        <h3 id="p-name-display" style="margin:5px 0;">Name</h3>
-        <p id="p-email-display" style="color:gray; font-size:12px; margin-bottom:20px;">email@gmail.com</p>
-        
-        <div style="text-align: left;">
-            <label style="font-size: 12px; color: var(--primary); font-weight: 600;">ALMA MATER DETAILS</label>
-            <input type="text" id="p-inst" placeholder="School or College Name">
-            <input type="text" id="p-year" placeholder="Year of Passing">
-            
-            <label style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top:10px; display:block;">CURRENT & OTHER INFO</label>
-            <input type="text" id="p-city" placeholder="Current Living City">
-            <input type="text" id="p-class" placeholder="Studying Class / Profession">
-        </div>
-
-        <button class="btn btn-blue" style="margin-top:15px;" onclick="saveProfile()">Save Profile</button>
-        <button class="btn" style="color:#ff4d6d; background:none; margin-top:20px; width:100%;" onclick="logout()">Logout Account</button>
+        <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary);">
+        <h3 id="p-name-display">Name</h3>
+        <p id="p-email-display" style="color:gray; font-size:12px;">email@gmail.com</p>
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        <input type="text" id="p-inst" placeholder="Your School/College">
+        <input type="text" id="p-year" placeholder="Passout Year">
+        <input type="text" id="p-city" placeholder="Current City">
+        <input type="text" id="p-class" placeholder="Class / Job">
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="saveProfile()">Update Profile</button>
+        <button class="btn" style="color:gray; background:none; margin-top:15px;" onclick="logout()">Logout Account</button>
+        <button class="btn btn-danger" style="margin-top:10px;" onclick="deleteAccount()">Delete All My Data</button>
     </div>
 </div>
 
 <div id="chat-window">
     <div class="header-container">
-        <div class="main-header" style="text-align:left; padding:12px; display:flex; align-items:center;">
-            <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:24px; margin-right:15px;">←</button>
-            <span id="chat-with-name" style="font-weight:bold;">Chat</span>
+        <div class="main-header" style="text-align:left; padding:12px; display:flex; align-items:center; justify-content: space-between;">
+            <div style="display:flex; align-items:center;">
+                <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:24px; margin-right:15px;">←</button>
+                <span id="chat-with-name" style="font-weight:bold;">Chat</span>
+            </div>
+            <button onclick="toggleBlockMenu()" style="background:none; border:none; color:white; font-size:20px;">⋮</button>
         </div>
     </div>
+    
+    <div id="block-menu">
+        <button onclick="clearChat()" style="color:blue;">🗑 Clear Chat</button>
+        <button onclick="blockUser()" style="color:red;">🚫 Block User</button>
+        <button onclick="reportUser()" style="color:orange;">🚩 Report User</button>
+    </div>
+
     <div id="chat-messages"></div>
-    <div style="padding:15px; background:white; display:flex; gap:10px; border-top: 1px solid #eee;">
-        <input type="text" id="privateMsgInput" placeholder="Write a message..." style="margin:0;">
+    <div style="padding:15px; background:white; display:flex; gap:10px; border-top:1px solid #eee;">
+        <input type="text" id="privateMsgInput" placeholder="Type a message..." style="margin:0;">
         <button class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
 </div>
@@ -145,7 +146,7 @@
 <div class="nav-bar">
     <div class="nav-item active-nav" onclick="show('feed', 'Home Feed', this)">🏠<br>Home</div>
     <div class="nav-item" onclick="show('friends', 'Find Friends', this)">👥<br>Friends</div>
-    <div class="nav-item" onclick="show('settings', 'Profile Settings', this)">⚙️<br>Profile</div>
+    <div class="nav-item" onclick="show('settings', 'Settings', this)">⚙️<br>Settings</div>
 </div>
 
 <script src="app.js"></script>
