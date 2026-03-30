@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alumni Connect Pro</title>
+    <title>Alumni Connect</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -27,7 +27,6 @@
             margin: 0; color: var(--text); padding-bottom: 90px; transition: 0.3s;
         }
 
-        /* Login Screen Fix */
         #login-overlay { 
             position: fixed; inset: 0; background: var(--bg); z-index: 9999; 
             display: flex; align-items: center; justify-content: center; text-align: center; 
@@ -65,7 +64,7 @@
         .post-img { width: calc(100% + 36px); margin: 12px -18px; max-height: 350px; object-fit: cover; }
         .action-bar { display: flex; gap: 15px; border-top: 1px solid var(--border); padding-top: 12px; }
         .action-item { cursor: pointer; color: var(--sub); font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .options-btn { position: absolute; top: 15px; right: 15px; color: var(--sub); cursor: pointer; font-size: 14px; }
+        .options-btn { position: absolute; top: 15px; right: 15px; color: var(--sub); cursor: pointer; font-size: 11px; font-weight: 600; }
 
         .nav-bar { 
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -78,7 +77,6 @@
         .active-nav { color: var(--primary); }
         .nav-item span { display: block; font-size: 10px; font-weight: 600; }
 
-        /* Chat Window */
         #chat-window { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; flex-direction: column; }
         #chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
         .msg-bubble { padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 14px; max-width: 75%; position: relative; }
@@ -96,12 +94,12 @@
 <div id="login-overlay">
     <div style="padding:30px;">
         <div class="login-title">Alumni Connect</div>
-        <p style="color:var(--sub); margin-bottom:30px; font-size: 14px;">Your old friends are waiting..</p>
+        <p style="color:var(--sub); margin-bottom:30px; font-size: 14px;">Find your old friends</p>
         <button class="btn btn-blue" onclick="loginWithGoogle()">Sign in with Google</button>
     </div>
 </div>
 
-<div id="toast">Message!</div>
+<div id="toast">Notification</div>
 
 <div class="header">
     <div style="font-weight:700; font-size:18px; color:var(--primary);">Alumni Connect</div>
@@ -113,7 +111,7 @@
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="Share a memory..."></textarea>
+        <textarea id="msgInput" rows="2" placeholder="What's on your mind?"></textarea>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <label style="cursor:pointer; font-size:20px;">🖼️ <input type="file" id="feedPhotoInput" hidden accept="image/*"></label>
             <button class="btn btn-blue" style="width:80px; padding:8px;" onclick="handleFeedPost()">Post</button>
@@ -125,9 +123,9 @@
 <div id="friends" class="section">
     <div class="card">
         <h4 style="margin:0 0 10px 0;">🔍 Search Friends</h4>
-        <input type="text" id="s-inst" placeholder="School/University/Office">
+        <input type="text" id="s-inst" placeholder="School / College / University">
         <div class="grid-2">
-            <input type="text" id="s-year" placeholder="Year">
+            <input type="text" id="s-year" placeholder="Passout Year">
             <input type="text" id="s-class" placeholder="Batch/Class">
         </div>
         <input type="text" id="s-city" placeholder="Current City">
@@ -140,17 +138,17 @@
     <div class="card" style="text-align:center;">
         <img id="p-img-large" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary); object-fit: cover;">
         <h3 id="p-name-display" style="margin:10px 0;">User Name</h3>
-        <input type="text" id="p-inst" placeholder="Institution">
+        <input type="text" id="p-inst" placeholder="Institution Name">
         <div class="grid-2">
-            <input type="text" id="p-year" placeholder="Passout Year">
-            <input type="text" id="p-class" placeholder="Batch/Class">
+            <input type="text" id="p-year" placeholder="Year">
+            <input type="text" id="p-class" placeholder="Batch">
         </div>
         <input type="text" id="p-city" placeholder="City">
         <button class="btn btn-blue" style="margin-top:10px;" onclick="saveProfile()">Update Profile</button>
         <button class="btn" style="margin-top:20px; color:gray;" onclick="logout()">Logout</button>
         <button class="btn btn-danger" style="margin-top:10px;" onclick="deleteAccount()">Delete Account</button>
     </div>
-    <div id="blocked-users-card" class="card">
+    <div class="card">
         <h4>Blocked Users</h4>
         <div id="blocked-users-list"></div>
     </div>
@@ -160,17 +158,16 @@
     <div class="header">
         <div style="display:flex; align-items:center;">
             <button onclick="closeChat()" style="background:none; border:none; color:var(--text); font-size:24px; margin-right:15px;">←</button>
-            <span id="chat-with-name" style="font-weight:600;">...</span>
+            <span id="chat-with-name" style="font-weight:600;">Chat</span>
         </div>
         <div style="display:flex; gap:10px;">
-            <button onclick="clearChat()" style="background:none; border:none; font-size:12px; color:var(--sub);">Clear</button>
             <button onclick="handleBlockToggle()" style="background:var(--accent); color:white; border:none; font-size:10px; padding:4px 8px; border-radius:6px;">Block</button>
         </div>
     </div>
     <div id="chat-messages"></div>
     <div id="chat-input-area" style="padding:15px; background:var(--card); display:flex; gap:10px; border-top:1px solid var(--border);">
         <label style="cursor:pointer; font-size:20px;">📷 <input type="file" id="chatPhotoInput" hidden accept="image/*" onchange="sendPhoto()"></label>
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="margin:0;">
+        <input type="text" id="privateMsgInput" placeholder="Type a message..." style="margin:0;">
         <button class="btn btn-blue" style="width:50px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
 </div>
