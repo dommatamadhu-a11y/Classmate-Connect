@@ -147,8 +147,13 @@
 <div id="friends" class="section">
     <div class="card">
         <h4 style="margin:0 0 12px 0;">Find Alumni</h4>
-        <input type="text" id="s-inst" placeholder="Enter Institution Name">
-        <button class="btn btn-blue" onclick="searchAlumni()">Search Batchmates</button>
+        <input type="text" id="s-inst" placeholder="Institution Name">
+        <input type="text" id="s-inst-city" placeholder="Institution City">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="number" id="s-year" placeholder="Passout Year">
+            <input type="text" id="s-group" placeholder="Class/Group/Section">
+        </div>
+        <button class="btn btn-blue" onclick="searchAlumni()">Apply Advanced Search</button>
     </div>
     <div id="my-friends-list"></div>
 </div>
@@ -163,7 +168,7 @@
         <input type="text" id="p-inst-city" placeholder="Institution City">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <input type="number" id="p-year" placeholder="Passout Year">
-            <input type="text" id="p-group" placeholder="Group/Section">
+            <input type="text" id="p-group" placeholder="Class/Group/Section">
         </div>
         <button class="btn btn-blue" onclick="saveProfile()" style="margin-top:10px;">Update Profile</button>
         <button class="btn" style="margin-top:25px; color:var(--accent); background:none;" onclick="logout()">Sign Out</button>
@@ -188,7 +193,7 @@
 
 <nav class="nav-bar">
     <button class="nav-item active-nav" onclick="show('feed', '', this)">🏠<span>Feed</span></button>
-    <button class="nav-item" onclick="show('friends', '', this)">👥<span>Network</span></button>
+    <button class="nav-item" onclick="show('friends', '', this)">👥<span>Search</span></button>
     <button class="nav-item" onclick="show('settings', '', this)">⚙️<span>Profile</span></button>
 </nav>
 
