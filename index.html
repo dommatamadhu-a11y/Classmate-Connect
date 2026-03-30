@@ -32,26 +32,36 @@
             margin: 0; color: var(--text); padding-bottom: 90px; transition: 0.3s;
         }
 
-        /* Login Overlay */
+        /* Like Animation */
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.4); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .like-btn-anim { display: inline-block; transition: 0.2s; }
+        .active-heart { animation: heartBeat 0.4s ease-out; color: #f43f5e !important; }
+
+        #noti-banner {
+            background: var(--primary); color: white; padding: 10px; 
+            font-size: 12px; text-align: center; display: none; position: sticky; top: 0; z-index: 2000;
+        }
+
         #login-overlay { 
             position: fixed; inset: 0; background: var(--bg); z-index: 9999; 
             display: flex; align-items: center; justify-content: center; text-align: center; 
         }
-        .login-logo { width: 120px; height: 120px; margin-bottom: 20px; border-radius: 20px; }
-        .login-title { font-size: 28px; font-weight: 700; color: var(--primary); }
+        .login-logo { width: 100px; height: 100px; margin-bottom: 15px; border-radius: 20px; }
 
-        /* Fixed Header with Full Name */
         .header { 
             background: var(--nav-bg); backdrop-filter: blur(12px);
             position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border);
             padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;
         }
         .header-left { display: flex; align-items: center; gap: 8px; }
-        .header-logo { width: 30px; height: 30px; object-fit: contain; }
+        .header-logo { width: 30px; height: 30px; }
         .header-title { font-weight: 700; font-size: 16px; color: var(--primary); white-space: nowrap; }
-
-        .header-right { display: flex; align-items: center; gap: 12px; }
-        .user-pic { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--primary); cursor: pointer; }
 
         .section { padding: 15px; max-width: 500px; margin: auto; display: none; }
         .active { display: block; animation: fadeInUp 0.4s ease; }
@@ -68,14 +78,13 @@
         }
         .btn { border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-danger { background: var(--accent); color: white; width: 100%; }
 
         .post-img { width: calc(100% + 30px); margin: 10px -15px; max-height: 300px; object-fit: cover; }
         .nav-bar { 
             position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px; background: var(--nav-bg); backdrop-filter: blur(15px);
             display: flex; justify-content: space-around; padding: 10px; 
-            border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border: 1px solid var(--border);
+            border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 1px solid var(--border);
         }
         .nav-item { border: none; background: none; color: var(--sub); font-size: 18px; cursor: pointer; text-align: center; }
         .active-nav { color: var(--primary); }
@@ -88,18 +97,21 @@
         .theirs { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
 
         #toast { visibility: hidden; background: #333; color: #fff; padding: 10px 20px; border-radius: 30px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; font-size: 13px; }
-        #toast.show { visibility: visible; animation: fadeInOut 3s; }
-        @keyframes fadeInOut { 0%, 100% { opacity: 0; } 10%, 90% { opacity: 1; } }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        #toast.show { visibility: visible; }
     </style>
 </head>
 <body>
 
+<div id="noti-banner">
+    Enable notifications for messages? 
+    <button onclick="enableNotifications()" style="margin-left:10px; border:none; padding:4px 8px; border-radius:5px; font-weight:bold;">Enable</button>
+</div>
+
 <div id="login-overlay">
     <div>
         <img src="logo.png" alt="Logo" class="login-logo">
-        <div class="login-title">Alumni Connect</div>
-        <p style="color:var(--sub); margin-bottom:25px; font-size: 14px;">Find and chat with batchmates</p>
+        <div style="font-size: 24px; font-weight: 700; color: var(--primary);">Alumni Connect</div>
+        <p style="color:var(--sub); margin-bottom:20px;">Connect with your old friends</p>
         <button class="btn btn-blue" onclick="loginWithGoogle()">Sign in with Google</button>
     </div>
 </div>
@@ -111,15 +123,15 @@
         <img src="logo.png" alt="Logo" class="header-logo">
         <div class="header-title">Alumni Connect</div>
     </div>
-    <div class="header-right">
+    <div style="display:flex; align-items:center; gap:12px;">
         <button onclick="toggleDarkMode()" style="background:none; border:none; font-size:18px;">🌓</button>
-        <img id="header-user-img" src="" alt="" class="user-pic" onclick="show('settings', '', document.querySelector('.nav-item:last-child'))">
+        <img id="header-user-img" src="" style="width:32px; height:32px; border-radius:50%; border:2px solid var(--primary);" onclick="show('settings', '', document.querySelector('.nav-item:last-child'))">
     </div>
 </div>
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="Share an update..."></textarea>
+        <textarea id="msgInput" rows="2" placeholder="What's new?"></textarea>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <label style="cursor:pointer; font-size:18px;">🖼️ <input type="file" id="feedPhotoInput" hidden accept="image/*"></label>
             <button class="btn btn-blue" style="width:70px; padding:6px;" onclick="handleFeedPost()">Post</button>
@@ -130,13 +142,7 @@
 
 <div id="friends" class="section">
     <div class="card">
-        <h4 style="margin:0 0 8px 0;">🔍 Search Friends</h4>
-        <input type="text" id="s-inst" placeholder="College/School Name">
-        <div class="grid-2">
-            <input type="text" id="s-year" placeholder="Passout Year">
-            <input type="text" id="s-class" placeholder="Batch">
-        </div>
-        <input type="text" id="s-city" placeholder="City">
+        <input type="text" id="s-inst" placeholder="Search by School/College">
         <button class="btn btn-blue" onclick="searchAlumni()">Search</button>
     </div>
     <div id="my-friends-list"></div>
@@ -145,20 +151,15 @@
 <div id="settings" class="section">
     <div class="card" style="text-align:center;">
         <img id="p-img-large" style="width:70px; height:70px; border-radius:50%; border:2px solid var(--primary); object-fit: cover;">
-        <h3 id="p-name-display" style="margin:8px 0;">User</h3>
+        <h3 id="p-name-display">User</h3>
         <input type="text" id="p-inst" placeholder="Institution">
-        <div class="grid-2">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <input type="text" id="p-year" placeholder="Year">
             <input type="text" id="p-class" placeholder="Batch">
         </div>
         <input type="text" id="p-city" placeholder="City">
         <button class="btn btn-blue" onclick="saveProfile()">Save Profile</button>
-        <button class="btn" style="margin-top:15px; color:var(--sub);" onclick="logout()">Logout</button>
-        <button class="btn btn-danger" style="margin-top:8px; font-size:12px;" onclick="deleteAccount()">Delete Account</button>
-    </div>
-    <div class="card">
-        <h4>Blocked Users</h4>
-        <div id="blocked-users-list"></div>
+        <button class="btn" style="margin-top:20px; color:var(--sub);" onclick="logout()">Logout</button>
     </div>
 </div>
 
@@ -168,11 +169,9 @@
             <button onclick="closeChat()" style="background:none; border:none; font-size:22px; margin-right:10px;">←</button>
             <span id="chat-with-name" style="font-weight:600;">Chat</span>
         </div>
-        <button onclick="handleBlockToggle()" style="background:var(--accent); color:white; border:none; font-size:10px; padding:4px 8px; border-radius:5px;">Block</button>
     </div>
     <div id="chat-messages"></div>
     <div style="padding:10px; background:var(--card); display:flex; gap:8px; border-top:1px solid var(--border);">
-        <label style="cursor:pointer; font-size:20px;">📷 <input type="file" id="chatPhotoInput" hidden accept="image/*" onchange="sendPhoto()"></label>
         <input type="text" id="privateMsgInput" placeholder="Message..." style="margin:0;">
         <button class="btn btn-blue" style="width:45px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
