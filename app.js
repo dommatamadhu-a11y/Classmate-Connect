@@ -70,7 +70,7 @@ auth.onAuthStateChanged((u) => {
             const d = snap.val();
             user = {
                 uid: u.uid, name: u.displayName, photo: u.photoURL,
-                inst: d?.inst || "", year: d?.year || "", instCity: d?.instCity || "",
+                inst: d?.inst || "", year: d?.year || "", instCity: d?.instCity || "", group: d?.group || "",
                 groupKey: d ? cleanString(d.inst) + d.year : ""
             };
             updateUI(d);
@@ -94,7 +94,7 @@ function updateUI(d) {
     }
 }
 
-// --- FEED & SAFETY ---
+// --- FEED LOGIC ---
 async function handleFeedPost() {
     const txt = document.getElementById('msgInput').value.trim();
     const file = document.getElementById('feedPhotoInput').files[0];
@@ -124,7 +124,7 @@ function loadFeed() {
                 </div>`;
             }
         });
-        if(!hasPosts) cont.innerHTML = `<div class="empty-state">No posts in your batch yet. Be the first!</div>`;
+        if(!hasPosts) cont.innerHTML = `<div class="empty-state">No posts in your batch yet.</div>`;
     });
 }
 
@@ -183,21 +183,37 @@ function listenForChatNotifications() {
     });
 }
 
-// --- NETWORK & PROFILE ---
+// --- SEARCH WITH MULTIPLE FILTERS ---
 function searchAlumni() {
-    const s = cleanString(document.getElementById('s-inst').value);
-    if(!s) return showToast("Enter name");
+    const sInst = cleanString(document.getElementById('s-inst').value);
+    const sCity = cleanString(document.getElementById('s-inst-city').value);
+    const sYear = document.getElementById('s-year').value;
+    const sGroup = cleanString(document.getElementById('s-group').value);
+
+    if(!sInst && !sCity && !sYear && !sGroup) return showToast("Enter at least one detail");
+
     db.ref('users').once('value', snap => {
         const list = document.getElementById('my-friends-list'); list.innerHTML = "<h4>Search Results</h4>";
+        let found = false;
         snap.forEach(c => {
             const u = c.val();
-            if(c.key !== user.uid && cleanString(u.inst).includes(s)) {
+            if(c.key === user.uid) return;
+
+            // Matching Logic
+            const matchInst = !sInst || cleanString(u.inst).includes(sInst);
+            const matchCity = !sCity || cleanString(u.instCity).includes(sCity);
+            const matchYear = !sYear || u.year == sYear;
+            const matchGroup = !sGroup || cleanString(u.group).includes(sGroup);
+
+            if(matchInst && matchCity && matchYear && matchGroup) {
+                found = true;
                 list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${u.name}</b><br><small>${u.inst}, ${u.instCity || ''} (${u.year})</small></div>
+                    <div><b>${u.name}</b><br><small>${u.inst}, ${u.instCity || ''}<br>${u.year} - ${u.group || ''}</small></div>
                     <button class="btn btn-blue" style="width:auto; padding:8px 15px;" onclick="addFriend('${c.key}','${u.name}')">Connect</button>
                 </div>`;
             }
         });
+        if(!found) list.innerHTML += `<p style="text-align:center; font-size:12px; color:var(--sub);">No matches found.</p>`;
     });
 }
 
@@ -205,7 +221,7 @@ function addFriend(uid, name) { db.ref('friends/'+user.uid+'/'+uid).set({name: n
 function loadMyFriends() {
     db.ref('friends/'+user.uid).on('value', snap => {
         const list = document.getElementById('my-friends-list'); list.innerHTML = "<h4>My Network</h4>";
-        if(!snap.exists()) list.innerHTML += `<p style="font-size:12px; color:var(--sub);">Search to connect.</p>`;
+        if(!snap.exists()) list.innerHTML += `<p style="font-size:12px; color:var(--sub);">Use search to connect with friends.</p>`;
         snap.forEach(c => { list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><b>${c.val().name}</b><button class="btn btn-blue" style="width:auto; padding:8px 15px;" onclick="openChat('${c.key}','${c.val().name}')">Chat</button></div>`; });
     });
 }
