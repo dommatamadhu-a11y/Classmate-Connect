@@ -40,7 +40,6 @@
             75% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
-        .like-btn-anim { display: inline-block; transition: 0.2s; }
         .active-heart { animation: heartBeat 0.4s ease-out; color: #f43f5e !important; }
 
         #noti-banner {
@@ -79,7 +78,6 @@
         .btn { border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
 
-        .post-img { width: calc(100% + 30px); margin: 10px -15px; max-height: 300px; object-fit: cover; }
         .nav-bar { 
             position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 400px; background: var(--nav-bg); backdrop-filter: blur(15px);
@@ -103,7 +101,7 @@
 <body>
 
 <div id="noti-banner">
-    Enable notifications for messages? 
+    Enable notifications to stay connected? 
     <button onclick="enableNotifications()" style="margin-left:10px; border:none; padding:4px 8px; border-radius:5px; font-weight:bold;">Enable</button>
 </div>
 
@@ -111,7 +109,7 @@
     <div>
         <img src="logo.png" alt="Logo" class="login-logo">
         <div style="font-size: 24px; font-weight: 700; color: var(--primary);">Alumni Connect</div>
-        <p style="color:var(--sub); margin-bottom:20px;">Connect with your old friends</p>
+        <p style="color:var(--sub); margin-bottom:20px;">The network of batchmates</p>
         <button class="btn btn-blue" onclick="loginWithGoogle()">Sign in with Google</button>
     </div>
 </div>
@@ -131,18 +129,16 @@
 
 <div id="feed" class="section active">
     <div class="card">
-        <textarea id="msgInput" rows="2" placeholder="What's new?"></textarea>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label style="cursor:pointer; font-size:18px;">🖼️ <input type="file" id="feedPhotoInput" hidden accept="image/*"></label>
-            <button class="btn btn-blue" style="width:70px; padding:6px;" onclick="handleFeedPost()">Post</button>
-        </div>
+        <textarea id="msgInput" rows="2" placeholder="Post an update..."></textarea>
+        <button class="btn btn-blue" style="margin-top:5px;" onclick="handleFeedPost()">Post</button>
     </div>
     <div id="post-container"></div>
 </div>
 
 <div id="friends" class="section">
     <div class="card">
-        <input type="text" id="s-inst" placeholder="Search by School/College">
+        <h4 style="margin:0 0 10px 0;">Find Alumni</h4>
+        <input type="text" id="s-inst" placeholder="Enter College/School Name">
         <button class="btn btn-blue" onclick="searchAlumni()">Search</button>
     </div>
     <div id="my-friends-list"></div>
@@ -152,10 +148,10 @@
     <div class="card" style="text-align:center;">
         <img id="p-img-large" style="width:70px; height:70px; border-radius:50%; border:2px solid var(--primary); object-fit: cover;">
         <h3 id="p-name-display">User</h3>
-        <input type="text" id="p-inst" placeholder="Institution">
+        <input type="text" id="p-inst" placeholder="Institution Name (e.g. JNTU)">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <input type="text" id="p-year" placeholder="Year">
-            <input type="text" id="p-class" placeholder="Batch">
+            <input type="text" id="p-year" placeholder="Passout Year">
+            <input type="text" id="p-class" placeholder="Batch/Section">
         </div>
         <input type="text" id="p-city" placeholder="City">
         <button class="btn btn-blue" onclick="saveProfile()">Save Profile</button>
@@ -172,7 +168,7 @@
     </div>
     <div id="chat-messages"></div>
     <div style="padding:10px; background:var(--card); display:flex; gap:8px; border-top:1px solid var(--border);">
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="margin:0;">
+        <input type="text" id="privateMsgInput" placeholder="Type a message..." style="margin:0;">
         <button class="btn btn-blue" style="width:45px; border-radius:50%;" onclick="sendPrivateMessage()">➤</button>
     </div>
 </div>
