@@ -14,30 +14,20 @@ const db = firebase.database();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Setting persistence to LOCAL so login stays active
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
 let user = null;
 let currentChatFriendUID = "";
 let blockedList = [];
 
-// --- LOGIN FUNCTION (Back to Popup for Browser Support) ---
-function loginWithGoogle() {
-    auth.signInWithPopup(provider).then((result) => {
-        console.log("Login Successful");
-    }).catch((error) => {
-        console.error("Login Error:", error.message);
-        // If popup fails (like in some apps), try redirect as fallback
-        if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment') {
-            auth.signInWithRedirect(provider);
-        } else {
-            alert("Error: " + error.message);
-        }
-    });
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
 }
+if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
 
-// Check for redirect result if popup was blocked
-auth.getRedirectResult().catch(err => console.log(err.message));
+// --- ORIGINAL LOGIN WITH POPUP ---
+function loginWithGoogle() { 
+    auth.signInWithPopup(provider).catch(err => alert("Login Error: " + err.message)); 
+}
 
 auth.onAuthStateChanged((u) => {
     if (u) {
@@ -58,13 +48,6 @@ auth.onAuthStateChanged((u) => {
     }
 });
 
-// --- UI & OTHER FEATURES (English) ---
-function toggleDarkMode() {
-    document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-}
-if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
-
 function updateUI() {
     if(!user) return;
     document.getElementById('header-user-img').src = user.photo;
@@ -76,12 +59,14 @@ function updateUI() {
     document.getElementById('p-city').value = user.city;
 }
 
+// FEED LOGIC
 async function handleFeedPost() {
     const txt = document.getElementById('msgInput').value.trim();
     const file = document.getElementById('feedPhotoInput').files[0];
-    if(!user.inst) return alert("Update profile first!");
+    if(!user.inst) return alert("Please update your profile information first.");
     if(!txt && !file) return;
-    showToast("Sharing...");
+
+    showToast("Sharing post...");
     let b64 = file ? await toBase64(file) : "";
     db.ref('posts').push({
         uid: user.uid, name: user.name, msg: txt, img: b64, groupKey: user.groupKey,
@@ -99,6 +84,7 @@ db.ref('posts').on('value', snap => {
             let id = s.key;
             let imgTag = p.img ? `<img src="${p.img}" class="post-img">` : "";
             let action = p.uid === user.uid ? `<span class="options-btn" onclick="deletePost('${id}')">🗑️ Delete</span>` : `<span class="options-btn" onclick="reportContent('${id}')">🚩 Report</span>`;
+            
             cont.innerHTML = `
                 <div class="card">
                     ${action}
@@ -115,10 +101,10 @@ db.ref('posts').on('value', snap => {
     });
 });
 
-function deletePost(id) { if(confirm("Delete?")) db.ref('posts/' + id).remove(); }
+function deletePost(id) { if(confirm("Delete this post?")) db.ref('posts/' + id).remove(); }
 function likePost(id) { db.ref('posts/' + id + '/likes').transaction(c => (c || 0) + 1); }
 function addComment(id) {
-    let m = prompt("Comment:");
+    let m = prompt("Write your comment:");
     if(m) db.ref('comments/' + id).push({ name: user.name, msg: m, uid: user.uid });
 }
 function loadComments(id) {
@@ -128,7 +114,9 @@ function loadComments(id) {
     });
 }
 
+// CHAT LOGIC
 function getChatId(u1, u2) { return u1 < u2 ? `${u1}_${u2}` : `${u2}_${u1}`; }
+
 async function sendPhoto() {
     const file = document.getElementById('chatPhotoInput').files[0];
     if(file) {
@@ -136,12 +124,14 @@ async function sendPhoto() {
         db.ref('private_messages/' + getChatId(user.uid, currentChatFriendUID)).push({ sender: user.uid, img: b64 });
     }
 }
+
 function sendPrivateMessage() {
     const msg = document.getElementById('privateMsgInput').value.trim();
     if(!msg) return;
     db.ref('private_messages/' + getChatId(user.uid, currentChatFriendUID)).push({ sender: user.uid, text: msg });
     document.getElementById('privateMsgInput').value = "";
 }
+
 function loadMessages() {
     const chatId = getChatId(user.uid, currentChatFriendUID);
     db.ref('private_messages/' + chatId).on('value', snap => {
@@ -155,8 +145,10 @@ function loadMessages() {
         c.scrollTop = c.scrollHeight;
     });
 }
-function deleteMsg(cid, mid) { if(confirm("Delete?")) db.ref('private_messages/'+cid+'/'+mid).remove(); }
 
+function deleteMsg(cid, mid) { if(confirm("Delete this message?")) db.ref('private_messages/'+cid+'/'+mid).remove(); }
+
+// SOCIAL & SEARCH
 function searchAlumni() {
     const inst = document.getElementById('s-inst').value.toUpperCase();
     const year = document.getElementById('s-year').value;
@@ -175,22 +167,29 @@ function searchAlumni() {
         });
     });
 }
+
 function addFriend(uid, name) {
     db.ref('friends/'+user.uid+'/'+uid).set({name: name});
     db.ref('friends/'+uid+'/'+user.uid).set({name: user.name});
-    showToast("Connected!");
+    showToast("Connection successful!");
 }
+
 function loadMyFriends() {
     db.ref('friends/' + user.uid).on('value', snap => {
-        const list = document.getElementById('my-friends-list'); list.innerHTML = "<h4>My Connections</h4>";
+        const list = document.getElementById('my-friends-list'); list.innerHTML = "<h4>My Friends</h4>";
         snap.forEach(c => {
             if(!blockedList.includes(c.key)) list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><b>${c.val().name}</b><button class="btn btn-blue" style="width:auto; padding:5px 12px;" onclick="openChat('${c.key}','${c.val().name}')">Chat</button></div>`;
         });
     });
 }
+
 function handleBlockToggle() {
-    if(confirm("Block?")) { db.ref(`users/${user.uid}/blocked/${currentChatFriendUID}`).set(true); closeChat(); showToast("Blocked"); }
+    if(confirm("Block this user? They won't be able to see you.")) {
+        db.ref(`users/${user.uid}/blocked/${currentChatFriendUID}`).set(true);
+        closeChat(); showToast("User Blocked");
+    }
 }
+
 function loadBlockedUsers() {
     const list = document.getElementById('blocked-users-list'); list.innerHTML = "";
     blockedList.forEach(uid => {
@@ -200,8 +199,9 @@ function loadBlockedUsers() {
     });
 }
 function unblock(uid) { db.ref(`users/${user.uid}/blocked/${uid}`).remove(); }
-function reportContent(id) { prompt("Reason?"); showToast("Reported."); }
+function reportContent(id) { prompt("Reason for reporting?"); showToast("Reported to admin."); }
 
+// UTILS
 function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); }); }
 function show(id, title, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -214,10 +214,10 @@ function saveProfile() {
     db.ref('users/' + user.uid).update({
         inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value,
         batch: document.getElementById('p-class').value, city: document.getElementById('p-city').value
-    }).then(() => showToast("Saved!"));
+    }).then(() => showToast("Profile Updated!"));
 }
 function openChat(uid, name) { currentChatFriendUID = uid; document.getElementById('chat-with-name').innerText = name; document.getElementById('chat-window').style.display = "flex"; loadMessages(); }
 function closeChat() { document.getElementById('chat-window').style.display = "none"; }
 function showToast(m) { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => t.className = "", 3000); }
 function logout() { auth.signOut().then(() => location.reload()); }
-function deleteAccount() { if(confirm("Delete?")) { db.ref('users/'+user.uid).remove(); auth.currentUser.delete().then(()=>location.reload()); } }
+function deleteAccount() { if(confirm("Are you sure? This cannot be undone.")) { db.ref('users/'+user.uid).remove(); auth.currentUser.delete().then(()=>location.reload()); } }
