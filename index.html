@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classmate Connect | Global Network</title>
+    <title>Classmate Connect | Professional Network</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -47,37 +47,37 @@
 
 <div id="login-overlay">
     <h2 style="color:var(--primary)">Classmate Connect</h2>
-    <p>Sign in to connect with your classmates.</p>
-    <button class="btn btn-blue" style="width:200px" onclick="loginWithGoogle()"><i class="fab fa-google"></i> Sign in</button>
+    <p>Join your institutional network today.</p>
+    <button class="btn btn-blue" style="width:200px" onclick="loginWithGoogle()"><i class="fab fa-google"></i> Sign in with Google</button>
 </div>
 
 <div class="header">
-    <span onclick="toggleDarkMode()"><i class="fas fa-user-friends"></i> ClassmateConnect</span>
+    <span onclick="toggleDarkMode()"><i class="fas fa-link"></i> ClassmateConnect</span>
     <img id="header-user-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover;">
 </div>
 
 <div class="container">
     <div id="feed" class="section active">
         <div class="card">
-            <textarea id="msgInput" placeholder="Share something with your class..."></textarea>
+            <textarea id="msgInput" placeholder="Write a post to your batch group..."></textarea>
             <input type="file" id="feedPhotoInput" accept="image/*">
-            <button class="btn btn-blue" onclick="handleFeedPost()">Post</button>
+            <button class="btn btn-blue" onclick="handleFeedPost()">Post to Group</button>
         </div>
         <div id="post-container"></div>
     </div>
 
     <div id="network" class="section">
         <div id="requests-section" class="card" style="display:none; border: 2px solid var(--primary);">
-            <h4 style="margin-top:0;"><i class="fas fa-bell"></i> New Requests</h4>
+            <h4 style="margin-top:0;"><i class="fas fa-user-plus"></i> Pending Requests</h4>
             <div id="requests-list"></div>
         </div>
         <div class="card">
-            <h4><i class="fas fa-search"></i> Search Classmates</h4>
+            <h4><i class="fas fa-search"></i> Advanced Search</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
             <input type="text" id="s-city" placeholder="Institution City">
-            <input type="text" id="s-class" placeholder="Studying Class/Course">
+            <input type="text" id="s-class" placeholder="Course / Class">
             <input type="number" id="s-year" placeholder="Passout Year">
-            <button class="btn btn-blue" onclick="searchClassmates()">Find Friends</button>
+            <button class="btn btn-blue" onclick="searchClassmates()">Search Members</button>
         </div>
         <div id="search-results"></div>
     </div>
@@ -88,13 +88,13 @@
             <h3 id="p-name-display"></h3>
         </div>
         <div class="card">
-            <h4>Your Education Details</h4>
+            <h4>Education & Batch Details</h4>
             <input type="text" id="p-inst" placeholder="Institution Name">
             <input type="text" id="p-city" placeholder="Institution City">
-            <input type="text" id="p-class" placeholder="Class/Group">
+            <input type="text" id="p-class" placeholder="Class / Branch">
             <input type="number" id="p-year" placeholder="Passout Year">
-            <button class="btn btn-blue" onclick="saveProfile()">Save Details</button>
-            <button class="btn" style="margin-top:10px; background:#ddd;" onclick="logout()">Logout</button>
+            <button class="btn btn-blue" onclick="saveProfile()">Update Profile</button>
+            <button class="btn" style="margin-top:10px; background:#e2e8f0; color:#475569;" onclick="logout()">Logout</button>
         </div>
     </div>
 </div>
@@ -105,7 +105,7 @@
     </div>
     <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column;"></div>
     <div style="padding:15px; background:var(--card); display:flex; gap:10px;">
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="flex:1; margin-bottom:0;">
+        <input type="text" id="privateMsgInput" placeholder="Type a message..." style="flex:1; margin-bottom:0;">
         <button onclick="sendPrivateMessage()" class="btn-blue" style="width:50px; border:none; border-radius:10px;"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
@@ -113,10 +113,10 @@
 <div class="nav-bottom">
     <div class="nav-item active-nav" onclick="show('feed', event, this)"><i class="fas fa-home"></i></div>
     <div class="nav-item" onclick="show('network', event, this)">
-        <i class="fas fa-user-group"></i>
+        <i class="fas fa-user-friends"></i>
         <div id="request-dot" class="notification-dot"></div>
     </div>
-    <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user"></i></div>
+    <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user-circle"></i></div>
 </div>
 
 <div id="toast"></div>
