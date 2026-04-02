@@ -3,36 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classmate Connect</title>
+    <title>Classmate Connect | Global Network</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #6366f1; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --sub: #64748b; --danger: #ef4444; }
         .dark-mode { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --sub: #94a3b8; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 75px; transition: 0.3s; }
+        
         .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(0,0,0,0.1); z-index: 100; }
         .nav-item { color: var(--sub); font-size: 20px; cursor: pointer; text-align: center; flex: 1; position: relative; }
         .active-nav { color: var(--primary); }
         .notification-dot { position: absolute; top: -5px; right: 30%; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; display: none; border: 2px solid var(--card); }
+
         .container { padding: 15px; max-width: 600px; margin: auto; }
         .section { display: none; animation: fadeIn 0.3s; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        input, textarea { width: 93%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; background: var(--card); color: var(--text); }
+        input, textarea { width: 93%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; background: var(--card); color: var(--text); font-size: 14px; }
         .btn { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; width: 100%; }
         .btn-blue { background: var(--primary); color: white; }
+        
         .post-img { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 300px; object-fit: cover; }
         .post-actions { display: flex; gap: 20px; padding: 10px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 10px; }
         .action-btn { cursor: pointer; color: var(--sub); font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .action-btn.liked { color: var(--danger); }
         .comment-section { margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; display: none; }
         .comment-item { font-size: 13px; margin-bottom: 5px; background: #f1f5f9; padding: 8px; border-radius: 8px; color: #333; }
+
         .msg-bubble { padding: 12px; border-radius: 18px; margin: 5px 0; max-width: 80%; font-size: 14px; }
         .mine { background: var(--primary); color: white; align-self: flex-end; }
         .theirs { background: #e2e8f0; color: #333; align-self: flex-start; }
-        #login-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        #login-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; padding: 12px; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); border-radius: 30px; z-index: 1000; }
         #toast.show { visibility: visible; }
     </style>
@@ -41,6 +47,7 @@
 
 <div id="login-overlay">
     <h2 style="color:var(--primary)">Classmate Connect</h2>
+    <p>Sign in to connect with your classmates.</p>
     <button class="btn btn-blue" style="width:200px" onclick="loginWithGoogle()"><i class="fab fa-google"></i> Sign in</button>
 </div>
 
@@ -61,14 +68,14 @@
 
     <div id="network" class="section">
         <div id="requests-section" class="card" style="display:none; border: 2px solid var(--primary);">
-            <h4 style="margin-top:0;">New Requests</h4>
+            <h4 style="margin-top:0;"><i class="fas fa-bell"></i> New Requests</h4>
             <div id="requests-list"></div>
         </div>
         <div class="card">
-            <h4>Find Classmates</h4>
+            <h4><i class="fas fa-search"></i> Search Classmates</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
             <input type="text" id="s-city" placeholder="Institution City">
-            <input type="text" id="s-class" placeholder="Class/Course">
+            <input type="text" id="s-class" placeholder="Studying Class/Course">
             <input type="number" id="s-year" placeholder="Passout Year">
             <button class="btn btn-blue" onclick="searchClassmates()">Find Friends</button>
         </div>
@@ -77,14 +84,15 @@
 
     <div id="profile" class="section">
         <div class="card" style="text-align:center;">
-            <img id="p-img-large" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary);">
+            <img id="p-img-large" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--primary);">
             <h3 id="p-name-display"></h3>
         </div>
         <div class="card">
-            <input type="text" id="p-inst" placeholder="Institution">
-            <input type="text" id="p-city" placeholder="City">
-            <input type="text" id="p-class" placeholder="Class">
-            <input type="number" id="p-year" placeholder="Year">
+            <h4>Your Education Details</h4>
+            <input type="text" id="p-inst" placeholder="Institution Name">
+            <input type="text" id="p-city" placeholder="Institution City">
+            <input type="text" id="p-class" placeholder="Class/Group">
+            <input type="number" id="p-year" placeholder="Passout Year">
             <button class="btn btn-blue" onclick="saveProfile()">Save Details</button>
             <button class="btn" style="margin-top:10px; background:#ddd;" onclick="logout()">Logout</button>
         </div>
@@ -92,7 +100,9 @@
 </div>
 
 <div id="chat-window" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:200; flex-direction:column;">
-    <div class="header"><span onclick="closeChat()"><i class="fas fa-arrow-left"></i> <span id="chat-with-name">Chat</span></span></div>
+    <div class="header">
+        <span onclick="closeChat()"><i class="fas fa-arrow-left"></i> <span id="chat-with-name">Chat</span></span>
+    </div>
     <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column;"></div>
     <div style="padding:15px; background:var(--card); display:flex; gap:10px;">
         <input type="text" id="privateMsgInput" placeholder="Message..." style="flex:1; margin-bottom:0;">
@@ -102,7 +112,10 @@
 
 <div class="nav-bottom">
     <div class="nav-item active-nav" onclick="show('feed', event, this)"><i class="fas fa-home"></i></div>
-    <div class="nav-item" onclick="show('network', event, this)"><i class="fas fa-user-group"></i><div id="request-dot" class="notification-dot"></div></div>
+    <div class="nav-item" onclick="show('network', event, this)">
+        <i class="fas fa-user-group"></i>
+        <div id="request-dot" class="notification-dot"></div>
+    </div>
     <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user"></i></div>
 </div>
 
@@ -111,196 +124,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script>
-    // Paste your Firebase Config here
-    const firebaseConfig = {
-        apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
-        authDomain: "class-connect-b58f0.firebaseapp.com",
-        databaseURL: "https://class-connect-b58f0-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "class-connect-b58f0",
-        storageBucket: "class-connect-b58f0.appspot.com",
-        messagingSenderId: "836461719745",
-        appId: "1:836461719745:web:f827862e4db4954626a440"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
-
-    let user = null;
-    let currentChatFriendUID = "";
-
-    auth.onAuthStateChanged((u) => {
-        if (u) {
-            document.getElementById('login-overlay').style.display = "none";
-            db.ref('users/' + u.uid).on('value', snap => {
-                const d = snap.val();
-                user = { uid: u.uid, name: u.displayName, photo: d?.photo || u.photoURL, inst: d?.inst||"", city: d?.city||"", uClass: d?.uClass||"", year: d?.year||"" };
-                updateUI(); loadFeed(); listenForRequests();
-            });
-        } else { document.getElementById('login-overlay').style.display = "flex"; }
-    });
-
-    function updateUI() {
-        document.getElementById('header-user-img').src = user.photo;
-        document.getElementById('p-img-large').src = user.photo;
-        document.getElementById('p-name-display').innerText = user.name;
-        document.getElementById('p-inst').value = user.inst;
-        document.getElementById('p-city').value = user.city;
-        document.getElementById('p-class').value = user.uClass;
-        document.getElementById('p-year').value = user.year;
-    }
-
-    async function handleFeedPost() {
-        const txt = document.getElementById('msgInput').value.trim(); if(!txt) return;
-        const file = document.getElementById('feedPhotoInput').files[0];
-        let imgData = "";
-        if(file) {
-            const reader = new FileReader();
-            imgData = await new Promise(r => { reader.onload=e=>r(e.target.result); reader.readAsDataURL(file); });
-        }
-        const filterKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
-        db.ref('posts').push({ uid: user.uid, name: user.name, msg: txt, img: imgData, time: Date.now(), filterKey: filterKey });
-        document.getElementById('msgInput').value = ""; document.getElementById('feedPhotoInput').value = "";
-        showToast("Shared!");
-    }
-
-    function loadFeed() {
-        db.ref('posts').on('value', snap => {
-            const cont = document.getElementById('post-container'); cont.innerHTML = "";
-            const myKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
-            snap.forEach(s => {
-                const p = s.val(); const pid = s.key;
-                if(p.filterKey === myKey) {
-                    const likesCount = p.likes ? Object.keys(p.likes).length : 0;
-                    const isLiked = p.likes && p.likes[user.uid] ? 'liked' : '';
-                    cont.innerHTML += `
-                    <div class="card">
-                        <b>${p.name}</b><p>${p.msg}</p>
-                        ${p.img ? `<img src="${p.img}" class="post-img">`:''}
-                        <div class="post-actions">
-                            <span class="action-btn ${isLiked}" onclick="toggleLike('${pid}')"><i class="${isLiked?'fas':'far'} fa-heart"></i> ${likesCount}</span>
-                            <span class="action-btn" onclick="toggleComments('${pid}')"><i class="far fa-comment"></i> Comments</span>
-                        </div>
-                        <div id="comment-area-${pid}" class="comment-section">
-                            <div id="list-${pid}"></div>
-                            <div style="display:flex; gap:5px; margin-top:10px;"><input type="text" id="in-${pid}" placeholder="Comment..."><button onclick="addComment('${pid}')" class="btn-blue" style="width:45px;"><i class="fas fa-paper-plane"></i></button></div>
-                        </div>
-                    </div>`;
-                    loadComments(pid);
-                }
-            });
-        });
-    }
-
-    function toggleLike(pid) {
-        const ref = db.ref(`posts/${pid}/likes/${user.uid}`);
-        ref.once('value', s => s.exists() ? ref.remove() : ref.set(true));
-    }
-
-    function toggleComments(pid) {
-        const el = document.getElementById(`comment-area-${pid}`);
-        el.style.display = el.style.display === "block" ? "none" : "block";
-    }
-
-    function addComment(pid) {
-        const val = document.getElementById(`in-${pid}`).value.trim(); if(!val) return;
-        db.ref(`posts/${pid}/comments`).push({ name: user.name, text: val });
-        document.getElementById(`in-${pid}`).value = "";
-    }
-
-    function loadComments(pid) {
-        db.ref(`posts/${pid}/comments`).on('value', snap => {
-            const list = document.getElementById(`list-${pid}`); if(!list) return; list.innerHTML = "";
-            snap.forEach(s => { list.innerHTML += `<div class="comment-item"><b>${s.val().name}:</b> ${s.val().text}</div>`; });
-        });
-    }
-
-    function searchClassmates() {
-        const sInst = document.getElementById('s-inst').value.toUpperCase();
-        const sCity = document.getElementById('s-city').value.toUpperCase();
-        const sClass = document.getElementById('s-class').value.toUpperCase();
-        const sYear = document.getElementById('s-year').value;
-        db.ref('users').once('value', snap => {
-            const res = document.getElementById('search-results'); res.innerHTML = "<h4>Search Results</h4>";
-            snap.forEach(c => {
-                const u = c.val(); if(c.key === user.uid) return;
-                const match = (!sInst || (u.inst && u.inst.toUpperCase().includes(sInst))) &&
-                              (!sCity || (u.city && u.city.toUpperCase().includes(sCity))) &&
-                              (!sClass || (u.uClass && u.uClass.toUpperCase().includes(sClass))) &&
-                              (!sYear || u.year == sYear);
-                if(match && (sInst || sCity || sClass || sYear)) {
-                    res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                        <div><b>${u.name}</b><br><small>${u.uClass||''} - ${u.inst||''}, ${u.city||''}</small></div>
-                        <button class="btn-blue" style="width:auto; padding:8px 15px;" onclick="checkAndChat('${c.key}','${u.name}')">Connect</button>
-                    </div>`;
-                }
-            });
-        });
-    }
-
-    function checkAndChat(uid, name) {
-        db.ref('friends/' + user.uid + '/' + uid).once('value', s => {
-            if(s.exists()) openChat(uid, name);
-            else if(confirm("Send request to " + name + "?")) db.ref('friend_requests/'+uid+'/'+user.uid).set({fromName: user.name});
-        });
-    }
-
-    function listenForRequests() {
-        db.ref('friend_requests/' + user.uid).on('value', snap => {
-            const list = document.getElementById('requests-list'); const dot = document.getElementById('request-dot');
-            list.innerHTML = "";
-            if(snap.exists()){
-                document.getElementById('requests-section').style.display = "block"; dot.style.display = "block";
-                snap.forEach(s => {
-                    list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span><b>${s.val().fromName}</b></span><button class="btn-blue" style="width:auto; padding:5px 10px;" onclick="acceptFriend('${s.key}')">Accept</button>
-                    </div>`;
-                });
-            } else { document.getElementById('requests-section').style.display = "none"; dot.style.display = "none"; }
-        });
-    }
-
-    function acceptFriend(fid) {
-        db.ref('friends/'+user.uid+'/'+fid).set(true); db.ref('friends/'+fid+'/'+user.uid).set(true);
-        db.ref('friend_requests/'+user.uid+'/'+fid).remove(); showToast("Connected!");
-    }
-
-    function openChat(uid, name) {
-        currentChatFriendUID = uid; document.getElementById('chat-with-name').innerText = name;
-        document.getElementById('chat-window').style.display = "flex"; loadMessages();
-    }
-
-    function sendPrivateMessage() {
-        const txt = document.getElementById('privateMsgInput').value.trim(); if(!txt) return;
-        const cid = user.uid < currentChatFriendUID ? user.uid+'_'+currentChatFriendUID : currentChatFriendUID+'_'+user.uid;
-        db.ref('private_messages/'+cid).push({ sender: user.uid, text: txt, time: Date.now() });
-        document.getElementById('privateMsgInput').value = "";
-    }
-
-    function loadMessages() {
-        const cid = user.uid < currentChatFriendUID ? user.uid+'_'+currentChatFriendUID : currentChatFriendUID+'_'+user.uid;
-        db.ref('private_messages/'+cid).on('value', snap => {
-            const c = document.getElementById('chat-messages'); c.innerHTML = "";
-            snap.forEach(s => { c.innerHTML += `<div class="msg-bubble ${s.val().sender === user.uid?'mine':'theirs'}">${s.val().text}</div>`; });
-            c.scrollTop = c.scrollHeight;
-        });
-    }
-
-    function show(id, event, el) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-        document.getElementById(id).classList.add('active'); el.classList.add('active-nav');
-    }
-    function showToast(m) { const t = document.getElementById("toast"); t.innerText = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 3000); }
-    function loginWithGoogle() { auth.signInWithPopup(provider); }
-    function logout() { auth.signOut().then(() => location.reload()); }
-    function closeChat() { document.getElementById('chat-window').style.display = "none"; }
-    function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
-    function saveProfile() {
-        db.ref('users/'+user.uid).update({ inst: document.getElementById('p-inst').value, city: document.getElementById('p-city').value, uClass: document.getElementById('p-class').value, year: document.getElementById('p-year').value })
-        .then(() => showToast("Profile Saved!"));
-    }
-</script>
+<script src="app.js"></script>
 </body>
 </html>
