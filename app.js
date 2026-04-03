@@ -18,12 +18,10 @@ let currentChatFriendUID = "";
 let blockedUsers = [];
 
 function notify(msg) {
-    const t = document.getElementById("toast");
-    t.innerText = msg; t.classList.add("show");
+    const t = document.getElementById("toast"); t.innerText = msg; t.classList.add("show");
     setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-// Time Formatting Logic
 function formatTime(ts) {
     const diff = Date.now() - ts;
     const mins = Math.floor(diff / 60000);
@@ -56,18 +54,17 @@ function updateUI() {
     document.getElementById('p-year').value = user.year;
 }
 
-// --- FEED WITH FORMATTED TIME ---
+// --- FEED LOGIC ---
 async function handleFeedPost() {
     const txt = document.getElementById('msgInput').value.trim();
-    if(!txt || !user.inst) return notify("Complete profile to post!");
-    const groupKey = (user.inst + user.city + user.uClass + user.year).replace(/\s/g, '').toUpperCase();
+    if(!txt || !user.inst) return notify("Complete profile first!");
+    const key = (user.inst + user.city + user.uClass + user.year).replace(/\s/g, '').toUpperCase();
     const file = document.getElementById('feedPhotoInput').files[0];
-    let imgData = "";
+    let img = "";
     if(file) {
-        const reader = new FileReader();
-        imgData = await new Promise(r => { reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
+        const r = new FileReader(); img = await new Promise(res => { r.onload = e => res(e.target.result); r.readAsDataURL(file); });
     }
-    db.ref('posts').push({ uid: user.uid, name: user.name, msg: txt, img: imgData, time: Date.now(), filterKey: groupKey })
+    db.ref('posts').push({ uid: user.uid, name: user.name, msg: txt, img, time: Date.now(), filterKey: key })
     .then(() => { notify("Posted!"); document.getElementById('msgInput').value = ""; });
 }
 
@@ -82,17 +79,16 @@ function loadFeed() {
                 const isLiked = p.likes && p.likes[user.uid] ? 'liked' : '';
                 cont.innerHTML = `
                 <div class="card">
-                    <span class="report-btn" onclick="reportPost('${s.key}')">Report</span>
                     <b>${p.name}</b> <small style="color:gray">• ${formatTime(p.time)}</small>
                     <p>${p.msg}</p>
                     ${p.img ? `<img src="${p.img}" class="post-img">` : ''}
                     <div class="post-actions">
                         <span class="action-btn ${isLiked}" onclick="toggleLike('${s.key}')"><i class="fas fa-heart"></i> ${likes}</span>
-                        <span class="action-btn" onclick="toggleComments('${s.key}')"><i class="fas fa-comment"></i> Comments</span>
+                        <span class="action-btn" onclick="toggleComments('${s.key}')"><i class="fas fa-comment"></i> Comment</span>
                     </div>
                     <div id="comment-area-${s.key}" class="comment-section">
                         <div id="list-${s.key}"></div>
-                        <div style="display:flex; gap:5px; margin-top:10px;"><input type="text" id="in-${s.key}" placeholder="Comment..."><button onclick="addComment('${s.key}')" class="btn-blue">></button></div>
+                        <div style="display:flex; gap:5px; margin-top:5px;"><input type="text" id="in-${s.key}" placeholder="Reply..."><button onclick="addComment('${s.key}')" class="btn-blue">></button></div>
                     </div>
                 </div>` + cont.innerHTML;
                 loadComments(s.key);
@@ -109,7 +105,7 @@ function searchClassmates() {
     const sYear = document.getElementById('s-year').value.trim();
 
     db.ref('users').once('value', snap => {
-        const res = document.getElementById('search-results'); res.innerHTML = "<h4>Results</h4>";
+        const res = document.getElementById('search-results'); res.innerHTML = "";
         snap.forEach(c => {
             const u = c.val(); if(c.key === user.uid) return;
             const match = (!sInst || (u.inst && u.inst.toUpperCase().includes(sInst))) &&
@@ -117,8 +113,8 @@ function searchClassmates() {
                           (!sClass || (u.uClass && u.uClass.toUpperCase().includes(sClass))) &&
                           (!sYear || (u.year && u.year.toString() === sYear));
             if(match) {
-                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${u.name}</b><br><small>${u.inst || ''} (${u.year || ''})</small></div>
+                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;">
+                    <div><b>${u.name}</b><br><small>${u.inst||''} (${u.year||''})</small></div>
                     <button class="btn-blue" style="width:auto; padding:5px 10px;" onclick="connect('${c.key}','${u.name}')">Connect</button>
                 </div>`;
             }
@@ -135,9 +131,8 @@ function sendPrivateMessage() {
 async function sendChatImage() {
     const file = document.getElementById('chatImageInput').files[0];
     if(file) {
-        const reader = new FileReader();
-        reader.onload = e => pushMsg({ type: 'image', content: e.target.result });
-        reader.readAsDataURL(file);
+        const r = new FileReader(); r.onload = e => pushMsg({ type: 'image', content: e.target.result });
+        r.readAsDataURL(file);
     }
 }
 
@@ -154,8 +149,7 @@ function deleteMsg(msgId) {
 }
 
 function openChat(uid, name) {
-    currentChatFriendUID = uid;
-    document.getElementById('chat-with-name').innerText = name;
+    currentChatFriendUID = uid; document.getElementById('chat-with-name').innerText = name;
     document.getElementById('chat-window').style.display = "flex";
     const cid = user.uid < uid ? user.uid+'_'+uid : uid+'_'+user.uid;
     db.ref('private_messages/' + cid).on('value', snap => {
@@ -173,66 +167,19 @@ function openChat(uid, name) {
     });
 }
 
-// --- OTHERS (Like, Comment, Profile, Block) ---
-function toggleLike(pid) {
-    const ref = db.ref(`posts/${pid}/likes/${user.uid}`);
-    ref.once('value', s => s.exists() ? ref.remove() : ref.set(true));
-}
-function addComment(pid) {
-    const val = document.getElementById(`in-${pid}`).value.trim();
-    if(val) { db.ref(`posts/${pid}/comments`).push({ name: user.name, text: val }); document.getElementById(`in-${pid}`).value = ""; }
-}
-function loadComments(pid) {
-    db.ref(`posts/${pid}/comments`).on('value', snap => {
-        const list = document.getElementById(`list-${pid}`); if(!list) return;
-        list.innerHTML = "";
-        snap.forEach(s => { list.innerHTML += `<div class="comment-item"><b>${s.val().name}:</b> ${s.val().text}</div>`; });
-    });
-}
-function toggleBlock() {
-    if(blockedUsers.includes(currentChatFriendUID)) blockedUsers = blockedUsers.filter(id => id !== currentChatFriendUID);
-    else if(confirm("Block user?")) blockedUsers.push(currentChatFriendUID);
-    db.ref('users/' + user.uid + '/blocked').set(blockedUsers);
-}
-function saveProfile() {
-    const d = { inst: document.getElementById('p-inst').value, city: document.getElementById('p-city').value, uClass: document.getElementById('p-class').value, year: document.getElementById('p-year').value };
-    db.ref('users/' + user.uid).update(d).then(() => notify("Saved!"));
-}
-function connect(uid, name) {
-    db.ref('friends/'+user.uid+'/'+uid).once('value', s => {
-        if(s.exists()) openChat(uid, name);
-        else db.ref('friend_requests/'+uid+'/'+user.uid).set({ fromName: user.name }).then(() => notify("Sent!"));
-    });
-}
-function listenForRequests() {
-    db.ref('friend_requests/'+user.uid).on('value', snap => {
-        const dot = document.getElementById('request-dot');
-        if(snap.exists()) {
-            dot.style.display = "block";
-            const list = document.getElementById('requests-list'); list.innerHTML = "";
-            snap.forEach(s => { list.innerHTML += `<div>${s.val().fromName} <button onclick="accept('${s.key}')">Accept</button></div>`; });
-            document.getElementById('requests-section').style.display = "block";
-        } else { dot.style.display = "none"; document.getElementById('requests-section').style.display = "none"; }
-    });
-}
-function accept(fid) {
-    db.ref('friends/'+user.uid+'/'+fid).set(true); db.ref('friends/'+fid+'/'+user.uid).set(true);
-    db.ref('friend_requests/'+user.uid+'/'+fid).remove();
-}
-function listenForMessages() {
-    db.ref('friends/' + user.uid).on('child_added', snap => {
-        const fid = snap.key; const cid = user.uid < fid ? user.uid+'_'+fid : fid+'_'+user.uid;
-        db.ref('private_messages/' + cid).limitToLast(1).on('child_added', m => {
-            if(m.val().sender !== user.uid && !blockedUsers.includes(m.val().sender) && (Date.now() - m.val().time < 3000)) notify("New Message!");
-        });
-    });
-}
-function inviteFriends() { window.open(`https://wa.me/?text=Join Classmate Connect: ${window.location.href}`, '_blank'); }
-function show(id, e, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-    document.getElementById(id).classList.add('active'); el.classList.add('active-nav');
-}
+// --- SYSTEM ---
+function toggleLike(pid) { const ref = db.ref(`posts/${pid}/likes/${user.uid}`); ref.once('value', s => s.exists() ? ref.remove() : ref.set(true)); }
+function toggleComments(pid) { const el = document.getElementById(`comment-area-${pid}`); el.style.display = el.style.display === "block" ? "none" : "block"; }
+function addComment(pid) { const v = document.getElementById(`in-${pid}`).value.trim(); if(v) { db.ref(`posts/${pid}/comments`).push({ name: user.name, text: v }); document.getElementById(`in-${pid}`).value = ""; } }
+function loadComments(pid) { db.ref(`posts/${pid}/comments`).on('value', s => { const l = document.getElementById(`list-${pid}`); l.innerHTML = ""; s.forEach(c => { l.innerHTML += `<div class="comment-item"><b>${c.val().name}:</b> ${c.val().text}</div>`; }); }); }
+function toggleBlock() { if(confirm("Block user?")) { blockedUsers.push(currentChatFriendUID); db.ref('users/' + user.uid + '/blocked').set(blockedUsers); } }
+function saveProfile() { const d = { inst: document.getElementById('p-inst').value, city: document.getElementById('p-city').value, uClass: document.getElementById('p-class').value, year: document.getElementById('p-year').value }; db.ref('users/' + user.uid).update(d).then(() => notify("Saved!")); }
+function connect(uid, name) { db.ref('friends/'+user.uid+'/'+uid).once('value', s => { if(s.exists()) openChat(uid, name); else db.ref('friend_requests/'+uid+'/'+user.uid).set({ fromName: user.name }).then(() => notify("Sent!")); }); }
+function listenForRequests() { db.ref('friend_requests/'+user.uid).on('value', snap => { const dot = document.getElementById('request-dot'); if(snap.exists()) { dot.style.display = "block"; document.getElementById('requests-section').style.display = "block"; const list = document.getElementById('requests-list'); list.innerHTML = ""; snap.forEach(s => { list.innerHTML += `<div>${s.val().fromName} <button onclick="accept('${s.key}')">Accept</button></div>`; }); } else { dot.style.display = "none"; document.getElementById('requests-section').style.display = "none"; } }); }
+function accept(fid) { db.ref('friends/'+user.uid+'/'+fid).set(true); db.ref('friends/'+fid+'/'+user.uid).set(true); db.ref('friend_requests/'+user.uid+'/'+fid).remove(); }
+function listenForMessages() { db.ref('friends/' + user.uid).on('child_added', snap => { const fid = snap.key; const cid = user.uid < fid ? user.uid+'_'+fid : fid+'_'+user.uid; db.ref('private_messages/' + cid).limitToLast(1).on('child_added', m => { if(m.val().sender !== user.uid && !blockedUsers.includes(m.val().sender) && (Date.now() - m.val().time < 3000)) notify("New Message!"); }); }); }
+function inviteFriends() { window.open(`https://wa.me/?text=Join Classmate Connect: https://dommatamadhu-a11y.github.io/Classmate-Connect/`, '_blank'); }
+function show(id, e, el) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav')); document.getElementById(id).classList.add('active'); el.classList.add('active-nav'); }
 function loginWithGoogle() { auth.signInWithPopup(provider); }
 function logout() { auth.signOut().then(() => location.reload()); }
 function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
