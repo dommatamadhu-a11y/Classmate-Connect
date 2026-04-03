@@ -5,60 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Classmate Connect</title>
     
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2232/2232688.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="manifest" href="manifest.json">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         :root { --primary: #6366f1; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --sub: #64748b; --danger: #ef4444; --whatsapp: #25d366; }
         .dark-mode { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --sub: #94a3b8; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 75px; transition: 0.3s; }
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 75px; transition: 0.3s; overflow-x: hidden; }
+        
+        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(0,0,0,0.1); z-index: 100; }
         .nav-item { color: var(--sub); font-size: 20px; cursor: pointer; flex: 1; text-align: center; position: relative; }
         .active-nav { color: var(--primary); }
-        .notification-dot { position: absolute; top: -5px; right: 30%; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; display: none; }
+        .notification-dot { position: absolute; top: -5px; right: 30%; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; display: none; border: 2px solid var(--card); }
+
         .container { padding: 15px; max-width: 600px; margin: auto; }
         .section { display: none; animation: fadeIn 0.3s; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        input, textarea { width: 93%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; background: var(--card); color: var(--text); outline: none; }
-        .btn { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        input, textarea { width: 93%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; background: var(--card); color: var(--text); outline: none; font-size: 14px; }
+        .btn { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
         .btn-blue { background: var(--primary); color: white; }
+        .btn-wa { background: var(--whatsapp); color: white; margin-top: 10px; }
+        
         .post-img, .chat-img { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 300px; object-fit: cover; }
         .post-actions { display: flex; gap: 20px; padding: 10px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 10px; }
-        .action-btn { cursor: pointer; color: var(--sub); font-size: 14px; }
+        .action-btn { cursor: pointer; color: var(--sub); font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .action-btn.liked { color: var(--danger); }
+        
         .comment-section { margin-top: 10px; display: none; }
-        .comment-item { font-size: 13px; background: #f1f5f9; padding: 8px; border-radius: 8px; margin-bottom: 5px; color: #333; }
-        .msg-bubble { padding: 10px 15px; border-radius: 18px; margin: 5px 0; max-width: 75%; font-size: 14px; cursor: pointer; }
+        .comment-item { font-size: 13px; margin-bottom: 5px; background: #f1f5f9; padding: 8px; border-radius: 8px; color: #333; }
+
+        .msg-bubble { padding: 10px 15px; border-radius: 18px; margin: 5px 0; max-width: 75%; font-size: 14px; position: relative; cursor: pointer; word-wrap: break-word; }
         .mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .theirs { background: #e2e8f0; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        
         #login-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #toast { visibility: hidden; min-width: 200px; background: #1e293b; color: #fff; text-align: center; padding: 12px; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); border-radius: 25px; z-index: 1000; }
-        #toast.show { visibility: visible; }
+        #toast { visibility: hidden; min-width: 250px; background: #1e293b; color: #fff; text-align: center; padding: 14px; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); border-radius: 30px; z-index: 1000; font-weight: 500; }
+        #toast.show { visibility: visible; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { bottom: 0; opacity: 0; } to { bottom: 90px; opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
-    <h2 style="color:var(--primary)">Classmate Connect</h2>
+    <img src="logo.png" width="80" style="margin-bottom:20px; border-radius:15px;">
+    <h2 style="color:var(--primary); margin-bottom:5px;">Classmate Connect</h2>
+    <p style="color:var(--sub); margin-bottom:20px;">Sign in to join your batch</p>
     <button class="btn btn-blue" style="width:240px" onclick="loginWithGoogle()"><i class="fab fa-google"></i> Sign in with Google</button>
 </div>
 
 <div class="header">
-    <span onclick="toggleDarkMode()"><i class="fas fa-university"></i> Classmate Connect</span>
-    <img id="header-user-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover;">
+    <span onclick="toggleDarkMode()"><i class="fas fa-graduation-cap"></i> Classmate Connect</span>
+    <img id="header-user-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover; border: 2px solid #fff;">
 </div>
 
 <div class="container">
     <div id="feed" class="section active">
         <div class="card">
-            <textarea id="msgInput" placeholder="Post to your batch..."></textarea>
-            <div style="display:flex; gap:10px;">
-                <input type="file" id="feedPhotoInput" accept="image/*" style="font-size:11px;">
+            <textarea id="msgInput" placeholder="What's on your mind?"></textarea>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="file" id="feedPhotoInput" accept="image/*" style="font-size:11px; flex:1;">
                 <button class="btn btn-blue" style="width:100px" onclick="handleFeedPost()">Post</button>
             </div>
         </div>
@@ -66,14 +82,15 @@
     </div>
 
     <div id="network" class="section">
-        <div id="requests-section" class="card" style="display:none;">
-            <h4>Requests</h4><div id="requests-list"></div>
+        <div id="requests-section" class="card" style="display:none; border-left: 5px solid var(--primary);">
+            <h4>Connection Requests</h4>
+            <div id="requests-list"></div>
         </div>
         <div class="card">
-            <h4><i class="fas fa-search"></i> Advanced Search</h4>
+            <h4><i class="fas fa-search"></i> Advanced Find</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
             <input type="text" id="s-city" placeholder="City">
-            <input type="text" id="s-class" placeholder="Class/Branch">
+            <input type="text" id="s-class" placeholder="Course / Branch">
             <input type="number" id="s-year" placeholder="Passout Year">
             <button class="btn btn-blue" onclick="searchClassmates()">Search Directory</button>
         </div>
@@ -82,41 +99,41 @@
 
     <div id="profile" class="section">
         <div class="card" style="text-align:center;">
-            <img id="p-img-large" src="" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--primary);">
-            <h3 id="p-name-display"></h3>
-            <button class="btn" style="background:var(--whatsapp); color:white;" onclick="inviteFriends()"><i class="fab fa-whatsapp"></i> Invite Batch</button>
+            <img id="p-img-large" src="" style="width:100px; height:100px; border-radius:50%; border:4px solid var(--primary); object-fit:cover;">
+            <h3 id="p-name-display" style="margin:10px 0 5px 0;"></h3>
+            <button class="btn btn-wa" onclick="inviteFriends()"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
         </div>
         <div class="card">
-            <h4>Education Info</h4>
+            <h4>Academic Profile</h4>
             <input type="text" id="p-inst" placeholder="Institution">
             <input type="text" id="p-city" placeholder="City">
             <input type="text" id="p-class" placeholder="Class">
             <input type="number" id="p-year" placeholder="Year">
-            <button class="btn btn-blue" onclick="saveProfile()">Save Profile</button>
-            <button class="btn" style="margin-top:10px; background:#eee;" onclick="logout()">Logout</button>
+            <button class="btn btn-blue" onclick="saveProfile()">Update Profile</button>
+            <button class="btn" style="margin-top:10px; background:#f1f5f9; color:var(--sub);" onclick="logout()">Logout</button>
         </div>
     </div>
 </div>
 
 <div id="chat-window" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:200; flex-direction:column;">
     <div class="header">
-        <span onclick="closeChat()"><i class="fas fa-arrow-left"></i> <span id="chat-with-name">Chat</span></span>
-        <button id="block-btn" onclick="toggleBlock()" style="background:none; border:1px solid white; color:white; border-radius:5px;">Block</button>
+        <span onclick="closeChat()"><i class="fas fa-chevron-left"></i> <span id="chat-with-name">Chat</span></span>
+        <button id="block-btn" style="background:none; border:1px solid white; color:white; border-radius:5px; padding:2px 8px; font-size:12px;" onclick="toggleBlock()">Block</button>
     </div>
-    <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column;"></div>
-    <div id="chat-input-area" style="padding:10px; background:var(--card); display:flex; gap:10px;">
-        <label for="chatImageInput" style="font-size:22px; cursor:pointer;"><i class="fas fa-image"></i></label>
+    <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; background: #f0f2f5;"></div>
+    <div id="chat-input-area" style="padding:12px; background:var(--card); display:flex; align-items:center; gap:12px; border-top:1px solid #ddd;">
+        <label for="chatImageInput" style="cursor:pointer; color:var(--primary); font-size:22px;"><i class="fas fa-camera"></i></label>
         <input type="file" id="chatImageInput" accept="image/*" style="display:none;" onchange="sendChatImage()">
-        <input type="text" id="privateMsgInput" placeholder="Message..." style="flex:1; margin-bottom:0;">
-        <button onclick="sendPrivateMessage()" class="btn-blue" style="width:40px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+        <input type="text" id="privateMsgInput" placeholder="Type a message..." style="flex:1; margin-bottom:0;">
+        <button onclick="sendPrivateMessage()" class="btn-blue" style="width:45px; height:45px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
     </div>
-    <div id="blocked-msg" style="display:none; text-align:center; color:red; padding:10px;">User Blocked</div>
+    <div id="blocked-msg" style="display:none; padding:20px; text-align:center; color:var(--danger); background:#fee2e2;">Blocked. Unblock to chat.</div>
 </div>
 
 <div class="nav-bottom">
     <div class="nav-item active-nav" onclick="show('feed', event, this)"><i class="fas fa-home"></i></div>
     <div class="nav-item" onclick="show('network', event, this)"><i class="fas fa-users"></i><div id="request-dot" class="notification-dot"></div></div>
-    <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user"></i></div>
+    <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user-circle"></i></div>
 </div>
 
 <div id="toast"></div>
