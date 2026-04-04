@@ -3,62 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Classmate Connect</title>
-    
+    <title>Classmate Connect - TEMRIS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <style>
         :root { --primary: #6366f1; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --sub: #64748b; --danger: #ef4444; }
         .dark-mode { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --sub: #94a3b8; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 75px; transition: 0.3s; overflow-x: hidden; }
-        
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(0,0,0,0.1); z-index: 100; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 75px; transition: 0.3s; }
+        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 100; }
         .nav-item { color: var(--sub); font-size: 20px; cursor: pointer; flex: 1; text-align: center; position: relative; }
         .active-nav { color: var(--primary); }
-        .dot { position: absolute; top: -5px; right: 30%; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; display: none; border: 2px solid var(--card); }
-
+        .dot { position: absolute; top: -5px; right: 30%; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; display: none; }
         .container { padding: 15px; max-width: 600px; margin: auto; }
-        .section { display: none; animation: fadeIn 0.3s; }
+        .section { display: none; }
         .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
         input, textarea { width: 93%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; background: var(--card); color: var(--text); outline: none; }
-        .btn { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-blue { background: var(--primary); color: white; }
-        
-        .post-img, .chat-img { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 300px; object-fit: cover; }
-        .msg-bubble { padding: 10px 15px; border-radius: 18px; margin: 5px 0; max-width: 75%; font-size: 14px; position: relative; cursor: pointer; word-wrap: break-word; }
-        .mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .theirs { background: #e2e8f0; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-        
-        #login-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #toast { visibility: hidden; min-width: 200px; background: #1e293b; color: #fff; text-align: center; padding: 12px; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); border-radius: 30px; z-index: 1000; }
-        #toast.show { visibility: visible; animation: slideUp 0.3s; }
-        
+        .btn-blue { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 300px; object-fit: cover; }
         #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; flex-direction: column; }
-        @keyframes slideUp { from { bottom: 0; opacity: 0; } to { bottom: 90px; opacity: 1; } }
+        .msg-bubble { padding: 10px 15px; border-radius: 18px; margin: 5px 0; max-width: 75%; font-size: 14px; cursor: pointer; }
+        .mine { background: var(--primary); color: white; align-self: flex-end; }
+        .theirs { background: #e2e8f0; color: #333; align-self: flex-start; }
+        #toast { visibility: hidden; background: #1e293b; color: #fff; padding: 12px; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); border-radius: 30px; z-index: 1000; }
+        #toast.show { visibility: visible; }
     </style>
 </head>
 <body>
 
-<div id="login-overlay">
+<div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <h2 style="color:var(--primary);">Classmate Connect</h2>
-    <button class="btn btn-blue" style="width:240px" onclick="login()"><i class="fab fa-google"></i> Sign in with Google</button>
+    <button class="btn-blue" style="width:240px" onclick="login()"><i class="fab fa-google"></i> Sign in with Google</button>
 </div>
 
 <div class="header">
     <span onclick="toggleDarkMode()"><i class="fas fa-graduation-cap"></i> Connect</span>
-    <img id="h-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover;">
+    <img id="h-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover; border: 1px solid white;">
 </div>
 
 <div class="container">
     <div id="feed" class="section active">
         <div class="card">
             <textarea id="msgInput" placeholder="Write something to your batch..."></textarea>
-            <input type="file" id="feedPhoto" accept="image/*" style="font-size:12px; margin-bottom:10px;">
-            <button class="btn btn-blue" onclick="handlePost()">Post Update</button>
+            <input type="file" id="feedPhoto" accept="image/*">
+            <button class="btn-blue" onclick="handlePost()">Post Update</button>
         </div>
         <div id="post-container"></div>
     </div>
@@ -73,26 +61,29 @@
             <div id="req-list"></div>
         </div>
         <div class="card">
-            <h4><i class="fas fa-search"></i> Find Classmates</h4>
+            <h4><i class="fas fa-search"></i> Advanced Find</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
-            <button class="btn btn-blue" onclick="search()">Search</button>
+            <input type="text" id="s-city" placeholder="City">
+            <input type="text" id="s-class" placeholder="Course/Class">
+            <input type="number" id="s-year" placeholder="Passout Year">
+            <button class="btn-blue" onclick="search()">Search</button>
         </div>
         <div id="search-results"></div>
     </div>
 
     <div id="profile" class="section">
         <div class="card" style="text-align:center;">
-            <img id="p-img" src="" width="100" height="100" style="border-radius:50%; object-fit:cover; border:3px solid var(--primary);">
+            <img id="p-img" src="" width="100" height="100" style="border-radius:50%; border:3px solid var(--primary); object-fit: cover;">
             <br><input type="file" id="p-upload" accept="image/*" onchange="uploadProfilePic()" style="margin-top:10px;">
             <h3 id="p-name"></h3>
         </div>
         <div class="card">
             <input type="text" id="p-inst" placeholder="Institution">
             <input type="text" id="p-city" placeholder="City">
-            <input type="text" id="p-class" placeholder="Course">
+            <input type="text" id="p-class" placeholder="Class">
             <input type="number" id="p-year" placeholder="Year">
-            <button class="btn btn-blue" onclick="saveProfile()">Update Profile</button>
-            <button class="btn" style="margin-top:10px;" onclick="logout()">Logout</button>
+            <button class="btn-blue" onclick="saveProfile()">Update Profile</button>
+            <button class="btn-blue" style="margin-top:10px; background:#64748b;" onclick="logout()">Logout</button>
         </div>
     </div>
 </div>
@@ -108,15 +99,15 @@
     </div>
     <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column;"></div>
     <div style="padding:10px; background:white; display:flex; gap:10px;">
-        <input type="text" id="chatInput" placeholder="Message..." style="margin-bottom:0; border-radius:20px;">
-        <button onclick="sendMsg()" class="btn-blue" style="width:50px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+        <input type="text" id="chatInput" placeholder="Message..." style="margin-bottom:0; border-radius: 20px;">
+        <button onclick="sendMsg()" class="btn-blue" style="width:50px; border-radius: 50%;"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 
 <div class="nav-bottom">
-    <div class="nav-item active-nav" onclick="show('feed', event, this)"><i class="fas fa-home"></i></div>
-    <div class="nav-item" onclick="show('network', event, this)"><i class="fas fa-users"></i><div id="req-dot" class="dot"></div></div>
-    <div class="nav-item" onclick="show('profile', event, this)"><i class="fas fa-user"></i></div>
+    <div class="nav-item active-nav" onclick="show('feed', this)"><i class="fas fa-home"></i></div>
+    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-users"></i><div id="req-dot" class="dot"></div></div>
+    <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user-circle"></i></div>
 </div>
 
 <div id="toast"></div>
