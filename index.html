@@ -76,31 +76,31 @@
 
 <div id="login-overlay" style="position:fixed; inset:0; background:var(--bg); z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
     <div style="background:var(--primary); width:80px; height:80px; border-radius:24px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 20px 40px var(--primary-light);">
-        <i class="fas fa-link" style="color:white; font-size:2rem;"></i>
+        <i class="fas fa-graduation-cap" style="color:white; font-size:2rem;"></i>
     </div>
     <h1 style="margin:0; font-weight:800;">Classmate Connect</h1>
-    <p style="color:var(--sub); margin-bottom:30px;">Global Alumni Network</p>
+    <p style="color:var(--sub); margin-bottom:30px;">Connecting Students Worldwide</p>
     <button class="btn-primary" style="width:260px" onclick="login()">Sign in with Google</button>
 </div>
 
 <div class="header glass">
-    <b onclick="toggleDarkMode()"><i class="fas fa-bolt"></i> CONNECT</b>
+    <b onclick="toggleDarkMode()"><i class="fas fa-users"></i> Classmate Connect</b>
     <img id="h-img" src="" width="38" height="38" style="border-radius:12px; object-fit:cover; border:2px solid var(--primary-light);">
 </div>
 
 <div class="container">
     <div id="feed" class="section active">
         <div id="group-tag" class="card glass" style="background:var(--primary); color:white; display:none; border:none; padding:12px;">
-            <i class="fas fa-graduation-cap"></i> <span id="group-text" style="font-weight:600; margin-left:8px;"></span>
+            <i class="fas fa-university"></i> <span id="group-text" style="font-weight:600; margin-left:8px;"></span>
         </div>
         <div class="card glass">
-            <textarea id="msgInput" placeholder="Post an update to your batch..."></textarea>
+            <textarea id="msgInput" placeholder="Share an update with your classmates..."></textarea>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label for="feedPhoto" style="cursor:pointer; color:var(--primary); font-weight:700; font-size:14px;">
-                    <i class="fas fa-image"></i> Add Photo
+                    <i class="fas fa-image"></i> Photo
                 </label>
                 <input type="file" id="feedPhoto" accept="image/*" style="display:none;">
-                <button class="btn-primary" style="width:100px; padding:10px;" onclick="handlePost()">Share</button>
+                <button class="btn-primary" style="width:100px; padding:10px;" onclick="handlePost()">Post</button>
             </div>
         </div>
         <div id="post-container"></div>
@@ -108,10 +108,12 @@
 
     <div id="network" class="section">
         <div class="card glass">
-            <h4 style="margin-top:0;">Find People</h4>
+            <h4 style="margin-top:0;"><i class="fas fa-search"></i> Find Classmates</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
-            <input type="number" id="s-year" placeholder="Graduation Year">
-            <button class="btn-primary" onclick="search()">Search Globally</button>
+            <input type="number" id="s-year" placeholder="Passout Year">
+            <input type="text" id="s-class" placeholder="Studying Class/Branch">
+            <input type="text" id="s-city" placeholder="Institution City">
+            <button class="btn-primary" onclick="search()">Find Classmates</button>
         </div>
         <div id="search-results"></div>
         <h4 style="margin:20px 5px 10px 5px;">My Connections</h4>
@@ -119,7 +121,7 @@
     </div>
 
     <div id="notif-section" class="section">
-        <h3 style="margin-left:5px;">Notifications</h3>
+        <h3 style="margin-left:5px;">Alerts</h3>
         <div id="notif-list"></div>
     </div>
 
@@ -142,10 +144,11 @@
                 <span class="theme-dot" style="background:#10b981;" onclick="setTheme('#10b981')"></span>
                 <span class="theme-dot" style="background:#f59e0b;" onclick="setTheme('#f59e0b')"></span>
             </div>
-            <h4>Institution Mapping</h4>
-            <input type="text" id="p-inst" placeholder="University/School">
-            <input type="text" id="p-class" placeholder="Field/Branch">
+            <h4>My Profile Information</h4>
+            <input type="text" id="p-inst" placeholder="Institution Name">
+            <input type="text" id="p-class" placeholder="Studying Class/Branch">
             <input type="number" id="p-year" placeholder="Passout Year">
+            <input type="text" id="p-city" placeholder="Institution City">
             <button class="btn-primary" onclick="saveProfile()">Update Profile</button>
             <button class="btn-primary" style="margin-top:12px; background:#94a3b8;" onclick="logout()">Sign Out</button>
         </div>
@@ -165,7 +168,7 @@
 
 <div class="nav-bottom glass">
     <div class="nav-item active-nav" onclick="show('feed', this)"><i class="fas fa-house"></i></div>
-    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-users"></i></div>
+    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-search"></i></div>
     <div class="nav-item" onclick="show('notif-section', this)"><i class="fas fa-bell"></i><div id="notif-badge" class="badge" style="display:none;"></div></div>
     <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-cog"></i></div>
 </div>
