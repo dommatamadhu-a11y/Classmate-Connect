@@ -22,7 +22,7 @@ auth.onAuthStateChanged(u => {
         document.getElementById('login-overlay').style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
-            user = { uid: u.uid, name: u.displayName, photo: d.photo || u.photoURL, inst: d.inst||"", uClass: d.uClass||"", year: d.year||"" };
+            user = { uid: u.uid, name: u.displayName, photo: d.photo || u.photoURL, inst: d.inst||"", uClass: d.uClass||"", year: d.year||"", city: d.city||"" };
             
             db.ref('status/' + u.uid).set({ state: 'online', last: Date.now() });
             db.ref('status/' + u.uid).onDisconnect().set({ state: 'offline', last: Date.now() });
@@ -39,14 +39,15 @@ function syncUI() {
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-class').value = user.uClass;
     document.getElementById('p-year').value = user.year;
+    document.getElementById('p-city').value = user.city;
     
     if(user.inst && user.year) {
         document.getElementById('group-tag').style.display = "block";
-        document.getElementById('group-text').innerText = `${user.inst} • Batch of ${user.year}`;
+        document.getElementById('group-text').innerText = `${user.inst} | ${user.uClass} | ${user.year}`;
     }
 }
 
-// --- Home Feed (Images, Likes, Comments) ---
+// --- Feed Logic ---
 function loadFeed() {
     if(!user.inst || !user.year) return;
     const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
@@ -89,8 +90,8 @@ function loadFeed() {
 
 async function handlePost() {
     const msg = document.getElementById('msgInput').value.trim();
-    if(!msg) return notify("Type a message first!");
-    if(!user.inst || !user.year) return notify("Complete profile in Settings!");
+    if(!msg) return notify("Message is empty!");
+    if(!user.inst || !user.year) return notify("Complete profile info first!");
     
     const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
     let imgData = "";
@@ -102,7 +103,7 @@ async function handlePost() {
     
     db.ref('posts').push({ uid: user.uid, userName: user.name, userPhoto: user.photo, msg, img: imgData, groupKey: gKey, time: Date.now() });
     document.getElementById('msgInput').value = ""; document.getElementById('feedPhoto').value = "";
-    notify("Posted to your batch!");
+    notify("Post successful!");
 }
 
 function likePost(id) { db.ref(`posts/${id}/likes/${user.uid}`).set(true); }
@@ -118,7 +119,7 @@ function loadComments(pid) {
     });
 }
 
-// --- Chat with Deletion ---
+// --- Messaging & Delete ---
 function openChat(uid, name) {
     activeChatUid = uid; document.getElementById('chat-user').innerText = name;
     document.getElementById('chat-window').style.display = "flex";
@@ -142,23 +143,37 @@ function sendMsg() {
     db.ref(`notifications/${activeChatUid}`).push({ type: 'msg', fromName: user.name, text: v });
     document.getElementById('chatInput').value = "";
 }
+function deleteMsg(cid, mid) { if(confirm("Delete this message?")) db.ref(`chats/${cid}/${mid}`).remove(); }
 
-function deleteMsg(cid, mid) { if(confirm("Delete message?")) db.ref(`chats/${cid}/${mid}`).remove(); }
-
-// --- Networking & Notifications ---
+// --- Advanced Search & Connections ---
 function search() {
     const sInst = document.getElementById('s-inst').value.toUpperCase().trim();
+    const sYear = document.getElementById('s-year').value.trim();
+    const sClass = document.getElementById('s-class').value.toUpperCase().trim();
+    const sCity = document.getElementById('s-city').value.toUpperCase().trim();
+
     db.ref('users').once('value', snap => {
         const res = document.getElementById('search-results'); res.innerHTML = "";
+        let found = false;
         snap.forEach(c => {
             const u = c.val(); if(c.key === user.uid) return;
-            if(!sInst || (u.inst && u.inst.toUpperCase().includes(sInst))) {
-                res.innerHTML += `<div class="card glass" style="display:flex; justify-content:space-between; align-items:center; padding:15px;">
-                    <span><b>${u.name}</b><br><small>${u.inst || 'Global User'}</small></span>
+            
+            // Filtering logic
+            let match = true;
+            if(sInst && (!u.inst || !u.inst.toUpperCase().includes(sInst))) match = false;
+            if(sYear && (!u.year || u.year != sYear)) match = false;
+            if(sClass && (!u.uClass || !u.uClass.toUpperCase().includes(sClass))) match = false;
+            if(sCity && (!u.city || !u.city.toUpperCase().includes(sCity))) match = false;
+
+            if(match) {
+                found = true;
+                res.innerHTML += `<div class="card glass" style="display:flex; justify-content:space-between; align-items:center; padding:15px; animation: slideUp 0.3s ease;">
+                    <span><b>${u.name}</b><br><small>${u.inst || 'N/A'} | ${u.uClass || 'N/A'}<br>${u.city || ''}</small></span>
                     <button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto; padding:6px 15px; font-size:12px;">Connect</button>
                 </div>`;
             }
         });
+        if(!found) res.innerHTML = "<p style='text-align:center; color:gray; font-size:14px;'>No classmates found with these filters.</p>";
     });
 }
 
@@ -173,7 +188,7 @@ function loadFriends() {
                 db.ref('status/' + s.key).on('value', st => {
                     const status = st.val()?.state === 'online' ? 'online' : 'offline';
                     list.innerHTML += `<div class="card glass" onclick="openChat('${s.key}', '${u.name}')" style="cursor:pointer; display:flex; align-items:center; padding:15px;">
-                        <span class="status-dot ${status}"></span><b>${u.name}</b><i class="fas fa-comment-alt" style="margin-left:auto; color:var(--primary)"></i>
+                        <span class="status-dot ${status}"></span><b>${u.name}</b><i class="fas fa-comment-dots" style="margin-left:auto; color:var(--primary)"></i>
                     </div>`;
                 });
             });
@@ -201,17 +216,19 @@ function acceptReq(fid, nid) {
     db.ref(`notifications/${user.uid}/${nid}`).remove(); notify("Connected!");
 }
 
-// --- Themes & Profile ---
+// --- Theme & Profile Save ---
 function setTheme(c) {
     document.documentElement.style.setProperty('--primary', c);
     document.documentElement.style.setProperty('--primary-light', c + '15');
     localStorage.setItem('userTheme', c);
 }
-
 function saveProfile() {
-    const inst = document.getElementById('p-inst').value; const year = document.getElementById('p-year').value;
+    const inst = document.getElementById('p-inst').value;
+    const year = document.getElementById('p-year').value;
+    const uClass = document.getElementById('p-class').value;
+    const city = document.getElementById('p-city').value;
     if(!inst || !year) return notify("Institution and Year are required!");
-    db.ref('users/' + user.uid).update({ inst, uClass: document.getElementById('p-class').value, year }).then(() => notify("Profile Updated!"));
+    db.ref('users/' + user.uid).update({ inst, uClass, year, city }).then(() => notify("Profile Updated!"));
 }
 
 function uploadProfilePic() {
@@ -231,5 +248,4 @@ function show(id, el) {
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut().then(() => location.reload()); }
 
-// Load saved theme
 const st = localStorage.getItem('userTheme'); if(st) setTheme(st);
