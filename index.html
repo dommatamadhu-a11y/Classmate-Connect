@@ -6,158 +6,132 @@
     <title>Classmate Connect</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { --primary: #6c5ce7; --bg: #f0f2f5; --glass: rgba(255, 255, 255, 0.9); }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; }
+        .glass { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+        .card { margin: 15px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        header { position: sticky; top: 0; z-index: 100; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .section { display: none; }
+        .section.active { display: block; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; background: white; }
+        .nav-item { text-align: center; font-size: 11px; color: gray; cursor: pointer; flex: 1; }
+        .nav-item i { font-size: 20px; margin-bottom: 3px; }
+        .active-nav { color: var(--primary); }
+        .story-container { overflow-x: auto; white-space: nowrap; padding: 10px; display: flex; gap: 10px; }
+        .story-circle { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); overflow: hidden; flex-shrink: 0; }
+        .story-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .poll-box { background: #f9f9f9; padding: 10px; border-radius: 10px; margin: 10px 0; border: 1px solid #eee; }
+        .poll-opt { background: white; margin: 5px 0; padding: 10px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; text-align: center; }
+        .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; display: none; z-index: 2000; }
+    </style>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="login-overlay" class="overlay">
-        <div class="login-card glass">
-            <h2>Welcome to Classmate Connect</h2>
-            <p>Connect with your old friends easily</p>
-            <button onclick="login()" class="btn-primary"><i class="fab fa-google"></i> Sign in with Google</button>
-        </div>
+    <div id="login-overlay">
+        <h2 style="color:var(--primary)">Classmate Connect</h2>
+        <button onclick="login()" class="btn-primary" style="width:220px;"><i class="fab fa-google"></i> Login with Google</button>
     </div>
 
     <header class="glass">
-        <div class="header-content">
-            <div class="user-info">
-                <img id="h-img" src="https://via.placeholder.com/40" alt="Profile">
-                <div id="group-tag" style="display:none;"><small id="group-text"></small></div>
-            </div>
-            <div class="header-actions">
-                <i class="fas fa-moon" onclick="toggleDarkMode()"></i>
-                <div class="notif-icon" onclick="show('notifications', this)">
-                    <i class="fas fa-bell"></i>
-                    <span id="notif-badge" class="badge">0</span>
-                </div>
-            </div>
+        <div style="display:flex; align-items:center;">
+            <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%; margin-right:10px;">
+            <div id="daily-quote" style="font-size:10px; font-style:italic; color:#555; max-width:200px;"></div>
+        </div>
+        <div onclick="show('notifications', this)" style="position:relative; cursor:pointer;">
+            <i class="fas fa-bell" style="font-size:20px;"></i>
+            <span id="notif-badge" class="badge" style="display:none;">0</span>
         </div>
     </header>
 
-    <div class="quote-container">
-        <p id="daily-quote" class="glass-text">"Loading inspiration..."</p>
-    </div>
-
     <main>
         <section id="home" class="section active">
-            <div id="story-list" class="story-container">
-                </div>
-
-            <div class="post-box glass card">
-                <textarea id="msgInput" placeholder="What's on your mind, classmate?"></textarea>
-                
-                <div id="poll-creator" style="display:none; margin:10px 0; padding:10px; border-top:1px dashed #ccc;">
-                    <input type="text" id="poll-q" placeholder="Question?">
+            <div id="story-list" class="story-container"></div>
+            
+            <div class="card glass">
+                <textarea id="msgInput" placeholder="Share something with your class..."></textarea>
+                <div id="poll-creator" style="display:none; border-top:1px solid #eee; margin-top:10px; padding-top:10px;">
+                    <input type="text" id="poll-q" placeholder="Enter Question">
                     <input type="text" id="poll-o1" placeholder="Option 1">
                     <input type="text" id="poll-o2" placeholder="Option 2">
                 </div>
-
-                <div class="post-options">
-                    <label title="Image"><i class="fas fa-image"></i><input type="file" id="f-img" accept="image/*" hidden></label>
-                    <label title="Video"><i class="fas fa-video"></i><input type="file" id="f-vid" accept="video/*" hidden></label>
-                    <label title="PDF"><i class="fas fa-file-pdf"></i><input type="file" id="f-pdf" accept="application/pdf" hidden></label>
-                    <i class="fas fa-poll" onclick="togglePollCreator()" title="Create Poll"></i>
-                    <button onclick="handlePost()" class="btn-send"><i class="fas fa-paper-plane"></i> Post</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <div style="display:flex; gap:15px; font-size:18px; color:var(--primary);">
+                        <label title="Image"><i class="fas fa-image"></i><input type="file" id="f-img" accept="image/*" hidden></label>
+                        <label title="PDF"><i class="fas fa-file-pdf"></i><input type="file" id="f-pdf" accept="application/pdf" hidden></label>
+                        <i class="fas fa-poll" onclick="togglePollCreator()"></i>
+                    </div>
+                    <button onclick="handlePost()" class="btn-primary" style="width:100px;">Post</button>
                 </div>
             </div>
-
-            <div id="post-container">
-                </div>
+            <div id="post-container"></div>
         </section>
 
         <section id="search" class="section">
-            <div class="card glass search-box">
-                <h3><i class="fas fa-search"></i> Find Classmates</h3>
-                <div class="search-inputs">
-                    <input type="text" id="s-inst" placeholder="Institution Name">
-                    <input type="number" id="s-year" placeholder="Passout Year">
-                    <input type="text" id="s-class" placeholder="Studying Class">
-                    <input type="text" id="s-city" placeholder="Institution City">
-                </div>
-                <button onclick="search()" class="btn-primary"><i class="fas fa-filter"></i> Search</button>
+            <div class="card glass">
+                <h3>Find Classmates</h3>
+                <input type="text" id="s-inst" placeholder="Institution Name">
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Studying Class">
+                <input type="text" id="s-city" placeholder="Institution City">
+                <button onclick="search()" class="btn-primary">Search Now</button>
             </div>
             <div id="search-results"></div>
         </section>
 
-        <section id="friends" class="section">
-            <h3><i class="fas fa-users"></i> Your Connections</h3>
-            <div id="friends-list"></div>
+        <section id="profile" class="section">
+            <div class="card glass" style="text-align:center;">
+                <img id="p-img" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary);">
+                <h3 id="p-name">Username</h3>
+                <div style="text-align:left;">
+                    <label>Institution</label><input type="text" id="p-inst">
+                    <label>Passout Year</label><input type="number" id="p-year">
+                    <label>Studying Class</label><input type="text" id="p-class">
+                    <label>City</label><input type="text" id="p-city">
+                </div>
+                <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
+                <button onclick="logout()" style="background:#ff4757; margin-top:15px;" class="btn-primary">Logout</button>
+            </div>
         </section>
 
         <section id="notifications" class="section">
-            <h3><i class="fas fa-bell"></i> Notifications</h3>
-            <div id="notif-list"></div>
-        </section>
-
-        <section id="profile" class="section">
-            <div class="card glass profile-card">
-                <img id="p-img" src="" alt="Profile">
-                <h2 id="p-name">Username</h2>
-                
-                <div class="profile-details">
-                    <div class="input-group">
-                        <label>Institution Name</label>
-                        <input type="text" id="p-inst" placeholder="Ex: IIT Madras">
-                    </div>
-                    <div class="input-group">
-                        <label>Passout Year</label>
-                        <input type="number" id="p-year" placeholder="Ex: 2020">
-                    </div>
-                    <div class="input-group">
-                        <label>Studying Class</label>
-                        <input type="text" id="p-class" placeholder="Ex: B.Tech 4th Year">
-                    </div>
-                    <div class="input-group">
-                        <label>Institution City</label>
-                        <input type="text" id="p-city" placeholder="Ex: Hyderabad">
-                    </div>
-                    
-                    <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
-                    <button onclick="logout()" class="btn-danger" style="margin-top:10px;">Logout</button>
-                </div>
+            <div class="card glass">
+                <h3>Notifications</h3>
+                <div id="notif-list"></div>
             </div>
         </section>
     </main>
 
-    <nav class="bottom-nav glass">
-        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><span>Home</span></div>
-        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><span>Find</span></div>
-        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-comments"></i><span>Chats</span></div>
-        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><span>Profile</span></div>
+    <nav class="bottom-nav">
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br>Home</div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br>Find</div>
+        <div class="nav-item" onclick="show('notifications', this)"><i class="fas fa-bell"></i><br>Alerts</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><br>Profile</div>
     </nav>
 
-    <div id="chat-window" class="chat-overlay" style="display:none;">
-        <div class="chat-header glass">
-            <i class="fas fa-arrow-left" onclick="closeChat()"></i>
-            <span id="chat-user">Chat</span>
-        </div>
-        <div id="chat-msgs" class="chat-content"></div>
-        <div class="chat-input-area glass">
-            <input type="text" id="chatInput" placeholder="Type a message...">
-            <button onclick="sendMsg()"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
+    <div id="toast" class="toast"></div>
 
-    <div class="ai-trigger" onclick="toggleAI()">
+    <div onclick="toggleAI()" style="position:fixed; bottom:80px; right:20px; background:var(--primary); color:white; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3); cursor:pointer;">
         <i class="fas fa-robot"></i>
     </div>
-
-    <div id="ai-window" class="chat-overlay ai-chat" style="display:none;">
-        <div class="chat-header glass">
-            <span>Classmate AI</span>
-            <i class="fas fa-times" onclick="toggleAI()"></i>
-        </div>
-        <div id="ai-msgs" class="chat-content"></div>
-        <div class="chat-input-area glass">
-            <input type="text" id="ai-input" placeholder="Ask AI helper...">
-            <button onclick="askAI()"><i class="fas fa-paper-plane"></i></button>
+    <div id="ai-window" class="glass card" style="display:none; position:fixed; bottom:140px; right:20px; width:280px; height:350px; z-index:500; flex-direction:column;">
+        <div style="padding:10px; border-bottom:1px solid #ddd; font-weight:bold;">Classmate AI</div>
+        <div id="ai-msgs" style="flex:1; overflow-y:auto; padding:10px; font-size:13px;"></div>
+        <div style="display:flex; padding:5px;">
+            <input type="text" id="ai-input" placeholder="Ask anything...">
+            <button onclick="askAI()" style="background:var(--primary); color:white; border:none; border-radius:5px; margin-left:5px;">Go</button>
         </div>
     </div>
-
-    <div id="toast" class="toast"></div>
 
     <script src="app.js"></script>
 </body>
