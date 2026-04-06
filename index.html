@@ -29,26 +29,22 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; transition: 0.4s ease; overflow-x: hidden; }
         .glass { background: var(--card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-        /* Header & Nav */
         .header { background: var(--card); backdrop-filter: blur(10px); color: var(--primary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass-border); }
         .nav-bottom { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--card); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 24px; border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; }
         .nav-item { color: var(--sub); cursor: pointer; flex: 1; text-align: center; transition: 0.3s; position: relative; }
         .active-nav { color: var(--primary); transform: translateY(-3px); font-weight: bold; }
         .badge { position: absolute; top: -8px; right: 25%; background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
 
-        /* Container & Sections */
         .container { padding: 20px; max-width: 600px; margin: auto; }
         .section { display: none; }
         .active { display: block; animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Cards & Inputs */
         .card { border-radius: 24px; padding: 20px; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid transparent; border-radius: 16px; background: var(--primary-light); color: var(--text); outline: none; box-sizing: border-box; font-family: inherit; }
         input:focus { border: 1px solid var(--primary); }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 16px; width: 100%; cursor: pointer; font-weight: 700; transition: 0.3s; }
 
-        /* Post UI */
         .post-header { display: flex; align-items: center; margin-bottom: 12px; }
         .post-info { margin-left: 12px; flex: 1; }
         .post-img { width: 100%; border-radius: 20px; margin: 12px 0; object-fit: cover; }
@@ -56,7 +52,6 @@
         .action-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--sub); font-size: 0.85rem; }
         .comment-box { margin-top: 12px; display: none; padding: 12px; background: var(--primary-light); border-radius: 16px; }
 
-        /* Chat UI */
         #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; }
         .msg-bubble { padding: 12px 16px; border-radius: 20px; margin: 6px 0; max-width: 75%; font-size: 14px; position: relative; }
         .mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
@@ -65,9 +60,8 @@
         .online { background: var(--online); }
         .offline { background: #94a3b8; }
 
-        /* Theme & Toast */
         .theme-dot { width: 28px; height: 28px; border-radius: 50%; display: inline-block; cursor: pointer; margin-right: 12px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #toast { visibility: hidden; background: #0f172a; color: #fff; padding: 14px 28px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); border-radius: 50px; z-index: 3000; font-weight: 600; }
+        #toast { visibility: hidden; background: #0f172a; color: #fff; padding: 14px 28px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); border-radius: 50px; z-index: 3000; font-weight: 600; text-align: center; }
         #toast.show { visibility: visible; animation: fadeInUp 0.4s; }
         @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
@@ -94,10 +88,10 @@
             <i class="fas fa-university"></i> <span id="group-text" style="font-weight:600; margin-left:8px;"></span>
         </div>
         <div class="card glass">
-            <textarea id="msgInput" placeholder="Share an update with your classmates..."></textarea>
+            <textarea id="msgInput" placeholder="Share something with your batch..."></textarea>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label for="feedPhoto" style="cursor:pointer; color:var(--primary); font-weight:700; font-size:14px;">
-                    <i class="fas fa-image"></i> Photo
+                    <i class="fas fa-image"></i> Add Photo
                 </label>
                 <input type="file" id="feedPhoto" accept="image/*" style="display:none;">
                 <button class="btn-primary" style="width:100px; padding:10px;" onclick="handlePost()">Post</button>
@@ -113,7 +107,7 @@
             <input type="number" id="s-year" placeholder="Passout Year">
             <input type="text" id="s-class" placeholder="Studying Class/Branch">
             <input type="text" id="s-city" placeholder="Institution City">
-            <button class="btn-primary" onclick="search()">Find Classmates</button>
+            <button class="btn-primary" onclick="search()">Search</button>
         </div>
         <div id="search-results"></div>
         <h4 style="margin:20px 5px 10px 5px;">My Connections</h4>
@@ -144,9 +138,9 @@
                 <span class="theme-dot" style="background:#10b981;" onclick="setTheme('#10b981')"></span>
                 <span class="theme-dot" style="background:#f59e0b;" onclick="setTheme('#f59e0b')"></span>
             </div>
-            <h4>My Profile Information</h4>
+            <h4>Profile Details</h4>
             <input type="text" id="p-inst" placeholder="Institution Name">
-            <input type="text" id="p-class" placeholder="Studying Class/Branch">
+            <input type="text" id="p-class" placeholder="Class/Branch">
             <input type="number" id="p-year" placeholder="Passout Year">
             <input type="text" id="p-city" placeholder="Institution City">
             <button class="btn-primary" onclick="saveProfile()">Update Profile</button>
@@ -161,7 +155,7 @@
     </div>
     <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column;"></div>
     <div class="glass" style="padding:15px; display:flex; gap:10px; margin:10px; border-radius:20px;">
-        <input type="text" id="chatInput" placeholder="Type message..." style="margin-bottom:0;">
+        <input type="text" id="chatInput" placeholder="Message..." style="margin-bottom:0;">
         <button onclick="sendMsg()" class="btn-primary" style="width:60px;"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
