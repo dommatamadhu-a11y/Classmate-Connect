@@ -3,135 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Classmate Connect</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Classmate Connect | Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4f46e5; --bg: #f3f4f6; --card: #ffffff; --text: #111827; --sub: #6b7280; --accent: #f43f5e; --online: #10b981; }
-        .dark-mode { --bg: #111827; --card: #1f2937; --text: #f9fafb; --sub: #9ca3af; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; transition: 0.3s; }
+        :root { 
+            --primary: #6366f1; 
+            --primary-light: rgba(99, 102, 241, 0.1);
+            --bg: #f8fafc; 
+            --card: rgba(255, 255, 255, 0.8);
+            --text: #0f172a; 
+            --sub: #64748b; 
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --accent: #f43f5e;
+            --online: #10b981;
+        }
+        .dark-mode { 
+            --bg: #020617; 
+            --card: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc; 
+            --sub: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
         
-        /* Header */
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
-        /* Navigation */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(0,0,0,0.1); z-index: 100; }
-        .nav-item { color: var(--sub); cursor: pointer; flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; font-size: 11px; transition: 0.2s; position: relative; }
-        .active-nav { color: var(--primary); font-weight: bold; }
-        .badge { position: absolute; top: -5px; right: 28%; background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; transition: 0.4s ease; overflow-x: hidden; }
+        .glass { background: var(--card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-        /* Main UI */
-        .container { padding: 15px; max-width: 600px; margin: auto; }
+        /* Header & Nav */
+        .header { background: var(--card); backdrop-filter: blur(10px); color: var(--primary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass-border); }
+        .nav-bottom { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--card); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 24px; border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; }
+        .nav-item { color: var(--sub); cursor: pointer; flex: 1; text-align: center; transition: 0.3s; position: relative; }
+        .active-nav { color: var(--primary); transform: translateY(-3px); font-weight: bold; }
+        .badge { position: absolute; top: -8px; right: 25%; background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+
+        /* Container & Sections */
+        .container { padding: 20px; max-width: 600px; margin: auto; }
         .section { display: none; }
-        .active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .card { background: var(--card); border-radius: 18px; padding: 18px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: relative; border: 1px solid rgba(0,0,0,0.05); }
-        input, textarea { width: 94%; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 12px; background: var(--bg); color: var(--text); outline: none; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 600; }
+        .active { display: block; animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Posts */
-        .post-header { display: flex; align-items: center; margin-bottom: 10px; }
-        .post-info { margin-left: 10px; }
-        .post-info b { display: block; font-size: 14px; }
-        .post-info small { color: var(--sub); font-size: 11px; }
-        .post-actions { display: flex; gap: 20px; margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px; }
-        .post-actions span { cursor: pointer; font-size: 13px; color: var(--sub); display: flex; align-items: center; gap: 5px; }
-        .comment-box { margin-top: 10px; display: none; background: #f9f9f9; padding: 10px; border-radius: 10px; }
+        /* Cards & Inputs */
+        .card { border-radius: 24px; padding: 20px; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid transparent; border-radius: 16px; background: var(--primary-light); color: var(--text); outline: none; box-sizing: border-box; font-family: inherit; }
+        input:focus { border: 1px solid var(--primary); }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 16px; width: 100%; cursor: pointer; font-weight: 700; transition: 0.3s; }
 
-        /* Chat */
-        #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; flex-direction: column; }
-        .msg-bubble { padding: 10px 15px; border-radius: 18px; margin: 5px 0; max-width: 75%; font-size: 14px; position: relative; }
-        .mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .theirs { background: var(--card); color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; }
+        /* Post UI */
+        .post-header { display: flex; align-items: center; margin-bottom: 12px; }
+        .post-info { margin-left: 12px; flex: 1; }
+        .post-img { width: 100%; border-radius: 20px; margin: 12px 0; object-fit: cover; }
+        .post-actions { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid var(--glass-border); padding-top: 12px; }
+        .action-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--sub); font-size: 0.85rem; }
+        .comment-box { margin-top: 12px; display: none; padding: 12px; background: var(--primary-light); border-radius: 16px; }
+
+        /* Chat UI */
+        #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; }
+        .msg-bubble { padding: 12px 16px; border-radius: 20px; margin: 6px 0; max-width: 75%; font-size: 14px; position: relative; }
+        .mine { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .theirs { background: var(--card); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--glass-border); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .online { background: var(--online); }
-        .offline { background: #9ca3af; }
+        .offline { background: #94a3b8; }
 
-        #toast { visibility: hidden; background: #1f2937; color: #fff; padding: 12px 25px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); border-radius: 30px; z-index: 1000; }
-        #toast.show { visibility: visible; }
+        /* Theme & Toast */
+        .theme-dot { width: 28px; height: 28px; border-radius: 50%; display: inline-block; cursor: pointer; margin-right: 12px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #toast { visibility: hidden; background: #0f172a; color: #fff; padding: 14px 28px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); border-radius: 50px; z-index: 3000; font-weight: 600; }
+        #toast.show { visibility: visible; animation: fadeInUp 0.4s; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
 <body>
 
-<div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <h1 style="color:var(--primary)">Classmate Connect</h1>
-    <p style="color:var(--sub)">Connecting Batches Globally</p>
-    <button class="btn-primary" style="width:240px; margin-top:20px;" onclick="login()">Sign in with Google</button>
+<div id="login-overlay" style="position:fixed; inset:0; background:var(--bg); z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+    <div style="background:var(--primary); width:80px; height:80px; border-radius:24px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 20px 40px var(--primary-light);">
+        <i class="fas fa-link" style="color:white; font-size:2rem;"></i>
+    </div>
+    <h1 style="margin:0; font-weight:800;">Classmate Connect</h1>
+    <p style="color:var(--sub); margin-bottom:30px;">Global Alumni Network</p>
+    <button class="btn-primary" style="width:260px" onclick="login()">Sign in with Google</button>
 </div>
 
-<div class="header">
-    <b onclick="toggleDarkMode()">Classmate Connect</b>
-    <img id="h-img" src="" width="35" height="35" style="border-radius:50%; object-fit:cover;">
+<div class="header glass">
+    <b onclick="toggleDarkMode()"><i class="fas fa-bolt"></i> CONNECT</b>
+    <img id="h-img" src="" width="38" height="38" style="border-radius:12px; object-fit:cover; border:2px solid var(--primary-light);">
 </div>
 
 <div class="container">
     <div id="feed" class="section active">
-        <div id="group-tag" class="card" style="background:var(--primary); color:white; display:none; padding:10px;">
-            <i class="fas fa-users"></i> <span id="group-text"></span>
+        <div id="group-tag" class="card glass" style="background:var(--primary); color:white; display:none; border:none; padding:12px;">
+            <i class="fas fa-graduation-cap"></i> <span id="group-text" style="font-weight:600; margin-left:8px;"></span>
         </div>
-        <div class="card">
-            <textarea id="msgInput" placeholder="Share an update with your batch..."></textarea>
-            <input type="file" id="feedPhoto" accept="image/*" style="border:none; background:transparent; font-size:12px;">
-            <button class="btn-primary" style="margin-top:10px;" onclick="handlePost()">Post Update</button>
+        <div class="card glass">
+            <textarea id="msgInput" placeholder="Post an update to your batch..."></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label for="feedPhoto" style="cursor:pointer; color:var(--primary); font-weight:700; font-size:14px;">
+                    <i class="fas fa-image"></i> Add Photo
+                </label>
+                <input type="file" id="feedPhoto" accept="image/*" style="display:none;">
+                <button class="btn-primary" style="width:100px; padding:10px;" onclick="handlePost()">Share</button>
+            </div>
         </div>
         <div id="post-container"></div>
     </div>
 
     <div id="network" class="section">
-        <div class="card">
-            <h4>Global Search</h4>
+        <div class="card glass">
+            <h4 style="margin-top:0;">Find People</h4>
             <input type="text" id="s-inst" placeholder="Institution Name">
-            <input type="text" id="s-city" placeholder="City / Country">
-            <input type="text" id="s-class" placeholder="Course/Field">
             <input type="number" id="s-year" placeholder="Graduation Year">
-            <button class="btn-primary" onclick="search()">Search Classmates</button>
+            <button class="btn-primary" onclick="search()">Search Globally</button>
         </div>
         <div id="search-results"></div>
-        <div class="card">
-            <h4>My Connections</h4>
-            <div id="friends-list"></div>
-        </div>
+        <h4 style="margin:20px 5px 10px 5px;">My Connections</h4>
+        <div id="friends-list"></div>
     </div>
 
     <div id="notif-section" class="section">
-        <h3>Alerts & Notifications</h3>
+        <h3 style="margin-left:5px;">Notifications</h3>
         <div id="notif-list"></div>
     </div>
 
     <div id="profile" class="section">
-        <div class="card" style="text-align:center;">
-            <img id="p-img" src="" width="100" height="100" style="border-radius:50%; border:3px solid var(--primary);">
-            <br><input type="file" id="p-upload" accept="image/*" onchange="uploadProfilePic()" style="margin-top:10px; font-size:11px;">
-            <h3 id="p-name" style="margin-top:10px;"></h3>
+        <div class="card glass" style="text-align:center;">
+            <div style="position:relative; width:100px; margin:auto;">
+                <img id="p-img" src="" width="100" height="100" style="border-radius:30px; object-fit:cover;">
+                <label for="p-upload" style="position:absolute; bottom:-5px; right:-5px; background:var(--primary); color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:3px solid var(--card);">
+                    <i class="fas fa-camera" style="font-size:12px;"></i>
+                </label>
+            </div>
+            <input type="file" id="p-upload" accept="image/*" onchange="uploadProfilePic()" style="display:none;">
+            <h3 id="p-name" style="margin:15px 0 5px 0;"></h3>
         </div>
-        <div class="card">
-            <h4>Account Settings</h4>
-            <input type="text" id="p-inst" placeholder="University/School Name">
-            <input type="text" id="p-city" placeholder="Current City">
-            <input type="text" id="p-class" placeholder="Course Name (e.g. B.Tech)">
-            <input type="number" id="p-year" placeholder="Batch/Passout Year">
-            <button class="btn-primary" onclick="saveProfile()">Save Profile Info</button>
-            <button class="btn-primary" style="margin-top:15px; background:#9ca3af;" onclick="logout()">Sign Out</button>
+        <div class="card glass">
+            <h4>Interface Theme</h4>
+            <div style="margin-bottom:25px;">
+                <span class="theme-dot" style="background:#6366f1;" onclick="setTheme('#6366f1')"></span>
+                <span class="theme-dot" style="background:#ec4899;" onclick="setTheme('#ec4899')"></span>
+                <span class="theme-dot" style="background:#10b981;" onclick="setTheme('#10b981')"></span>
+                <span class="theme-dot" style="background:#f59e0b;" onclick="setTheme('#f59e0b')"></span>
+            </div>
+            <h4>Institution Mapping</h4>
+            <input type="text" id="p-inst" placeholder="University/School">
+            <input type="text" id="p-class" placeholder="Field/Branch">
+            <input type="number" id="p-year" placeholder="Passout Year">
+            <button class="btn-primary" onclick="saveProfile()">Update Profile</button>
+            <button class="btn-primary" style="margin-top:12px; background:#94a3b8;" onclick="logout()">Sign Out</button>
         </div>
     </div>
 </div>
 
 <div id="chat-window">
-    <div class="header">
+    <div class="header glass">
         <span onclick="closeChat()"><i class="fas fa-arrow-left"></i> <b id="chat-user">Chat</b></span>
     </div>
-    <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column;"></div>
-    <div style="padding:10px; background:white; display:flex; gap:10px; border-top: 1px solid #eee;">
-        <input type="text" id="chatInput" placeholder="Write a message..." style="margin-bottom:0;">
+    <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column;"></div>
+    <div class="glass" style="padding:15px; display:flex; gap:10px; margin:10px; border-radius:20px;">
+        <input type="text" id="chatInput" placeholder="Type message..." style="margin-bottom:0;">
         <button onclick="sendMsg()" class="btn-primary" style="width:60px;"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 
-<div class="nav-bottom">
-    <div class="nav-item active-nav" onclick="show('feed', this)"><i class="fas fa-home"></i><span>Home</span></div>
-    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-globe"></i><span>Network</span></div>
-    <div class="nav-item" onclick="show('notif-section', this)"><i class="fas fa-bell"></i><span>Alerts</span><div id="notif-badge" class="badge" style="display:none;"></div></div>
-    <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-cog"></i><span>Settings</span></div>
+<div class="nav-bottom glass">
+    <div class="nav-item active-nav" onclick="show('feed', this)"><i class="fas fa-house"></i></div>
+    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-users"></i></div>
+    <div class="nav-item" onclick="show('notif-section', this)"><i class="fas fa-bell"></i><div id="notif-badge" class="badge" style="display:none;"></div></div>
+    <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-cog"></i></div>
 </div>
 
 <div id="toast"></div>
