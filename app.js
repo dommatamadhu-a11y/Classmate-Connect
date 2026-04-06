@@ -16,17 +16,14 @@ const auth = firebase.auth();
 let user = null;
 let activeChatUid = "";
 
-// --- Initialization & Auth ---
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
             user = { uid: u.uid, name: u.displayName, photo: d.photo || u.photoURL, inst: d.inst||"", uClass: d.uClass||"", year: d.year||"", city: d.city||"" };
-            
             db.ref('status/' + u.uid).set({ state: 'online', last: Date.now() });
             db.ref('status/' + u.uid).onDisconnect().set({ state: 'offline', last: Date.now() });
-
             syncUI(); loadFeed(); loadFriends(); listenNotifs();
         });
     } else { document.getElementById('login-overlay').style.display = "flex"; }
@@ -40,28 +37,24 @@ function syncUI() {
     document.getElementById('p-class').value = user.uClass;
     document.getElementById('p-year').value = user.year;
     document.getElementById('p-city').value = user.city;
-    
     if(user.inst && user.year) {
         document.getElementById('group-tag').style.display = "block";
         document.getElementById('group-text').innerText = `${user.inst} | ${user.uClass} | ${user.year}`;
     }
 }
 
-// --- Feed Logic ---
+// --- Feed (Images, Likes, Comments) ---
 function loadFeed() {
     if(!user.inst || !user.year) return;
     const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
-    
     db.ref('posts').orderByChild('groupKey').equalTo(gKey).on('value', snap => {
         const container = document.getElementById('post-container'); 
         container.innerHTML = "";
         snap.forEach(s => {
             const p = s.val();
             const time = new Date(p.time).toLocaleString([], {hour: '2-digit', minute:'2-digit'});
-            const likeCount = p.likes ? Object.keys(p.likes).length : 0;
             const hasLiked = p.likes && p.likes[user.uid];
-            const delBtn = p.uid === user.uid ? `<i class="fas fa-trash" onclick="deletePost('${s.key}')" style="float:right; color:red; opacity:0.5; cursor:pointer;"></i>` : '';
-
+            const delBtn = p.uid === user.uid ? `<i class="fas fa-trash" onclick="deletePost('${s.key}')" style="float:right; color:red; opacity:0.4;"></i>` : '';
             container.innerHTML = `
                 <div class="card glass active">
                     ${delBtn}
@@ -72,7 +65,7 @@ function loadFeed() {
                     <p style="font-size:14px; margin:10px 0;">${p.msg}</p>
                     ${p.img ? `<img src="${p.img}" class="post-img">` : ''}
                     <div class="post-actions">
-                        <div class="action-btn" onclick="likePost('${s.key}')"><i class="fa${hasLiked?'s':'r'} fa-heart" style="${hasLiked?'color:var(--primary)':''}"></i> ${likeCount}</div>
+                        <div class="action-btn" onclick="likePost('${s.key}')"><i class="fa${hasLiked?'s':'r'} fa-heart" style="${hasLiked?'color:var(--primary)':''}"></i> ${p.likes ? Object.keys(p.likes).length : 0}</div>
                         <div class="action-btn" onclick="toggleComments('${s.key}')"><i class="far fa-comment"></i> Discussion</div>
                     </div>
                     <div id="comments-${s.key}" class="comment-box">
@@ -90,9 +83,7 @@ function loadFeed() {
 
 async function handlePost() {
     const msg = document.getElementById('msgInput').value.trim();
-    if(!msg) return notify("Message is empty!");
-    if(!user.inst || !user.year) return notify("Complete profile info first!");
-    
+    if(!msg) return notify("Please enter a message!");
     const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
     let imgData = "";
     const f = document.getElementById('feedPhoto').files[0];
@@ -100,10 +91,9 @@ async function handlePost() {
         const r = new FileReader(); 
         imgData = await new Promise(res => { r.onload = e => res(e.target.result); r.readAsDataURL(f); }); 
     }
-    
     db.ref('posts').push({ uid: user.uid, userName: user.name, userPhoto: user.photo, msg, img: imgData, groupKey: gKey, time: Date.now() });
     document.getElementById('msgInput').value = ""; document.getElementById('feedPhoto').value = "";
-    notify("Post successful!");
+    notify("Post Shared!");
 }
 
 function likePost(id) { db.ref(`posts/${id}/likes/${user.uid}`).set(true); }
@@ -119,23 +109,21 @@ function loadComments(pid) {
     });
 }
 
-// --- Messaging & Delete ---
+// --- Chat with Deletion ---
 function openChat(uid, name) {
     activeChatUid = uid; document.getElementById('chat-user').innerText = name;
     document.getElementById('chat-window').style.display = "flex";
     const cid = user.uid < uid ? user.uid + '_' + uid : uid + '_' + user.uid;
-    
     db.ref('chats/' + cid).on('value', snap => {
         const c = document.getElementById('chat-msgs'); c.innerHTML = "";
         snap.forEach(s => {
             const m = s.val(); const isMine = m.sender === user.uid;
-            const del = isMine ? `<i class="fas fa-trash-alt" style="font-size:10px; margin-left:8px; opacity:0.3; cursor:pointer;" onclick="deleteMsg('${cid}', '${s.key}')"></i>` : '';
+            const del = isMine ? `<i class="fas fa-trash-alt" style="font-size:10px; margin-left:8px; opacity:0.3;" onclick="deleteMsg('${cid}', '${s.key}')"></i>` : '';
             c.innerHTML += `<div class="msg-bubble ${isMine ? 'mine':'theirs'}">${m.text} ${del}</div>`;
         });
         c.scrollTop = c.scrollHeight;
     });
 }
-
 function sendMsg() {
     const v = document.getElementById('chatInput').value.trim(); if(!v) return;
     const cid = user.uid < activeChatUid ? user.uid + '_' + activeChatUid : activeChatUid + '_' + user.uid;
@@ -143,9 +131,9 @@ function sendMsg() {
     db.ref(`notifications/${activeChatUid}`).push({ type: 'msg', fromName: user.name, text: v });
     document.getElementById('chatInput').value = "";
 }
-function deleteMsg(cid, mid) { if(confirm("Delete this message?")) db.ref(`chats/${cid}/${mid}`).remove(); }
+function deleteMsg(cid, mid) { if(confirm("Delete message?")) db.ref(`chats/${cid}/${mid}`).remove(); }
 
-// --- Advanced Search & Connections ---
+// --- Advanced Search & Requests ---
 function search() {
     const sInst = document.getElementById('s-inst').value.toUpperCase().trim();
     const sYear = document.getElementById('s-year').value.trim();
@@ -157,8 +145,6 @@ function search() {
         let found = false;
         snap.forEach(c => {
             const u = c.val(); if(c.key === user.uid) return;
-            
-            // Filtering logic
             let match = true;
             if(sInst && (!u.inst || !u.inst.toUpperCase().includes(sInst))) match = false;
             if(sYear && (!u.year || u.year != sYear)) match = false;
@@ -169,15 +155,20 @@ function search() {
                 found = true;
                 res.innerHTML += `<div class="card glass" style="display:flex; justify-content:space-between; align-items:center; padding:15px; animation: slideUp 0.3s ease;">
                     <span><b>${u.name}</b><br><small>${u.inst || 'N/A'} | ${u.uClass || 'N/A'}<br>${u.city || ''}</small></span>
-                    <button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto; padding:6px 15px; font-size:12px;">Connect</button>
+                    <button id="btn-${c.key}" onclick="sendReq('${c.key}', this)" class="btn-primary" style="width:auto; padding:8px 15px; font-size:12px;">Connect</button>
                 </div>`;
             }
         });
-        if(!found) res.innerHTML = "<p style='text-align:center; color:gray; font-size:14px;'>No classmates found with these filters.</p>";
+        if(!found) res.innerHTML = "<p style='text-align:center; color:gray;'>No classmates found.</p>";
     });
 }
 
-function sendReq(toUid) { db.ref(`notifications/${toUid}`).push({ type: 'req', fromName: user.name, fromUid: user.uid }); notify("Request sent!"); }
+function sendReq(toUid, btn) {
+    db.ref(`notifications/${toUid}`).push({ type: 'req', fromName: user.name, fromUid: user.uid }).then(() => {
+        notify("Friend Request Sent!");
+        if(btn) { btn.innerText = "Requested"; btn.style.background = "#94a3b8"; btn.disabled = true; }
+    });
+}
 
 function loadFriends() {
     db.ref('friends/' + user.uid).on('value', snap => {
@@ -216,26 +207,20 @@ function acceptReq(fid, nid) {
     db.ref(`notifications/${user.uid}/${nid}`).remove(); notify("Connected!");
 }
 
-// --- Theme & Profile Save ---
 function setTheme(c) {
     document.documentElement.style.setProperty('--primary', c);
     document.documentElement.style.setProperty('--primary-light', c + '15');
     localStorage.setItem('userTheme', c);
 }
 function saveProfile() {
-    const inst = document.getElementById('p-inst').value;
-    const year = document.getElementById('p-year').value;
-    const uClass = document.getElementById('p-class').value;
-    const city = document.getElementById('p-city').value;
-    if(!inst || !year) return notify("Institution and Year are required!");
-    db.ref('users/' + user.uid).update({ inst, uClass, year, city }).then(() => notify("Profile Updated!"));
+    const inst = document.getElementById('p-inst').value; const year = document.getElementById('p-year').value;
+    if(!inst || !year) return notify("Institution & Year are required!");
+    db.ref('users/' + user.uid).update({ inst, uClass: document.getElementById('p-class').value, year, city: document.getElementById('p-city').value }).then(() => notify("Profile Updated!"));
 }
-
 function uploadProfilePic() {
     const f = document.getElementById('p-upload').files[0];
     if(f) { const r = new FileReader(); r.onload = e => db.ref('users/'+user.uid).update({ photo: e.target.result }); r.readAsDataURL(f); }
 }
-
 function notify(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
 function closeChat() { document.getElementById('chat-window').style.display = "none"; }
@@ -247,5 +232,4 @@ function show(id, el) {
 }
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut().then(() => location.reload()); }
-
 const st = localStorage.getItem('userTheme'); if(st) setTheme(st);
