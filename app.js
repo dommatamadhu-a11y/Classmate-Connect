@@ -1,4 +1,3 @@
-// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
     authDomain: "class-connect-b58f0.firebaseapp.com",
@@ -12,152 +11,127 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
-
 let user = null;
-let blockedList = [];
 
-const quotes = [
-    "Education is the movement from darkness to light.",
-    "The roots of education are bitter, but the fruit is sweet.",
-    "Learning is a treasure that will follow its owner everywhere."
-];
-document.getElementById('daily-quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
-
-// Auth State
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = "none";
-        db.ref('blocks/' + u.uid).on('value', snap => {
-            blockedList = snap.val() ? Object.keys(snap.val()) : [];
-            db.ref('users/' + u.uid).on('value', s => {
-                const d = s.val() || {};
-                user = { uid: u.uid, name: u.displayName, photo: u.photoURL, inst: d.inst || "", year: d.year || "", uClass: d.uClass || "", city: d.city || "" };
-                syncProfile();
-                loadFeed();
-                loadStories();
-                listenNotifs();
-            });
+        db.ref('users/' + u.uid).on('value', s => {
+            const d = s.val() || {};
+            user = { 
+                uid: u.uid, 
+                name: d.name || u.displayName, 
+                photo: u.photoURL, 
+                inst: d.inst||"", 
+                year: d.year||"", 
+                uClass: d.uClass||"", 
+                city: d.city||"" 
+            };
+            updateUI(); loadFeed(); loadStories(); listenNotifs(); loadFriends();
         });
-    } else {
-        document.getElementById('login-overlay').style.display = "flex";
-    }
+    } else { document.getElementById('login-overlay').style.display = "flex"; }
 });
 
-function syncProfile() {
+function updateUI() {
     document.getElementById('h-img').src = user.photo;
     document.getElementById('p-img').src = user.photo;
-    document.getElementById('p-name').innerText = user.name;
+    document.getElementById('u-display').innerText = user.name;
+    document.getElementById('p-name-input').value = user.name;
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-year').value = user.year;
     document.getElementById('p-class').value = user.uClass;
     document.getElementById('p-city').value = user.city;
 }
 
-function saveProfile() {
-    const data = {
-        inst: document.getElementById('p-inst').value,
-        year: document.getElementById('p-year').value,
-        uClass: document.getElementById('p-class').value,
-        city: document.getElementById('p-city').value
-    };
-    db.ref('users/' + user.uid).update(data).then(() => notify("Profile Updated Successfully!"));
+function show(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active-nav');
 }
 
-// Post Handling
+// Home Feed Logic (Post, Likes, Comments)
 async function handlePost() {
-    const msg = document.getElementById('msgInput').value.trim();
-    const isPoll = document.getElementById('poll-creator').style.display === 'block';
-    let media = ""; let mType = "text";
-
-    const fImg = document.getElementById('f-img').files[0];
-    const fPdf = document.getElementById('f-pdf').files[0];
-
-    if(fImg) { media = await toBase64(fImg); mType = "image"; }
-    else if(fPdf) { media = await toBase64(fPdf); mType = "pdf"; }
-
-    if(!msg && !media && !isPoll) return;
-
-    const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
-    const postObj = { uid: user.uid, userName: user.name, userPhoto: user.photo, msg, media, mType, time: Date.now(), groupKey: gKey };
-
-    if(isPoll) {
-        postObj.poll = { 
-            q: document.getElementById('poll-q').value, 
-            o1: { t: document.getElementById('poll-o1').value, v: 0 }, 
-            o2: { t: document.getElementById('poll-o2').value, v: 0 } 
-        };
-    }
-
-    db.ref('posts').push(postObj);
-    resetPostUI();
-    notify("Posted to Class Feed!");
+    const msg = document.getElementById('msgInput').value;
+    const file = document.getElementById('f-img').files[0];
+    if(!msg && !file) return;
+    let media = ""; if(file) media = await toBase64(file);
+    const gKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
+    db.ref('posts').push({
+        uid: user.uid, userName: user.name, userPhoto: user.photo,
+        msg, media, groupKey: gKey, time: Date.now(), likesCount: 0
+    });
+    document.getElementById('msgInput').value = "";
+    document.getElementById('f-img').value = "";
 }
 
 function loadFeed() {
-    if(!user.inst) return;
-    const gKey = (user.inst + user.year + user.uClass).replace(/\s/g, '').toUpperCase();
+    const gKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
     db.ref('posts').orderByChild('groupKey').equalTo(gKey).on('value', snap => {
         const cont = document.getElementById('post-container'); cont.innerHTML = "";
         snap.forEach(s => {
-            const p = s.val(); if(blockedList.includes(p.uid)) return;
-            let mediaHTML = p.mType === 'image' ? `<img src="${p.media}" class="post-img">` : (p.mType === 'pdf' ? `<a href="${p.media}" download style="display:block; margin-top:10px; color:var(--primary);"><i class="fas fa-file-pdf"></i> Download PDF</a>` : "");
-            let pollHTML = p.poll ? `<div class="poll-box"><b>${p.poll.q}</b><div class="poll-opt" onclick="vote('${s.key}', 'o1')">${p.poll.o1.t} (${p.poll.o1.v})</div><div class="poll-opt" onclick="vote('${s.key}', 'o2')">${p.poll.o2.t} (${p.poll.o2.v})</div></div>` : "";
-            
-            const btn = p.uid === user.uid ? `<i class="fas fa-trash" onclick="db.ref('posts/${s.key}').remove()"></i>` : `<i class="fas fa-flag" onclick="report('${s.key}')"></i> <i class="fas fa-user-slash" onclick="block('${p.uid}')" style="margin-left:10px;"></i>`;
+            const p = s.val(); const pid = s.key;
+            let commentsHTML = "";
+            if(p.comments) Object.values(p.comments).forEach(c => {
+                commentsHTML += `<div style="font-size:12px; margin-top:3px;"><b>${c.name}:</b> ${c.text}</div>`;
+            });
 
-            cont.innerHTML = `<div class="card glass">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center;"><img src="${p.userPhoto}" width="30" height="30" style="border-radius:50%; margin-right:8px;"><b>${p.userName}</b></div>
-                    <div style="opacity:0.3; cursor:pointer;">${btn}</div>
+            cont.innerHTML = `<div class="card">
+                <div style="display:flex; align-items:center; margin-bottom:10px;">
+                    <img src="${p.userPhoto}" width="30" height="30" style="border-radius:50%; margin-right:10px;">
+                    <b>${p.userName}</b>
                 </div>
-                <p>${p.msg}</p>${mediaHTML}${pollHTML}
+                <p style="font-size:14px;">${p.msg}</p>
+                ${p.media ? `<img src="${p.media}" class="post-img">` : ""}
+                <div style="display:flex; gap:15px; margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
+                    <span onclick="likePost('${pid}')" style="cursor:pointer; color:var(--primary);"><i class="fas fa-heart"></i> ${p.likesCount || 0}</span>
+                    <span style="color:#555;"><i class="fas fa-comment"></i> ${p.comments ? Object.keys(p.comments).length : 0}</span>
+                </div>
+                <div style="margin-top:10px; background:#f9f9f9; padding:8px; border-radius:8px;">
+                    ${commentsHTML}
+                    <div style="display:flex; margin-top:8px;">
+                        <input type="text" id="inp-${pid}" placeholder="Comment..." style="padding:5px; margin:0; font-size:12px;">
+                        <button onclick="addComment('${pid}')" style="background:var(--primary); color:white; border:none; padding:0 10px; border-radius:5px; margin-left:5px;">Go</button>
+                    </div>
+                </div>
             </div>` + cont.innerHTML;
         });
     });
 }
 
-// Search Logic
+function likePost(pid) { db.ref(`posts/${pid}/likesCount`).transaction(c => (c || 0) + 1); }
+function addComment(pid) {
+    const txt = document.getElementById(`inp-${pid}`).value;
+    if(!txt) return;
+    db.ref(`posts/${pid}/comments`).push({ name: user.name, text: txt });
+    document.getElementById(`inp-${pid}`).value = "";
+}
+
+// Global Search & Friends Logic
 function search() {
     const inst = document.getElementById('s-inst').value.toUpperCase().trim();
-    const year = document.getElementById('s-year').value;
+    const yr = document.getElementById('s-year').value;
     const cl = document.getElementById('s-class').value.toUpperCase().trim();
-    const city = document.getElementById('s-city').value.toUpperCase().trim();
+    const ct = document.getElementById('s-city').value.toUpperCase().trim();
 
     db.ref('users').once('value', snap => {
         const res = document.getElementById('search-results'); res.innerHTML = "";
-        let found = false;
         snap.forEach(c => {
-            const u = c.val(); if(c.key === user.uid || blockedList.includes(c.key)) return;
-            let match = true;
-            if(inst && (!u.inst || !u.inst.toUpperCase().includes(inst))) match = false;
-            if(year && u.year != year) match = false;
-            if(cl && (!u.uClass || !u.uClass.toUpperCase().includes(cl))) match = false;
-            if(city && (!u.city || !u.city.toUpperCase().includes(city))) match = false;
-
-            if(match && (inst || year || cl || city)) {
-                found = true;
-                res.innerHTML += `<div class="card glass" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><b>${u.name}</b><br><small>${u.inst || ''} | ${u.uClass || ''}</small></span>
-                    <button onclick="sendReq('${c.key}', '${u.name}')" class="btn-primary" style="width:80px; padding:5px;">Connect</button>
+            const u = c.val(); if(c.key === user.uid) return;
+            if((inst && u.inst?.toUpperCase().includes(inst)) || (yr && u.year == yr) || (cl && u.uClass?.toUpperCase().includes(cl)) || (ct && u.city?.toUpperCase().includes(ct))) {
+                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small></div>
+                    <button onclick="sendReq('${c.key}', '${u.name}')" style="background:var(--primary); color:white; border:none; padding:8px; border-radius:5px;"><i class="fas fa-user-plus"></i></button>
                 </div>`;
             }
         });
-        if(!found) res.innerHTML = "<p style='text-align:center;'>No classmates found.</p>";
     });
 }
 
-// Utilities & Social
-function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); }); }
-function notify(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = "block"; setTimeout(() => t.style.display = "none", 3000); }
-function show(id, el) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav')); document.getElementById(id).classList.add('active'); el.classList.add('active-nav'); }
-function togglePollCreator() { const p = document.getElementById('poll-creator'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
-function resetPostUI() { document.getElementById('msgInput').value = ""; document.getElementById('poll-creator').style.display = 'none'; document.getElementById('f-img').value = ""; document.getElementById('f-pdf').value = ""; }
-function vote(pid, opt) { db.ref(`posts/${pid}/poll/${opt}/v`).transaction(v => (v || 0) + 1); }
-function block(uid) { if(confirm("Block this user?")) db.ref(`blocks/${user.uid}/${uid}`).set(true).then(() => location.reload()); }
-function report(pid) { prompt("Reason for reporting?"); notify("Reported to Admin."); }
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-function logout() { auth.signOut().then(() => location.reload()); }
-function sendReq(uid, name) { db.ref(`notifications/${uid}`).push({ type: 'req', from: user.name, fromUid: user.uid }).then(() => notify("Request Sent!")); }
+function sendReq(tUid, tName) {
+    db.ref(`notifications/${tUid}`).push({ type: 'friend_req', from: user.name, fromUid: user.uid });
+    alert("Request Sent to " + tName);
+}
 
 function listenNotifs() {
     db.ref('notifications/' + user.uid).on('value', snap => {
@@ -167,38 +141,63 @@ function listenNotifs() {
             b.innerText = snap.numChildren(); b.style.display = "block";
             snap.forEach(s => {
                 const n = s.val();
-                l.innerHTML += `<div class="card" style="margin:5px 0; background:#f0f0f0;"><b>${n.from}</b> wants to connect.</div>`;
+                l.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${n.from}</b> sent a request.</span>
+                    <button onclick="acceptReq('${s.key}', '${n.fromUid}', '${n.from}')" class="btn-primary" style="width:80px;">Accept</button>
+                </div>`;
             });
         } else b.style.display = "none";
     });
 }
 
-// Stories
-function loadStories() {
-    db.ref('stories').on('value', snap => {
-        const list = document.getElementById('story-list'); list.innerHTML = `<div class="story-circle" onclick="addStory()" style="background:#ddd; display:flex; align-items:center; justify-content:center; cursor:pointer;"><i class="fas fa-plus"></i></div>`;
+function acceptReq(nid, fUid, fName) {
+    db.ref(`friends/${user.uid}/${fUid}`).set({ name: fName });
+    db.ref(`friends/${fUid}/${user.uid}`).set({ name: user.name });
+    db.ref(`notifications/${user.uid}/${nid}`).remove();
+    alert("You are now connected with " + fName);
+}
+
+function loadFriends() {
+    db.ref(`friends/${user.uid}`).on('value', snap => {
+        const fl = document.getElementById('friends-list'); fl.innerHTML = "";
+        if(!snap.exists()) fl.innerHTML = "<p style='text-align:center; color:gray;'>No friends yet.</p>";
         snap.forEach(s => {
-            const d = s.val(); if(blockedList.includes(d.uid)) return;
-            list.innerHTML += `<div class="story-circle" onclick="window.open('${d.content}')"><img src="${d.userPhoto}"></div>`;
+            fl.innerHTML += `<div class="card"><i class="fas fa-user-circle" style="color:var(--primary);"></i> <b>${s.val().name}</b></div>`;
         });
     });
 }
+
+// Profile Save & Stories
+function saveProfile() {
+    const newName = document.getElementById('p-name-input').value.trim();
+    const data = {
+        name: newName,
+        inst: document.getElementById('p-inst').value.trim(),
+        year: document.getElementById('p-year').value.trim(),
+        uClass: document.getElementById('p-class').value.trim(),
+        city: document.getElementById('p-city').value.trim()
+    };
+    if(!newName) return alert("Name is required");
+    db.ref('users/' + user.uid).update(data).then(() => {
+        alert("Profile details updated successfully!");
+    });
+}
+
+function loadStories() {
+    db.ref('stories').on('value', snap => {
+        const list = document.getElementById('story-list');
+        list.innerHTML = `<div class="story-circle" onclick="addStory()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#888; font-size:20px;">+</div>`;
+        snap.forEach(s => { list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
+    });
+}
+
 async function addStory() {
-    const i = document.createElement('input'); i.type='file'; i.accept='image/*';
-    i.onchange = async e => {
+    const i = document.createElement('input'); i.type='file'; i.onchange = async e => {
         const b64 = await toBase64(e.target.files[0]);
-        db.ref('stories').push({ uid: user.uid, userPhoto: user.photo, content: b64, time: Date.now() });
+        db.ref('stories').push({ uid: user.uid, userPhoto: user.photo, content: b64 });
     }; i.click();
 }
 
-// AI Helper
-function toggleAI() { const w = document.getElementById('ai-window'); w.style.display = w.style.display === 'none' ? 'flex' : 'none'; }
-function askAI() {
-    const inp = document.getElementById('ai-input'); const box = document.getElementById('ai-msgs');
-    if(!inp.value) return;
-    box.innerHTML += `<div><b>You:</b> ${inp.value}</div>`;
-    let res = "I can help you find classmates or explain how to use this app. Just ask!";
-    if(inp.value.toLowerCase().includes("block")) res = "To block someone, click the user-slash icon on their post.";
-    setTimeout(() => { box.innerHTML += `<div style="color:var(--primary); margin-top:5px;"><b>AI:</b> ${res}</div>`; box.scrollTop = box.scrollHeight; }, 500);
-    inp.value = "";
-}
+function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); }); }
+function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function logout() { auth.signOut().then(() => location.reload()); }
