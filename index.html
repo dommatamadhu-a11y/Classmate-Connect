@@ -2,141 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Classmate Connect | Pro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #6366f1; --bg: #f8fafc; --card: rgba(255, 255, 255, 0.8); --text: #0f172a; --sub: #64748b; --glass: rgba(255, 255, 255, 0.3); }
-        .dark-mode { --bg: #020617; --card: rgba(30, 41, 59, 0.7); --text: #f8fafc; --sub: #94a3b8; }
-        
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 90px; transition: 0.4s ease; }
-        .glass { background: var(--card); backdrop-filter: blur(12px); border: 1px solid var(--glass); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
-
-        /* Stories UI */
-        .story-container { display: flex; gap: 12px; overflow-x: auto; padding: 15px 0; scrollbar-width: none; }
-        .story-circle { min-width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--primary); padding: 3px; cursor: pointer; }
-        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-
-        /* Daily Quote Section */
-        .quote-card { background: linear-gradient(135deg, var(--primary), #818cf8); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; font-style: italic; }
-
-        /* Post UI Extensions */
-        .poll-option { background: var(--bg); padding: 10px; border-radius: 12px; margin-top: 8px; cursor: pointer; border: 1px solid var(--glass); transition: 0.3s; position: relative; overflow: hidden; }
-        .poll-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); opacity: 0.2; width: 0%; transition: 1s ease; }
-
-        .header { background: var(--card); backdrop-filter: blur(10px); color: var(--primary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass); }
-        .nav-bottom { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--card); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 24px; border: 1px solid var(--glass); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; }
-        .nav-item { color: var(--sub); cursor: pointer; flex: 1; text-align: center; position: relative; }
-        .active-nav { color: var(--primary); transform: translateY(-3px); font-weight: bold; }
-        
-        .container { padding: 20px; max-width: 600px; margin: auto; }
-        .section { display: none; }
-        .active { display: block; animation: slideUp 0.5s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        .card { border-radius: 24px; padding: 20px; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid transparent; border-radius: 16px; background: rgba(99, 102, 241, 0.05); color: var(--text); outline: none; box-sizing: border-box; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 16px; width: 100%; cursor: pointer; font-weight: 700; }
-
-        /* Floating AI Bot */
-        #ai-trigger { position: fixed; bottom: 100px; right: 20px; background: var(--primary); color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(99,102,241,0.4); cursor: pointer; z-index: 999; }
-        
-        #toast { visibility: hidden; background: #0f172a; color: #fff; padding: 14px 28px; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); border-radius: 50px; z-index: 3000; }
-        #toast.show { visibility: visible; animation: fadeInUp 0.4s; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classmate Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="header glass">
-    <b onclick="toggleDarkMode()"><i class="fas fa-graduation-cap"></i> Classmate Connect</b>
-    <img id="h-img" src="" width="38" height="38" style="border-radius:12px; object-fit:cover;">
-</div>
+    <div id="login-overlay" class="overlay">
+        <div class="login-card glass">
+            <h2>Welcome to Classmate Connect</h2>
+            <p>Connect with your old friends easily</p>
+            <button onclick="login()" class="btn-primary"><i class="fab fa-google"></i> Sign in with Google</button>
+        </div>
+    </div>
 
-<div class="container">
-    <div id="feed" class="section active">
-        <div class="story-container" id="story-list">
-            <div class="story-circle" style="border-style: dashed; display:flex; align-items:center; justify-content:center;" onclick="addStory()">
-                <i class="fas fa-plus"></i>
+    <header class="glass">
+        <div class="header-content">
+            <div class="user-info">
+                <img id="h-img" src="https://via.placeholder.com/40" alt="Profile">
+                <div id="group-tag" style="display:none;"><small id="group-text"></small></div>
+            </div>
+            <div class="header-actions">
+                <i class="fas fa-moon" onclick="toggleDarkMode()"></i>
+                <div class="notif-icon" onclick="show('notifications', this)">
+                    <i class="fas fa-bell"></i>
+                    <span id="notif-badge" class="badge">0</span>
+                </div>
             </div>
         </div>
+    </header>
 
-        <div class="quote-card" id="daily-quote">"Your education is a dress rehearsal for a life that is yours to lead."</div>
+    <div class="quote-container">
+        <p id="daily-quote" class="glass-text">"Loading inspiration..."</p>
+    </div>
 
-        <div class="card glass">
-            <textarea id="msgInput" placeholder="What's happening?"></textarea>
-            <div style="display:flex; gap:15px; margin-bottom:10px;">
-                <label for="f-img" title="Images"><i class="fas fa-image" style="color:var(--primary)"></i></label>
-                <input type="file" id="f-img" accept="image/*" style="display:none">
+    <main>
+        <section id="home" class="section active">
+            <div id="story-list" class="story-container">
+                </div>
+
+            <div class="post-box glass card">
+                <textarea id="msgInput" placeholder="What's on your mind, classmate?"></textarea>
                 
-                <label for="f-vid" title="Video/Reels"><i class="fas fa-video" style="color:#f43f5e"></i></label>
-                <input type="file" id="f-vid" accept="video/*" style="display:none">
+                <div id="poll-creator" style="display:none; margin:10px 0; padding:10px; border-top:1px dashed #ccc;">
+                    <input type="text" id="poll-q" placeholder="Question?">
+                    <input type="text" id="poll-o1" placeholder="Option 1">
+                    <input type="text" id="poll-o2" placeholder="Option 2">
+                </div>
+
+                <div class="post-options">
+                    <label title="Image"><i class="fas fa-image"></i><input type="file" id="f-img" accept="image/*" hidden></label>
+                    <label title="Video"><i class="fas fa-video"></i><input type="file" id="f-vid" accept="video/*" hidden></label>
+                    <label title="PDF"><i class="fas fa-file-pdf"></i><input type="file" id="f-pdf" accept="application/pdf" hidden></label>
+                    <i class="fas fa-poll" onclick="togglePollCreator()" title="Create Poll"></i>
+                    <button onclick="handlePost()" class="btn-send"><i class="fas fa-paper-plane"></i> Post</button>
+                </div>
+            </div>
+
+            <div id="post-container">
+                </div>
+        </section>
+
+        <section id="search" class="section">
+            <div class="card glass search-box">
+                <h3><i class="fas fa-search"></i> Find Classmates</h3>
+                <div class="search-inputs">
+                    <input type="text" id="s-inst" placeholder="Institution Name">
+                    <input type="number" id="s-year" placeholder="Passout Year">
+                    <input type="text" id="s-class" placeholder="Studying Class">
+                    <input type="text" id="s-city" placeholder="Institution City">
+                </div>
+                <button onclick="search()" class="btn-primary"><i class="fas fa-filter"></i> Search</button>
+            </div>
+            <div id="search-results"></div>
+        </section>
+
+        <section id="friends" class="section">
+            <h3><i class="fas fa-users"></i> Your Connections</h3>
+            <div id="friends-list"></div>
+        </section>
+
+        <section id="notifications" class="section">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <div id="notif-list"></div>
+        </section>
+
+        <section id="profile" class="section">
+            <div class="card glass profile-card">
+                <img id="p-img" src="" alt="Profile">
+                <h2 id="p-name">Username</h2>
                 
-                <label for="f-pdf" title="PDF Documents"><i class="fas fa-file-pdf" style="color:#ef4444"></i></label>
-                <input type="file" id="f-pdf" accept=".pdf" style="display:none">
-
-                <span onclick="togglePollCreator()"><i class="fas fa-poll-h" style="color:#f59e0b; cursor:pointer;"></i></span>
+                <div class="profile-details">
+                    <div class="input-group">
+                        <label>Institution Name</label>
+                        <input type="text" id="p-inst" placeholder="Ex: IIT Madras">
+                    </div>
+                    <div class="input-group">
+                        <label>Passout Year</label>
+                        <input type="number" id="p-year" placeholder="Ex: 2020">
+                    </div>
+                    <div class="input-group">
+                        <label>Studying Class</label>
+                        <input type="text" id="p-class" placeholder="Ex: B.Tech 4th Year">
+                    </div>
+                    <div class="input-group">
+                        <label>Institution City</label>
+                        <input type="text" id="p-city" placeholder="Ex: Hyderabad">
+                    </div>
+                    
+                    <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
+                    <button onclick="logout()" class="btn-danger" style="margin-top:10px;">Logout</button>
+                </div>
             </div>
-            
-            <div id="poll-creator" style="display:none; margin-bottom:15px;">
-                <input type="text" id="poll-q" placeholder="Poll Question">
-                <input type="text" id="poll-o1" placeholder="Option 1">
-                <input type="text" id="poll-o2" placeholder="Option 2">
-            </div>
+        </section>
+    </main>
 
-            <button class="btn-primary" onclick="handlePost()">Post Update</button>
+    <nav class="bottom-nav glass">
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><span>Find</span></div>
+        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-comments"></i><span>Chats</span></div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><span>Profile</span></div>
+    </nav>
+
+    <div id="chat-window" class="chat-overlay" style="display:none;">
+        <div class="chat-header glass">
+            <i class="fas fa-arrow-left" onclick="closeChat()"></i>
+            <span id="chat-user">Chat</span>
         </div>
-
-        <div id="post-container"></div>
-    </div>
-
-    <div id="network" class="section">
-        <div class="card glass">
-            <h4><i class="fas fa-search"></i> Find Classmates</h4>
-            <input type="text" id="s-inst" placeholder="Institution Name">
-            <input type="number" id="s-year" placeholder="Passout Year">
-            <button class="btn-primary" onclick="search()">Search</button>
-        </div>
-        <div id="search-results"></div>
-        <div id="friends-list"></div>
-    </div>
-
-    <div id="notif-section" class="section">
-        <h3>Alerts</h3>
-        <div id="notif-list"></div>
-    </div>
-
-    <div id="profile" class="section">
-        <div class="card glass" style="text-align:center;">
-            <img id="p-img" src="" width="100" height="100" style="border-radius:30px; object-fit:cover;">
-            <h3 id="p-name"></h3>
-            <input type="text" id="p-inst" placeholder="Institution">
-            <input type="number" id="p-year" placeholder="Year">
-            <button class="btn-primary" onclick="saveProfile()">Update Profile</button>
-            <button class="btn-primary" style="background:#94a3b8; margin-top:10px;" onclick="logout()">Logout</button>
+        <div id="chat-msgs" class="chat-content"></div>
+        <div class="chat-input-area glass">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button onclick="sendMsg()"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
-</div>
 
-<div id="ai-trigger" onclick="toggleAI()"><i class="fas fa-robot"></i></div>
-<div id="ai-window" class="glass" style="display:none; position:fixed; bottom:165px; right:20px; width:280px; height:350px; border-radius:20px; z-index:1000; flex-direction:column; padding:15px;">
-    <div style="font-weight:bold; margin-bottom:10px;">Connect AI Helper</div>
-    <div id="ai-msgs" style="flex:1; overflow-y:auto; font-size:13px; margin-bottom:10px;"></div>
-    <input type="text" id="ai-input" placeholder="Ask AI..." onkeydown="if(event.key==='Enter') askAI()">
-</div>
+    <div class="ai-trigger" onclick="toggleAI()">
+        <i class="fas fa-robot"></i>
+    </div>
 
-<div class="nav-bottom glass">
-    <div class="nav-item active-nav" onclick="show('feed', this)"><i class="fas fa-house"></i></div>
-    <div class="nav-item" onclick="show('network', this)"><i class="fas fa-search"></i></div>
-    <div class="nav-item" onclick="show('notif-section', this)"><i class="fas fa-bell"></i><div id="notif-badge" style="display:none;" class="badge"></div></div>
-    <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i></div>
-</div>
+    <div id="ai-window" class="chat-overlay ai-chat" style="display:none;">
+        <div class="chat-header glass">
+            <span>Classmate AI</span>
+            <i class="fas fa-times" onclick="toggleAI()"></i>
+        </div>
+        <div id="ai-msgs" class="chat-content"></div>
+        <div class="chat-input-area glass">
+            <input type="text" id="ai-input" placeholder="Ask AI helper...">
+            <button onclick="askAI()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
 
-<div id="toast"></div>
+    <div id="toast" class="toast"></div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
