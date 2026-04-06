@@ -13,9 +13,15 @@ const db = firebase.database();
 const auth = firebase.auth();
 let user = null;
 
+// Handle Login Redirect Result
+auth.getRedirectResult().catch(error => {
+    console.error("Login Error:", error.message);
+});
+
 auth.onAuthStateChanged(u => {
+    const overlay = document.getElementById('login-overlay');
     if(u) {
-        document.getElementById('login-overlay').style.display = "none";
+        overlay.style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
             user = { 
@@ -29,8 +35,21 @@ auth.onAuthStateChanged(u => {
             };
             updateUI(); loadFeed(); loadStories(); listenNotifs(); loadFriends();
         });
-    } else { document.getElementById('login-overlay').style.display = "flex"; }
+    } else { 
+        overlay.style.display = "flex"; 
+    }
 });
+
+function login() { 
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithRedirect(provider); 
+}
+
+function logout() { 
+    auth.signOut().then(() => {
+        window.location.reload();
+    }); 
+}
 
 function updateUI() {
     document.getElementById('h-img').src = user.photo;
@@ -50,7 +69,7 @@ function show(id, el) {
     el.classList.add('active-nav');
 }
 
-// Home Feed Logic (Post, Likes, Comments)
+// Post, Like, Comment Logic
 async function handlePost() {
     const msg = document.getElementById('msgInput').value;
     const file = document.getElementById('f-img').files[0];
@@ -73,7 +92,7 @@ function loadFeed() {
             const p = s.val(); const pid = s.key;
             let commentsHTML = "";
             if(p.comments) Object.values(p.comments).forEach(c => {
-                commentsHTML += `<div style="font-size:12px; margin-top:3px;"><b>${c.name}:</b> ${c.text}</div>`;
+                commentsHTML += `<div style="font-size:12px; margin-top:3px; border-bottom:1px solid #eee;"><b>${c.name}:</b> ${c.text}</div>`;
             });
 
             cont.innerHTML = `<div class="card">
@@ -107,20 +126,17 @@ function addComment(pid) {
     document.getElementById(`inp-${pid}`).value = "";
 }
 
-// Global Search & Friends Logic
+// Search & Friends
 function search() {
     const inst = document.getElementById('s-inst').value.toUpperCase().trim();
     const yr = document.getElementById('s-year').value;
-    const cl = document.getElementById('s-class').value.toUpperCase().trim();
-    const ct = document.getElementById('s-city').value.toUpperCase().trim();
-
     db.ref('users').once('value', snap => {
         const res = document.getElementById('search-results'); res.innerHTML = "";
         snap.forEach(c => {
             const u = c.val(); if(c.key === user.uid) return;
-            if((inst && u.inst?.toUpperCase().includes(inst)) || (yr && u.year == yr) || (cl && u.uClass?.toUpperCase().includes(cl)) || (ct && u.city?.toUpperCase().includes(ct))) {
+            if((inst && u.inst?.toUpperCase().includes(inst)) || (yr && u.year == yr)) {
                 res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small></div>
+                    <div><b>${u.name}</b><br><small>${u.inst}</small></div>
                     <button onclick="sendReq('${c.key}', '${u.name}')" style="background:var(--primary); color:white; border:none; padding:8px; border-radius:5px;"><i class="fas fa-user-plus"></i></button>
                 </div>`;
             }
@@ -130,7 +146,7 @@ function search() {
 
 function sendReq(tUid, tName) {
     db.ref(`notifications/${tUid}`).push({ type: 'friend_req', from: user.name, fromUid: user.uid });
-    alert("Request Sent to " + tName);
+    alert("Request Sent!");
 }
 
 function listenNotifs() {
@@ -142,7 +158,7 @@ function listenNotifs() {
             snap.forEach(s => {
                 const n = s.val();
                 l.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><b>${n.from}</b> sent a request.</span>
+                    <span><b>${n.from}</b> wants to connect.</span>
                     <button onclick="acceptReq('${s.key}', '${n.fromUid}', '${n.from}')" class="btn-primary" style="width:80px;">Accept</button>
                 </div>`;
             });
@@ -154,20 +170,19 @@ function acceptReq(nid, fUid, fName) {
     db.ref(`friends/${user.uid}/${fUid}`).set({ name: fName });
     db.ref(`friends/${fUid}/${user.uid}`).set({ name: user.name });
     db.ref(`notifications/${user.uid}/${nid}`).remove();
-    alert("You are now connected with " + fName);
+    alert("Connected!");
 }
 
 function loadFriends() {
     db.ref(`friends/${user.uid}`).on('value', snap => {
         const fl = document.getElementById('friends-list'); fl.innerHTML = "";
-        if(!snap.exists()) fl.innerHTML = "<p style='text-align:center; color:gray;'>No friends yet.</p>";
         snap.forEach(s => {
-            fl.innerHTML += `<div class="card"><i class="fas fa-user-circle" style="color:var(--primary);"></i> <b>${s.val().name}</b></div>`;
+            fl.innerHTML += `<div class="card"><i class="fas fa-user-circle"></i> <b>${s.val().name}</b></div>`;
         });
     });
 }
 
-// Profile Save & Stories
+// Profile & Story
 function saveProfile() {
     const newName = document.getElementById('p-name-input').value.trim();
     const data = {
@@ -177,7 +192,6 @@ function saveProfile() {
         uClass: document.getElementById('p-class').value.trim(),
         city: document.getElementById('p-city').value.trim()
     };
-    if(!newName) return alert("Name is required");
     db.ref('users/' + user.uid).update(data).then(() => {
         alert("Profile details updated successfully!");
     });
@@ -199,5 +213,3 @@ async function addStory() {
 }
 
 function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); }); }
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-function logout() { auth.signOut().then(() => location.reload()); }
