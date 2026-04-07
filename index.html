@@ -1,81 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Classmate Connect</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<style>
-:root { --primary:#007bff; --bg:#f0f2f5; }
-body { font-family:Poppins; background:var(--bg); margin:0; padding-bottom:70px; }
-header { background:white; padding:15px; display:flex; justify-content:space-between; }
-.section { display:none; padding:10px; }
-.active { display:block; }
-.card { background:white; padding:15px; margin-bottom:10px; border-radius:10px; }
-.btn { background:var(--primary); color:white; border:none; padding:10px; width:100%; border-radius:8px; }
-.bottom-nav { position:fixed; bottom:0; width:100%; display:flex; background:white; }
-.nav-item { flex:1; text-align:center; padding:10px; }
-.active-nav { color:var(--primary); }
-.post-img { width:100%; border-radius:10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classmate Connect Global</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #007bff; --bg: #f0f2f5; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .section { display: none; padding: 10px; }
+        .active { display: block; }
+        .card { background: white; margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; background: white; border-top: 1px solid #eee; }
+        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; position: relative; }
+        .active-nav { color: var(--primary); font-weight: 600; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: 15px; }
+        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; }
+        .story-circle { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); flex-shrink: 0; overflow: hidden; }
+        .story-circle img { width: 100%; height: 100%; object-fit: cover; }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-
 <body>
 
-<div id="login-overlay" style="display:none; position:fixed; width:100%; height:100%; background:white; justify-content:center; align-items:center; flex-direction:column;">
-<h2>Classmate Connect</h2>
-<button onclick="login()" class="btn">Login with Google</button>
-</div>
+    <div id="login-overlay">
+        <h1 style="color:var(--primary)">Classmate Connect</h1>
+        <button onclick="login()" class="btn-primary" style="width: 200px;">Login with Google</button>
+    </div>
 
-<header>
-<div>
-<img id="h-img" width="35">
-<span id="u-display"></span>
-</div>
-<button onclick="logout()">Logout</button>
-</header>
+    <header>
+        <div style="display:flex; align-items:center;">
+            <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%; margin-right:10px; background:#eee;">
+            <span id="u-display" style="font-weight:600;">Classmate Connect</span>
+        </div>
+        <div onclick="show('notifications', this)" style="position:relative; cursor:pointer;">
+            <i class="fas fa-bell" style="font-size:20px; color:#555;"></i>
+            <span id="notif-badge" class="badge" style="display:none;">0</span>
+        </div>
+    </header>
 
-<section id="home" class="section active">
-<textarea id="msgInput" placeholder="Write post..."></textarea>
-<input type="file" id="f-img">
-<button onclick="handlePost()" class="btn">Post</button>
-<div id="post-container"></div>
-</section>
+    <main>
+        <section id="home" class="section active">
+            <div id="story-list" class="story-container"></div>
+            <div class="card">
+                <textarea id="msgInput" placeholder="Share a message or photo..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label><i class="fas fa-image" style="font-size:22px; color:var(--primary); cursor:pointer;"></i><input type="file" id="f-img" accept="image/*" hidden></label>
+                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Post</button>
+                </div>
+            </div>
+            <div id="post-container"></div>
+        </section>
 
-<section id="search" class="section">
-<input id="s-inst" placeholder="Institution">
-<input id="s-year" placeholder="Year">
-<button onclick="search()" class="btn">Search</button>
-<div id="search-results"></div>
-</section>
+        <section id="search" class="section">
+            <div class="card">
+                <h3>Global Search</h3>
+                <input type="text" id="s-inst" placeholder="Institution Name">
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Class/Section">
+                <input type="text" id="s-city" placeholder="City">
+                <button onclick="search()" class="btn-primary">Find Classmates</button>
+            </div>
+            <div id="search-results"></div>
+        </section>
 
-<section id="friends" class="section">
-<div id="friends-list"></div>
-</section>
+        <section id="friends" class="section">
+            <div class="card"><h3>My Friends</h3></div>
+            <div id="friends-list"></div>
+        </section>
 
-<section id="profile" class="section">
-<input id="p-name-input">
-<input id="p-inst">
-<input id="p-year">
-<input id="p-class">
-<input id="p-city">
-<button onclick="saveProfile()" class="btn">Save</button>
-</section>
+        <section id="profile" class="section">
+            <div class="card" style="text-align:center;">
+                <img id="p-img" src="" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--primary);">
+                <div style="text-align:left; margin-top:15px;">
+                    <label style="font-size:12px; color:gray;">Full Name</label>
+                    <input type="text" id="p-name-input" placeholder="Your Name">
+                    <label style="font-size:12px; color:gray;">Institution Name</label>
+                    <input type="text" id="p-inst" placeholder="School/College Name">
+                    <label style="font-size:12px; color:gray;">Passout Year</label>
+                    <input type="number" id="p-year" placeholder="e.g. 2024">
+                    <label style="font-size:12px; color:gray;">Studying Class/Section</label>
+                    <input type="text" id="p-class" placeholder="e.g. 10th-B">
+                    <label style="font-size:12px; color:gray;">Institution City</label>
+                    <input type="text" id="p-city" placeholder="City">
+                </div>
+                <button onclick="saveProfile()" class="btn-primary" style="margin-top:10px;">Update Profile</button>
+                <button onclick="logout()" style="margin-top:15px; background:#ff4757;" class="btn-primary">Logout</button>
+            </div>
+        </section>
 
-<nav class="bottom-nav">
-<div class="nav-item active-nav" onclick="show('home',this)">Home</div>
-<div class="nav-item" onclick="show('search',this)">Search</div>
-<div class="nav-item" onclick="show('friends',this)">Friends</div>
-<div class="nav-item" onclick="show('profile',this)">Profile</div>
-</nav>
+        <section id="notifications" class="section">
+            <div class="card"><h3>Notifications</h3></div>
+            <div id="notif-list"></div>
+        </section>
+    </main>
 
-<script src="app.js"></script>
+    <nav class="bottom-nav">
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br>Feed</div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br>Find</div>
+        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-users"></i><br>Friends</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user-circle"></i><br>Profile</div>
+    </nav>
+
+    <script src="app.js"></script>
 </body>
 </html>
