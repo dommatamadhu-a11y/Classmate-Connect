@@ -20,10 +20,11 @@
         .active-nav { color: var(--primary); font-weight: 600; }
         .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
         .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: 15px; }
-        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; border-bottom: 1px solid #ddd; margin-bottom: 10px; }
+        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #ddd; }
         .story-circle { width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--primary); flex-shrink: 0; overflow: hidden; padding: 2px; background: white; }
         .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .poll-option { background: #f8f9fa; border: 1px solid #ddd; padding: 8px; margin: 5px 0; border-radius: 5px; cursor: pointer; }
+        .poll-option { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .poll-option:active { background: #e9ecef; }
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -51,20 +52,19 @@
     <main>
         <section id="home" class="section active">
             <div id="story-list" class="story-container"></div>
-            
             <div class="card">
-                <textarea id="msgInput" placeholder="What's on your mind?"></textarea>
+                <textarea id="msgInput" placeholder="What's happening?"></textarea>
                 <div id="poll-inputs" style="display:none; border-top: 1px solid #eee; padding-top: 10px;">
-                    <input type="text" id="p-q" placeholder="Question?">
+                    <input type="text" id="p-q" placeholder="Ask a question...">
                     <input type="text" id="p-1" placeholder="Option 1">
                     <input type="text" id="p-2" placeholder="Option 2">
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="display:flex; gap:15px;">
+                    <div style="display:flex; gap:20px;">
                         <label><i class="fas fa-image" style="font-size:22px; color:var(--primary); cursor:pointer;"></i><input type="file" id="f-img" accept="image/*" hidden></label>
                         <i class="fas fa-poll" onclick="togglePoll()" style="font-size:22px; color:#28a745; cursor:pointer;"></i>
                     </div>
-                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Share</button>
+                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Post</button>
                 </div>
             </div>
             <div id="post-container"></div>
@@ -72,16 +72,18 @@
 
         <section id="search" class="section">
             <div class="card">
-                <h3>Global Search</h3>
+                <h3>Find Classmates</h3>
                 <input type="text" id="s-inst" placeholder="Institution Name">
-                <input type="number" id="s-year" placeholder="Year">
-                <button onclick="search()" class="btn-primary">Search</button>
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Studying Class/Section">
+                <input type="text" id="s-city" placeholder="Institution City">
+                <button onclick="search()" class="btn-primary">Search Now</button>
             </div>
             <div id="search-results"></div>
         </section>
 
         <section id="friends" class="section">
-            <div class="card"><h3>Friends List</h3></div>
+            <div class="card"><h3>My Friends</h3></div>
             <div id="friends-list"></div>
         </section>
 
@@ -90,11 +92,15 @@
                 <img id="p-img" src="" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--primary);">
                 <div style="text-align:left; margin-top:15px;">
                     <label style="font-size:12px; color:gray;">Full Name</label>
-                    <input type="text" id="p-name-input" placeholder="Your Name">
-                    <input type="text" id="p-inst" placeholder="Institution">
-                    <input type="number" id="p-year" placeholder="Year">
-                    <input type="text" id="p-class" placeholder="Class">
-                    <input type="text" id="p-city" placeholder="City">
+                    <input type="text" id="p-name-input">
+                    <label style="font-size:12px; color:gray;">Institution Name</label>
+                    <input type="text" id="p-inst">
+                    <label style="font-size:12px; color:gray;">Passout Year</label>
+                    <input type="number" id="p-year">
+                    <label style="font-size:12px; color:gray;">Class/Section</label>
+                    <input type="text" id="p-class">
+                    <label style="font-size:12px; color:gray;">City</label>
+                    <input type="text" id="p-city">
                 </div>
                 <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
                 <button onclick="logout()" style="margin-top:15px; background:#ff4757;" class="btn-primary">Logout</button>
