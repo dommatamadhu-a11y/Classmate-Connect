@@ -9,79 +9,33 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
 const auth = firebase.auth();
-
 let user = null;
 
-// LOGIN RESULT HANDLE
-auth.getRedirectResult().catch(err => console.log(err.message));
-
-// AUTH STATE
 auth.onAuthStateChanged(u => {
-    const overlay = document.getElementById('login-overlay');
-
-    if (u) {
-        overlay.style.display = "none";
-
-        // 🔥 CREATE USER IF NOT EXISTS
-        db.ref('users/' + u.uid).once('value').then(snap => {
-            if (!snap.exists()) {
-                db.ref('users/' + u.uid).set({
-                    name: u.displayName,
-                    email: u.email,
-                    photo: u.photoURL,
-                    inst: "",
-                    year: "",
-                    uClass: "",
-                    city: ""
-                });
-            }
-        });
-
-        // 🔥 GET USER DATA
+    if(u) {
+        document.getElementById('login-overlay').style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
-            user = {
-                uid: u.uid,
-                name: d.name || u.displayName,
-                photo: u.photoURL,
-                inst: d.inst || "",
-                year: d.year || "",
-                uClass: d.uClass || "",
-                city: d.city || ""
+            user = { 
+                uid: u.uid, 
+                name: d.name || u.displayName, 
+                photo: u.photoURL, 
+                inst: d.inst||"", 
+                year: d.year||"", 
+                uClass: d.uClass||"", 
+                city: d.city||"" 
             };
-
-            updateUI();
-            loadFeed();
-            loadFriends();
-            listenNotifs();
-            loadStories();
+            updateUI(); loadFeed(); loadStories(); listenNotifs(); loadFriends();
         });
-
-    } else {
-        overlay.style.display = "flex";
-    }
+    } else { document.getElementById('login-overlay').style.display = "flex"; }
 });
 
-// LOGIN
-function login() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithRedirect(provider);
-}
-
-// LOGOUT
-function logout() {
-    auth.signOut().then(() => location.reload());
-}
-
-// UI UPDATE
 function updateUI() {
     document.getElementById('h-img').src = user.photo;
     document.getElementById('p-img').src = user.photo;
     document.getElementById('u-display').innerText = user.name;
-
     document.getElementById('p-name-input').value = user.name;
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-year').value = user.year;
@@ -89,7 +43,6 @@ function updateUI() {
     document.getElementById('p-city').value = user.city;
 }
 
-// NAVIGATION
 function show(id, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
@@ -97,218 +50,154 @@ function show(id, el) {
     el.classList.add('active-nav');
 }
 
-// POST
+// Home Feed Logic (Post, Likes, Comments)
 async function handlePost() {
     const msg = document.getElementById('msgInput').value;
     const file = document.getElementById('f-img').files[0];
-
-    if (!msg && !file) return;
-
-    let media = "";
-    if (file) media = await toBase64(file);
-
-    const gKey = ((user.inst || "") + (user.year || ""))
-        .replace(/\s/g, '')
-        .toUpperCase();
-
+    if(!msg && !file) return;
+    let media = ""; if(file) media = await toBase64(file);
+    const gKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
     db.ref('posts').push({
-        uid: user.uid,
-        userName: user.name,
-        userPhoto: user.photo,
-        msg,
-        media,
-        groupKey: gKey,
-        time: Date.now(),
-        likes: {}
+        uid: user.uid, userName: user.name, userPhoto: user.photo,
+        msg, media, groupKey: gKey, time: Date.now(), likesCount: 0
     });
-
     document.getElementById('msgInput').value = "";
     document.getElementById('f-img').value = "";
 }
 
-// FEED
 function loadFeed() {
-    const gKey = ((user.inst || "") + (user.year || ""))
-        .replace(/\s/g, '')
-        .toUpperCase();
-
+    const gKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
     db.ref('posts').orderByChild('groupKey').equalTo(gKey).on('value', snap => {
-        let html = "";
-
+        const cont = document.getElementById('post-container'); cont.innerHTML = "";
         snap.forEach(s => {
-            const p = s.val();
-            const id = s.key;
+            const p = s.val(); const pid = s.key;
+            let commentsHTML = "";
+            if(p.comments) Object.values(p.comments).forEach(c => {
+                commentsHTML += `<div style="font-size:12px; margin-top:3px;"><b>${c.name}:</b> ${c.text}</div>`;
+            });
 
-            const likeCount = p.likes ? Object.keys(p.likes).length : 0;
-
-            html = `
-            <div class="card">
-                <div style="display:flex;align-items:center;">
-                    <img src="${p.userPhoto}" width="30" style="border-radius:50%;margin-right:10px;">
+            cont.innerHTML = `<div class="card">
+                <div style="display:flex; align-items:center; margin-bottom:10px;">
+                    <img src="${p.userPhoto}" width="30" height="30" style="border-radius:50%; margin-right:10px;">
                     <b>${p.userName}</b>
                 </div>
-
-                <p>${p.msg || ""}</p>
+                <p style="font-size:14px;">${p.msg}</p>
                 ${p.media ? `<img src="${p.media}" class="post-img">` : ""}
-
-                <button onclick="likePost('${id}')">❤️ ${likeCount}</button>
-            </div>
-            ` + html;
+                <div style="display:flex; gap:15px; margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
+                    <span onclick="likePost('${pid}')" style="cursor:pointer; color:var(--primary);"><i class="fas fa-heart"></i> ${p.likesCount || 0}</span>
+                    <span style="color:#555;"><i class="fas fa-comment"></i> ${p.comments ? Object.keys(p.comments).length : 0}</span>
+                </div>
+                <div style="margin-top:10px; background:#f9f9f9; padding:8px; border-radius:8px;">
+                    ${commentsHTML}
+                    <div style="display:flex; margin-top:8px;">
+                        <input type="text" id="inp-${pid}" placeholder="Comment..." style="padding:5px; margin:0; font-size:12px;">
+                        <button onclick="addComment('${pid}')" style="background:var(--primary); color:white; border:none; padding:0 10px; border-radius:5px; margin-left:5px;">Go</button>
+                    </div>
+                </div>
+            </div>` + cont.innerHTML;
         });
-
-        document.getElementById('post-container').innerHTML = html;
     });
 }
 
-// LIKE TOGGLE
-function likePost(id) {
-    const ref = db.ref(`posts/${id}/likes/${user.uid}`);
-
-    ref.once('value', snap => {
-        if (snap.exists()) {
-            ref.remove();
-        } else {
-            ref.set(true);
-        }
-    });
+function likePost(pid) { db.ref(`posts/${pid}/likesCount`).transaction(c => (c || 0) + 1); }
+function addComment(pid) {
+    const txt = document.getElementById(`inp-${pid}`).value;
+    if(!txt) return;
+    db.ref(`posts/${pid}/comments`).push({ name: user.name, text: txt });
+    document.getElementById(`inp-${pid}`).value = "";
 }
 
-// SEARCH
+// Global Search & Friends Logic
 function search() {
     const inst = document.getElementById('s-inst').value.toUpperCase().trim();
     const yr = document.getElementById('s-year').value;
+    const cl = document.getElementById('s-class').value.toUpperCase().trim();
+    const ct = document.getElementById('s-city').value.toUpperCase().trim();
 
     db.ref('users').once('value', snap => {
-        let html = "";
-
-        snap.forEach(s => {
-            const u = s.val();
-
-            if (s.key === user.uid) return;
-
-            if (
-                (!inst || u.inst?.toUpperCase().includes(inst)) &&
-                (!yr || u.year == yr)
-            ) {
-                html += `
-                <div class="card" style="display:flex;justify-content:space-between;">
-                    <span>${u.name}</span>
-                    <button onclick="sendReq('${s.key}','${u.name}')">+</button>
+        const res = document.getElementById('search-results'); res.innerHTML = "";
+        snap.forEach(c => {
+            const u = c.val(); if(c.key === user.uid) return;
+            if((inst && u.inst?.toUpperCase().includes(inst)) || (yr && u.year == yr) || (cl && u.uClass?.toUpperCase().includes(cl)) || (ct && u.city?.toUpperCase().includes(ct))) {
+                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small></div>
+                    <button onclick="sendReq('${c.key}', '${u.name}')" style="background:var(--primary); color:white; border:none; padding:8px; border-radius:5px;"><i class="fas fa-user-plus"></i></button>
                 </div>`;
             }
         });
-
-        document.getElementById('search-results').innerHTML = html;
     });
 }
 
-// FRIEND REQUEST
-function sendReq(uid, name) {
-    db.ref(`notifications/${uid}`).push({
-        type: "req",
-        from: user.name,
-        fromUid: user.uid
-    });
-    alert("Request Sent");
+function sendReq(tUid, tName) {
+    db.ref(`notifications/${tUid}`).push({ type: 'friend_req', from: user.name, fromUid: user.uid });
+    alert("Request Sent to " + tName);
 }
 
-// NOTIFICATIONS
 function listenNotifs() {
     db.ref('notifications/' + user.uid).on('value', snap => {
-        const list = document.getElementById('notif-list');
-        const badge = document.getElementById('notif-badge');
-
-        list.innerHTML = "";
-
-        if (snap.exists()) {
-            badge.style.display = "block";
-            badge.innerText = snap.numChildren();
-
+        const l = document.getElementById('notif-list'); l.innerHTML = "";
+        const b = document.getElementById('notif-badge');
+        if(snap.exists()) {
+            b.innerText = snap.numChildren(); b.style.display = "block";
             snap.forEach(s => {
                 const n = s.val();
-
-                list.innerHTML += `
-                <div class="card">
-                    ${n.from} wants to connect
-                    <button onclick="acceptReq('${s.key}','${n.fromUid}','${n.from}')">Accept</button>
+                l.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${n.from}</b> sent a request.</span>
+                    <button onclick="acceptReq('${s.key}', '${n.fromUid}', '${n.from}')" class="btn-primary" style="width:80px;">Accept</button>
                 </div>`;
             });
-
-        } else {
-            badge.style.display = "none";
-        }
+        } else b.style.display = "none";
     });
 }
 
-// ACCEPT REQUEST
 function acceptReq(nid, fUid, fName) {
     db.ref(`friends/${user.uid}/${fUid}`).set({ name: fName });
     db.ref(`friends/${fUid}/${user.uid}`).set({ name: user.name });
     db.ref(`notifications/${user.uid}/${nid}`).remove();
+    alert("You are now connected with " + fName);
 }
 
-// FRIENDS
 function loadFriends() {
-    db.ref('friends/' + user.uid).on('value', snap => {
-        let html = "";
-
+    db.ref(`friends/${user.uid}`).on('value', snap => {
+        const fl = document.getElementById('friends-list'); fl.innerHTML = "";
+        if(!snap.exists()) fl.innerHTML = "<p style='text-align:center; color:gray;'>No friends yet.</p>";
         snap.forEach(s => {
-            html += `<div class="card">${s.val().name}</div>`;
+            fl.innerHTML += `<div class="card"><i class="fas fa-user-circle" style="color:var(--primary);"></i> <b>${s.val().name}</b></div>`;
         });
-
-        document.getElementById('friends-list').innerHTML = html;
     });
 }
 
-// PROFILE SAVE
+// Profile Save & Stories
 function saveProfile() {
-    db.ref('users/' + user.uid).update({
-        name: document.getElementById('p-name-input').value,
-        inst: document.getElementById('p-inst').value,
-        year: document.getElementById('p-year').value,
-        uClass: document.getElementById('p-class').value,
-        city: document.getElementById('p-city').value
+    const newName = document.getElementById('p-name-input').value.trim();
+    const data = {
+        name: newName,
+        inst: document.getElementById('p-inst').value.trim(),
+        year: document.getElementById('p-year').value.trim(),
+        uClass: document.getElementById('p-class').value.trim(),
+        city: document.getElementById('p-city').value.trim()
+    };
+    if(!newName) return alert("Name is required");
+    db.ref('users/' + user.uid).update(data).then(() => {
+        alert("Profile details updated successfully!");
     });
-
-    alert("Profile Updated");
 }
 
-// STORIES
 function loadStories() {
     db.ref('stories').on('value', snap => {
         const list = document.getElementById('story-list');
-
-        list.innerHTML = `<div class="story-circle" onclick="addStory()">+</div>`;
-
-        snap.forEach(s => {
-            list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`;
-        });
+        list.innerHTML = `<div class="story-circle" onclick="addStory()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#888; font-size:20px;">+</div>`;
+        snap.forEach(s => { list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
     });
 }
 
-// ADD STORY
 async function addStory() {
-    const i = document.createElement('input');
-    i.type = 'file';
-
-    i.onchange = async e => {
+    const i = document.createElement('input'); i.type='file'; i.onchange = async e => {
         const b64 = await toBase64(e.target.files[0]);
-
-        db.ref('stories').push({
-            uid: user.uid,
-            userPhoto: user.photo,
-            content: b64
-        });
-    };
-
-    i.click();
+        db.ref('stories').push({ uid: user.uid, userPhoto: user.photo, content: b64 });
+    }; i.click();
 }
 
-// BASE64
-function toBase64(file) {
-    return new Promise(res => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result);
-        r.readAsDataURL(file);
-    });
-}
+function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); }); }
+function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function logout() { auth.signOut().then(() => location.reload()); }
