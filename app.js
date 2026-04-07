@@ -12,21 +12,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 let user = null;
+let pollActive = false;
 
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
-            user = { 
-                uid: u.uid, 
-                name: d.name || u.displayName, 
-                photo: u.photoURL, 
-                inst: d.inst||"", 
-                year: d.year||"", 
-                uClass: d.uClass||"", 
-                city: d.city||"" 
-            };
+            user = { uid: u.uid, name: d.name || u.displayName, photo: u.photoURL, inst: d.inst||"", year: d.year||"", uClass: d.uClass||"", city: d.city||"" };
             updateUI(); loadFeed(); loadStories(); listenNotifs(); loadFriends();
         });
     } else { document.getElementById('login-overlay').style.display = "flex"; }
@@ -50,19 +43,34 @@ function show(id, el) {
     el.classList.add('active-nav');
 }
 
-// Home Feed Logic (Post, Likes, Comments)
+function togglePoll() {
+    pollActive = !pollActive;
+    document.getElementById('poll-inputs').style.display = pollActive ? 'block' : 'none';
+}
+
+// Post Handling (Text, Image, Polls)
 async function handlePost() {
     const msg = document.getElementById('msgInput').value;
     const file = document.getElementById('f-img').files[0];
-    if(!msg && !file) return;
-    let media = ""; if(file) media = await toBase64(file);
     const gKey = (user.inst + user.year).replace(/\s/g, '').toUpperCase();
-    db.ref('posts').push({
+    
+    let postData = {
         uid: user.uid, userName: user.name, userPhoto: user.photo,
-        msg, media, groupKey: gKey, time: Date.now(), likesCount: 0
-    });
-    document.getElementById('msgInput').value = "";
-    document.getElementById('f-img').value = "";
+        msg, time: Date.now(), groupKey: gKey, likesCount: 0
+    };
+
+    if(pollActive) {
+        postData.poll = { q: document.getElementById('p-q').value, o1: document.getElementById('p-1').value, o2: document.getElementById('p-2').value, v1: 0, v2: 0 };
+        togglePoll();
+    }
+    
+    if(file) postData.media = await toBase64(file);
+    
+    if(msg || file || postData.poll) {
+        db.ref('posts').push(postData);
+        document.getElementById('msgInput').value = "";
+        document.getElementById('f-img').value = "";
+    }
 }
 
 function loadFeed() {
@@ -71,28 +79,24 @@ function loadFeed() {
         const cont = document.getElementById('post-container'); cont.innerHTML = "";
         snap.forEach(s => {
             const p = s.val(); const pid = s.key;
-            let commentsHTML = "";
-            if(p.comments) Object.values(p.comments).forEach(c => {
-                commentsHTML += `<div style="font-size:12px; margin-top:3px;"><b>${c.name}:</b> ${c.text}</div>`;
-            });
+            let pollHTML = "";
+            if(p.poll) {
+                pollHTML = `<div style="margin:10px 0;"><b>${p.poll.q}</b>
+                    <div class="poll-option" onclick="vote('${pid}', 'v1')">${p.poll.o1} (${p.poll.v1})</div>
+                    <div class="poll-option" onclick="vote('${pid}', 'v2')">${p.poll.o2} (${p.poll.v2})</div>
+                </div>`;
+            }
 
             cont.innerHTML = `<div class="card">
                 <div style="display:flex; align-items:center; margin-bottom:10px;">
                     <img src="${p.userPhoto}" width="30" height="30" style="border-radius:50%; margin-right:10px;">
                     <b>${p.userName}</b>
                 </div>
-                <p style="font-size:14px;">${p.msg}</p>
+                <p>${p.msg}</p>
                 ${p.media ? `<img src="${p.media}" class="post-img">` : ""}
-                <div style="display:flex; gap:15px; margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
+                ${pollHTML}
+                <div style="display:flex; gap:15px; border-top:1px solid #eee; padding-top:8px;">
                     <span onclick="likePost('${pid}')" style="cursor:pointer; color:var(--primary);"><i class="fas fa-heart"></i> ${p.likesCount || 0}</span>
-                    <span style="color:#555;"><i class="fas fa-comment"></i> ${p.comments ? Object.keys(p.comments).length : 0}</span>
-                </div>
-                <div style="margin-top:10px; background:#f9f9f9; padding:8px; border-radius:8px;">
-                    ${commentsHTML}
-                    <div style="display:flex; margin-top:8px;">
-                        <input type="text" id="inp-${pid}" placeholder="Comment..." style="padding:5px; margin:0; font-size:12px;">
-                        <button onclick="addComment('${pid}')" style="background:var(--primary); color:white; border:none; padding:0 10px; border-radius:5px; margin-left:5px;">Go</button>
-                    </div>
                 </div>
             </div>` + cont.innerHTML;
         });
@@ -100,94 +104,16 @@ function loadFeed() {
 }
 
 function likePost(pid) { db.ref(`posts/${pid}/likesCount`).transaction(c => (c || 0) + 1); }
-function addComment(pid) {
-    const txt = document.getElementById(`inp-${pid}`).value;
-    if(!txt) return;
-    db.ref(`posts/${pid}/comments`).push({ name: user.name, text: txt });
-    document.getElementById(`inp-${pid}`).value = "";
-}
+function vote(pid, opt) { db.ref(`posts/${pid}/poll/${opt}`).transaction(v => (v || 0) + 1); }
 
-// Global Search & Friends Logic
-function search() {
-    const inst = document.getElementById('s-inst').value.toUpperCase().trim();
-    const yr = document.getElementById('s-year').value;
-    const cl = document.getElementById('s-class').value.toUpperCase().trim();
-    const ct = document.getElementById('s-city').value.toUpperCase().trim();
-
-    db.ref('users').once('value', snap => {
-        const res = document.getElementById('search-results'); res.innerHTML = "";
-        snap.forEach(c => {
-            const u = c.val(); if(c.key === user.uid) return;
-            if((inst && u.inst?.toUpperCase().includes(inst)) || (yr && u.year == yr) || (cl && u.uClass?.toUpperCase().includes(cl)) || (ct && u.city?.toUpperCase().includes(ct))) {
-                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small></div>
-                    <button onclick="sendReq('${c.key}', '${u.name}')" style="background:var(--primary); color:white; border:none; padding:8px; border-radius:5px;"><i class="fas fa-user-plus"></i></button>
-                </div>`;
-            }
-        });
-    });
-}
-
-function sendReq(tUid, tName) {
-    db.ref(`notifications/${tUid}`).push({ type: 'friend_req', from: user.name, fromUid: user.uid });
-    alert("Request Sent to " + tName);
-}
-
-function listenNotifs() {
-    db.ref('notifications/' + user.uid).on('value', snap => {
-        const l = document.getElementById('notif-list'); l.innerHTML = "";
-        const b = document.getElementById('notif-badge');
-        if(snap.exists()) {
-            b.innerText = snap.numChildren(); b.style.display = "block";
-            snap.forEach(s => {
-                const n = s.val();
-                l.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><b>${n.from}</b> sent a request.</span>
-                    <button onclick="acceptReq('${s.key}', '${n.fromUid}', '${n.from}')" class="btn-primary" style="width:80px;">Accept</button>
-                </div>`;
-            });
-        } else b.style.display = "none";
-    });
-}
-
-function acceptReq(nid, fUid, fName) {
-    db.ref(`friends/${user.uid}/${fUid}`).set({ name: fName });
-    db.ref(`friends/${fUid}/${user.uid}`).set({ name: user.name });
-    db.ref(`notifications/${user.uid}/${nid}`).remove();
-    alert("You are now connected with " + fName);
-}
-
-function loadFriends() {
-    db.ref(`friends/${user.uid}`).on('value', snap => {
-        const fl = document.getElementById('friends-list'); fl.innerHTML = "";
-        if(!snap.exists()) fl.innerHTML = "<p style='text-align:center; color:gray;'>No friends yet.</p>";
-        snap.forEach(s => {
-            fl.innerHTML += `<div class="card"><i class="fas fa-user-circle" style="color:var(--primary);"></i> <b>${s.val().name}</b></div>`;
-        });
-    });
-}
-
-// Profile Save & Stories
-function saveProfile() {
-    const newName = document.getElementById('p-name-input').value.trim();
-    const data = {
-        name: newName,
-        inst: document.getElementById('p-inst').value.trim(),
-        year: document.getElementById('p-year').value.trim(),
-        uClass: document.getElementById('p-class').value.trim(),
-        city: document.getElementById('p-city').value.trim()
-    };
-    if(!newName) return alert("Name is required");
-    db.ref('users/' + user.uid).update(data).then(() => {
-        alert("Profile details updated successfully!");
-    });
-}
-
+// Stories Logic
 function loadStories() {
     db.ref('stories').on('value', snap => {
         const list = document.getElementById('story-list');
-        list.innerHTML = `<div class="story-circle" onclick="addStory()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#888; font-size:20px;">+</div>`;
-        snap.forEach(s => { list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
+        list.innerHTML = `<div class="story-circle" onclick="addStory()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#888; font-size:24px;">+</div>`;
+        snap.forEach(s => {
+            list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`;
+        });
     });
 }
 
@@ -198,6 +124,57 @@ async function addStory() {
     }; i.click();
 }
 
+// Profile & Friends
+function saveProfile() {
+    const data = { name: document.getElementById('p-name-input').value, inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value, uClass: document.getElementById('p-class').value, city: document.getElementById('p-city').value };
+    db.ref('users/' + user.uid).update(data).then(() => alert("Profile details updated successfully!"));
+}
+
+function search() {
+    const inst = document.getElementById('s-inst').value.toUpperCase().trim();
+    db.ref('users').once('value', snap => {
+        const res = document.getElementById('search-results'); res.innerHTML = "";
+        snap.forEach(c => {
+            const u = c.val(); if(c.key === user.uid) return;
+            if(inst && u.inst?.toUpperCase().includes(inst)) {
+                res.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;">
+                    <span><b>${u.name}</b><br><small>${u.inst}</small></span>
+                    <button onclick="sendReq('${c.key}')" style="background:var(--primary); color:white; border:none; padding:5px; border-radius:5px;"><i class="fas fa-user-plus"></i></button>
+                </div>`;
+            }
+        });
+    });
+}
+
+function sendReq(tUid) { db.ref(`notifications/${tUid}`).push({ from: user.name, fromUid: user.uid }); alert("Sent!"); }
+
+function listenNotifs() {
+    db.ref('notifications/' + user.uid).on('value', snap => {
+        const b = document.getElementById('notif-badge');
+        const l = document.getElementById('notif-list'); l.innerHTML = "";
+        if(snap.exists()) {
+            b.innerText = snap.numChildren(); b.style.display = "block";
+            snap.forEach(s => {
+                l.innerHTML += `<div class="card"><b>${s.val().from}</b> wants to be friends. <button onclick="acceptReq('${s.key}','${s.val().fromUid}','${s.val().from}')" class="btn-primary" style="width:70px;">Accept</button></div>`;
+            });
+        } else b.style.display = "none";
+    });
+}
+
+function acceptReq(nid, fUid, fName) {
+    db.ref(`friends/${user.uid}/${fUid}`).set({ name: fName });
+    db.ref(`friends/${fUid}/${user.uid}`).set({ name: user.name });
+    db.ref(`notifications/${user.uid}/${nid}`).remove();
+    alert("Friends now!");
+}
+
+function loadFriends() {
+    db.ref(`friends/${user.uid}`).on('value', snap => {
+        const fl = document.getElementById('friends-list'); fl.innerHTML = "";
+        snap.forEach(s => { fl.innerHTML += `<div class="card"><i class="fas fa-user"></i> ${s.val().name}</div>`; });
+    });
+}
+
 function toBase64(file) { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); }); }
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function login() { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut().then(() => location.reload()); }
