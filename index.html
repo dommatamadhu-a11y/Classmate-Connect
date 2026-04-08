@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 70px; transition: 0.3s; }
         header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
@@ -16,6 +16,7 @@
         .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         input, textarea, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; }
+        .btn-wa { background: var(--wa); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; margin-top: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; background: var(--card); border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; }
         .active-nav { color: var(--primary); font-weight: 600; }
@@ -128,9 +129,14 @@
                 <input type="text" id="p-class" placeholder="Studying Class">
                 <input type="text" id="p-city" placeholder="Institution City">
                 <div style="text-align:left; font-size:12px; margin: 10px 0;">
-                    <label><input type="checkbox" id="p-hide-contact"> Hide profile from search (Privacy)</label>
+                    <label><input type="checkbox" id="p-hide-contact"> Hide profile from search</label>
                 </div>
                 <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
+                
+                <a href="#" id="wa-invite-btn" onclick="shareWhatsApp()" class="btn-wa">
+                    <i class="fab fa-whatsapp"></i> Invite via WhatsApp
+                </a>
+                
                 <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
             </div>
         </section>
