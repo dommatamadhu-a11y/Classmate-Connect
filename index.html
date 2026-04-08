@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classmate Connect Global</title>
+    <title>Classmate Connect Global - Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; }
-        /* Dark Mode Styles */
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
-        
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 70px; transition: 0.3s; }
         header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .section { display: none; padding: 10px; }
@@ -19,25 +17,20 @@
         input, textarea, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; background: var(--card); border-top: 1px solid #eee; z-index: 1000; }
-        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; position: relative; }
+        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; }
         .active-nav { color: var(--primary); font-weight: 600; }
-        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
-        .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: 15px; }
-        
-        /* Online Status Dot */
-        .online-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; margin-left: 5px; border: 2px solid white; }
-        .offline-dot { width: 10px; height: 10px; background: #bbb; border-radius: 50%; display: inline-block; margin-left: 5px; border: 2px solid white; }
-
-        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #ddd; }
-        .story-circle { width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--primary); flex-shrink: 0; overflow: hidden; padding: 2px; background: white; }
-        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        
-        #chat-messages { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: var(--bg); }
+        .online-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; border: 2px solid white; }
+        .offline-dot { width: 10px; height: 10px; background: #bbb; border-radius: 50%; display: inline-block; border: 2px solid white; }
+        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; border-bottom: 1px solid #ddd; }
+        .story-circle { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); flex-shrink: 0; overflow: hidden; background: white; }
+        .story-circle img { width: 100%; height: 100%; object-fit: cover; }
+        #chat-messages { height: 45vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: var(--bg); }
         .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; max-width: 80%; position: relative; }
-        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; position: relative; }
-        .delete-btn { font-size: 9px; color: var(--danger); display: none; position: absolute; top: -18px; right: 0; background: white; padding: 2px 5px; border-radius: 5px; border: 1px solid #ddd; }
+        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; }
+        .chat-media { width: 100%; border-radius: 8px; margin-top: 5px; }
+        .delete-btn { font-size: 9px; color: var(--danger); display: none; position: absolute; top: -18px; right: 0; background: white; padding: 2px 5px; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; }
         .msg-sent:hover .delete-btn { display: block; }
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #login-overlay { position: fixed; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -47,23 +40,24 @@
 
     <div id="login-overlay">
         <h1>Classmate Connect</h1>
-        <button onclick="login()" class="btn-primary" style="width: 220px;">Login with Google</button>
+        <button onclick="login()" class="btn-primary" style="width: 200px;">Login with Google</button>
     </div>
 
     <header>
         <div style="display:flex; align-items:center;">
-            <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%; margin-right:10px;">
+            <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%; margin-right:8px;">
             <span id="u-display">Loading...</span>
         </div>
         <div style="display:flex; gap:12px; align-items:center;">
-            <i class="fas fa-moon" onclick="toggleDarkMode()" style="cursor:pointer; font-size:18px;"></i>
-            <select id="langSelector" onchange="changeLang(this.value)" style="width:auto; margin:0; font-size:11px;">
+            <i class="fas fa-robot" onclick="show('ai-bot')" style="color:var(--primary); cursor:pointer;"></i>
+            <i class="fas fa-moon" onclick="toggleDarkMode()" style="cursor:pointer;"></i>
+            <select onchange="changeLang(this.value)" style="width:auto; font-size:10px; padding:2px;">
                 <option value="en">EN</option>
                 <option value="te">TE</option>
             </select>
-            <div onclick="show('notifications', this)" style="position:relative;">
-                <i class="fas fa-bell" style="font-size:20px;"></i>
-                <span id="notif-badge" class="badge" style="display:none;">0</span>
+            <div onclick="show('notifications')" style="position:relative; cursor:pointer;">
+                <i class="fas fa-bell"></i>
+                <span id="notif-badge" class="badge" style="display:none; position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; padding:2px 5px; font-size:9px;">0</span>
             </div>
         </div>
     </header>
@@ -83,7 +77,7 @@
                         <label><i class="fas fa-image" style="color:var(--primary);"></i><input type="file" id="f-img" hidden></label>
                         <i class="fas fa-poll" onclick="togglePoll()" style="color:var(--success);"></i>
                     </div>
-                    <button onclick="handlePost()" class="btn-primary" id="btn-post" style="width:70px;">Post</button>
+                    <button onclick="handlePost()" class="btn-primary" style="width:70px;">Post</button>
                 </div>
             </div>
             <div id="post-container"></div>
@@ -91,65 +85,67 @@
 
         <section id="search" class="section">
             <div class="card">
-                <h3 id="txt-find">Find Classmates</h3>
+                <h3>Find Classmates</h3>
                 <input type="text" id="s-inst" placeholder="Institution">
                 <input type="number" id="s-year" placeholder="Year">
-                <input type="text" id="s-class" placeholder="Class">
-                <input type="text" id="s-city" placeholder="City">
-                <button onclick="search()" class="btn-primary" id="btn-search">Search</button>
+                <button onclick="search()" class="btn-primary">Search</button>
             </div>
             <div id="search-results"></div>
         </section>
 
         <section id="friends" class="section">
-            <div class="card"><h3 id="txt-friends">Friends</h3></div>
+            <div class="card"><h3>Friends</h3></div>
             <div id="friends-list"></div>
         </section>
 
         <section id="chat-window" class="section">
             <div class="card" style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-arrow-left" onclick="show('friends', document.getElementById('nav-friends'))"></i>
+                <i class="fas fa-arrow-left" onclick="show('friends')"></i>
                 <b id="chat-friend-name">Chat</b>
-                <span id="chat-friend-status"></span>
             </div>
             <div id="chat-messages"></div>
-            <div style="display:flex; gap:8px; padding:5px;">
+            <div style="display:flex; gap:8px; padding:5px; align-items:center;">
+                <label><i class="fas fa-paperclip" style="color:var(--primary);"></i><input type="file" id="chat-file" hidden onchange="sendMediaMessage()"></label>
                 <input type="text" id="chatInput" placeholder="Message...">
-                <button id="voiceBtn" class="btn-primary" style="width:45px; background:var(--danger);" onmousedown="startRecording()" onmouseup="stopRecording()"><i class="fas fa-microphone"></i></button>
-                <button onclick="sendMessage()" class="btn-primary" style="width:45px;"><i class="fas fa-paper-plane"></i></button>
+                <button id="voiceBtn" class="btn-primary" style="width:40px; background:var(--danger);" onmousedown="startRecording()" onmouseup="stopRecording()"><i class="fas fa-microphone"></i></button>
+                <button onclick="sendMessage()" class="btn-primary" style="width:40px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </section>
+
+        <section id="ai-bot" class="section">
+            <div class="card"><h3>AI Assistant</h3><p>Ask me anything!</p></div>
+            <div id="ai-messages" style="height:50vh; overflow-y:auto; padding:10px; background:var(--card); border-radius:10px; margin-bottom:10px;"></div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="aiInput" placeholder="Type a question...">
+                <button onclick="askAI()" class="btn-primary" style="width:60px;">Ask</button>
             </div>
         </section>
 
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
                 <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
-                <input type="text" id="p-name-input" placeholder="Name">
-                <input type="text" id="p-inst" placeholder="Institution">
-                <input type="number" id="p-year" placeholder="Year">
-                <input type="text" id="p-class" placeholder="Class">
-                <input type="text" id="p-city" placeholder="City">
-                
-                <div class="card" style="text-align:left; margin-top:10px;">
-                    <b>Privacy Settings</b><br>
-                    <label><input type="checkbox" id="p-hide-contact"> Hide Institution & City from search</label>
+                <input type="text" id="p-name-input">
+                <input type="text" id="p-inst">
+                <input type="number" id="p-year">
+                <div style="text-align:left; font-size:12px;">
+                    <label><input type="checkbox" id="p-hide-contact"> Private Account (Hide from search)</label>
                 </div>
-
-                <button onclick="saveProfile()" class="btn-primary" id="btn-save">Save Profile</button>
-                <button onclick="logout()" style="margin-top:10px; background:var(--danger);" class="btn-primary">Logout</button>
+                <button onclick="saveProfile()" class="btn-primary">Save Profile</button>
+                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
             </div>
         </section>
 
         <section id="notifications" class="section">
-            <div class="card"><h3 id="txt-notif">Notifications</h3></div>
+            <div class="card"><h3>Notifications</h3></div>
             <div id="notif-list"></div>
         </section>
     </main>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br><span id="nav-home">Feed</span></div>
-        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br><span id="nav-search">Search</span></div>
-        <div id="nav-friends" class="nav-item" onclick="show('friends', this)"><i class="fas fa-users"></i><br><span id="nav-friends-txt">Friends</span></div>
-        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user-circle"></i><br><span id="nav-profile">Profile</span></div>
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br>Feed</div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br>Search</div>
+        <div class="nav-item" id="nav-friends" onclick="show('friends', this)"><i class="fas fa-users"></i><br>Friends</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user-circle"></i><br>Profile</div>
     </nav>
 
     <script src="app.js"></script>
