@@ -18,20 +18,18 @@ let currentChatFriendId = null;
 let mediaRecorder;
 let audioChunks = [];
 
-// 1. Core Logic & Theme
 function toggleDarkMode() {
     document.body.classList.toggle('dark');
     localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
 }
 if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
 
-// 2. Auth State & Online Tracking
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = "none";
         db.ref('users/' + u.uid).on('value', s => {
             const d = s.val() || {};
-            user = { uid: u.uid, name: d.name || u.displayName, photo: u.photoURL, inst: d.inst||"", year: d.year||"", privacy: d.privacy || false };
+            user = { uid: u.uid, name: d.name || u.displayName, photo: u.photoURL, inst: d.inst||"", year: d.year||"", uClass: d.uClass||"", city: d.city||"", privacy: d.privacy || false };
             updateUI(); loadFeed(); loadStories(); listenNotifs(); loadFriends();
             db.ref('users/' + u.uid).update({ status: 'online' });
         });
@@ -46,10 +44,12 @@ function updateUI() {
     document.getElementById('p-name-input').value = user.name;
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-year').value = user.year;
+    document.getElementById('p-class').value = user.uClass;
+    document.getElementById('p-city').value = user.city;
     document.getElementById('p-hide-contact').checked = user.privacy;
 }
 
-// 3. Feed, Media & Polls
+// Post & Poll Functions
 function togglePoll() {
     pollActive = !pollActive;
     document.getElementById('poll-inputs').style.display = pollActive ? 'block' : 'none';
@@ -80,11 +80,35 @@ function loadFeed() {
 function like(pid) { db.ref(`posts/${pid}/likesCount`).transaction(c => (c || 0) + 1); }
 function vote(pid, o) { db.ref(`posts/${pid}/poll/${o}`).transaction(v => (v || 0) + 1); }
 
-// 4. Chat System with Media & Voice & Delete
+// Search Function with 4 Filters
+function search() {
+    const inst = document.getElementById('s-inst').value.toLowerCase().trim();
+    const year = document.getElementById('s-year').value.trim();
+    const ucl = document.getElementById('s-class').value.toLowerCase().trim();
+    const city = document.getElementById('s-city').value.toLowerCase().trim();
+    
+    db.ref('users').once('value', snap => {
+        const res = document.getElementById('search-results'); res.innerHTML = "";
+        snap.forEach(c => {
+            const u = c.val(); if(c.key === user.uid || u.privacy) return;
+            let match = true;
+            if(inst && !u.inst.toLowerCase().includes(inst)) match = false;
+            if(year && u.year != year) match = false;
+            if(ucl && !u.uClass.toLowerCase().includes(ucl)) match = false;
+            if(city && !u.city.toLowerCase().includes(city)) match = false;
+            
+            if(match) {
+                res.innerHTML += `<div class='card'><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small><br><button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto; padding:5px 10px; margin-top:5px;">Connect</button></div>`;
+            }
+        });
+    });
+}
+
+// Chat, Media, Voice & AI
 async function sendMediaMessage() {
     const file = document.getElementById('chat-file').files[0]; if(!file || !currentChatFriendId) return;
     const b64 = await toBase64(file);
-    pushMessage({ sender: user.uid, media: b64, type: 'image' });
+    pushMessage({ sender: user.uid, media: b64 });
 }
 
 function sendMessage() {
@@ -115,33 +139,28 @@ function loadMessages(fid) {
 }
 function deleteMsg(cid, mid) { if(confirm("Delete?")) db.ref(`chats/${cid}/${mid}`).remove(); }
 
-// 5. AI Chatbot
 function askAI() {
     const q = document.getElementById('aiInput').value; if(!q) return;
     const cont = document.getElementById('ai-messages');
     cont.innerHTML += `<p style="text-align:right"><b>You:</b> ${q}</p>`;
-    // Simple Teacher-Logic Bot (Mock AI)
     setTimeout(() => {
-        let ans = "I am your study assistant. For complex math like calculus or geometry, I'm here to help!";
-        if(q.toLowerCase().includes("hello")) ans = "Hello teacher! How can I assist you today?";
-        cont.innerHTML += `<p style="color:var(--primary)"><b>Bot:</b> ${ans}</p>`;
+        cont.innerHTML += `<p style="color:var(--primary)"><b>Bot:</b> Hello! I'm your assistant. How can I help you with your studies?</p>`;
         cont.scrollTop = cont.scrollHeight;
     }, 1000);
     document.getElementById('aiInput').value = "";
 }
 
-// 6. Search, Friends & Online Dots
-function search() {
-    const inst = document.getElementById('s-inst').value.toLowerCase();
-    db.ref('users').once('value', snap => {
-        const res = document.getElementById('search-results'); res.innerHTML = "";
-        snap.forEach(c => {
-            const u = c.val(); if(c.key === user.uid || u.privacy) return;
-            if(!inst || u.inst.toLowerCase().includes(inst)) {
-                res.innerHTML += `<div class='card'><b>${u.name}</b> <button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto">Connect</button></div>`;
-            }
-        });
-    });
+// Profile & Friends Logic
+function saveProfile() {
+    const d = { 
+        name: document.getElementById('p-name-input').value, 
+        inst: document.getElementById('p-inst').value, 
+        year: document.getElementById('p-year').value, 
+        uClass: document.getElementById('p-class').value, 
+        city: document.getElementById('p-city').value,
+        privacy: document.getElementById('p-hide-contact').checked 
+    };
+    db.ref('users/' + user.uid).update(d).then(() => alert("Profile Updated!"));
 }
 
 function loadFriends() {
@@ -157,10 +176,10 @@ function loadFriends() {
 }
 function openChat(f, n) { currentChatFriendId = f; document.getElementById('chat-friend-name').innerText = n; show('chat-window'); loadMessages(f); }
 
-// 7. Stories, Voice & Notifications
+// Stories, Voice, Notifications & Helpers
 function loadStories() {
     db.ref('stories').on('value', snap => {
-        const list = document.getElementById('story-list'); list.innerHTML = `<div class="story-circle" onclick="addStory()" style="line-height:60px; text-align:center">+</div>`;
+        const list = document.getElementById('story-list'); list.innerHTML = `<div class="story-circle" onclick="addStory()" style="line-height:60px; text-align:center; background:#eee;">+</div>`;
         snap.forEach(s => { list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
     });
 }
@@ -176,33 +195,26 @@ async function startRecording() {
     mediaRecorder.onstop = async () => {
         const b = await blobToBase64(new Blob(audioChunks, { type: 'audio/webm' }));
         pushMessage({ sender: user.uid, audio: b });
-    };
-    mediaRecorder.start();
+    }; mediaRecorder.start();
 }
 function stopRecording() { if(mediaRecorder) mediaRecorder.stop(); }
 
-function sendReq(t) { db.ref(`notifications/${t}`).push({ from: user.name, fromUid: user.uid }); alert("Sent!"); }
+function sendReq(t) { db.ref(`notifications/${t}`).push({ from: user.name, fromUid: user.uid }); alert("Request Sent!"); }
 function listenNotifs() {
     db.ref('notifications/' + user.uid).on('value', snap => {
         const b = document.getElementById('notif-badge'); const list = document.getElementById('notif-list'); list.innerHTML = "";
         if(snap.exists()) { b.innerText = snap.numChildren(); b.style.display="block"; snap.forEach(s => {
-            list.innerHTML += `<div class='card'>${s.val().from} wants to connect <button onclick="acceptReq('${s.key}','${s.val().fromUid}','${s.val().from}')">Accept</button></div>`;
+            list.innerHTML += `<div class='card'>${s.val().from} request. <button onclick="acceptReq('${s.key}','${s.val().fromUid}','${s.val().from}')">Accept</button></div>`;
         }); } else b.style.display="none";
     });
 }
 function acceptReq(k, f, n) { db.ref(`friends/${user.uid}/${f}`).set({name: n}); db.ref(`friends/${f}/${user.uid}`).set({name: user.name}); db.ref(`notifications/${user.uid}/${k}`).remove(); }
 
-// 8. General Helpers
 function show(id, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-}
-function saveProfile() {
-    const d = { name: document.getElementById('p-name-input').value, inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value, privacy: document.getElementById('p-hide-contact').checked };
-    db.ref('users/' + user.uid).update(d).then(() => alert("Saved!"));
 }
 function toBase64(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(f); }); }
 function blobToBase64(b) { return new Promise(r => { const rd = new FileReader(); rd.onloadend = () => r(rd.result); rd.readAsDataURL(b); }); }
 function login() { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
 function logout() { db.ref('users/' + user.uid).update({ status: 'offline' }); auth.signOut().then(() => location.reload()); }
-function changeLang(l) { alert("Language switched to: " + l); } // Multi-lang logic integration
