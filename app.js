@@ -49,7 +49,13 @@ function updateUI() {
     document.getElementById('p-hide-contact').checked = user.privacy;
 }
 
-// Post & Poll Functions
+// WhatsApp Invite Function
+function shareWhatsApp() {
+    const text = `Hi! Let's connect on Classmate Connect Global. It's a great app for students and teachers. My Institution: ${user.inst || 'Not set'}. Join here: https://class-connect-b58f0.web.app/`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+// Post, Poll, Search
 function togglePoll() {
     pollActive = !pollActive;
     document.getElementById('poll-inputs').style.display = pollActive ? 'block' : 'none';
@@ -80,87 +86,67 @@ function loadFeed() {
 function like(pid) { db.ref(`posts/${pid}/likesCount`).transaction(c => (c || 0) + 1); }
 function vote(pid, o) { db.ref(`posts/${pid}/poll/${o}`).transaction(v => (v || 0) + 1); }
 
-// Search Function with 4 Filters
 function search() {
     const inst = document.getElementById('s-inst').value.toLowerCase().trim();
     const year = document.getElementById('s-year').value.trim();
     const ucl = document.getElementById('s-class').value.toLowerCase().trim();
     const city = document.getElementById('s-city').value.toLowerCase().trim();
-    
     db.ref('users').once('value', snap => {
         const res = document.getElementById('search-results'); res.innerHTML = "";
         snap.forEach(c => {
             const u = c.val(); if(c.key === user.uid || u.privacy) return;
-            let match = true;
-            if(inst && !u.inst.toLowerCase().includes(inst)) match = false;
-            if(year && u.year != year) match = false;
-            if(ucl && !u.uClass.toLowerCase().includes(ucl)) match = false;
-            if(city && !u.city.toLowerCase().includes(city)) match = false;
-            
-            if(match) {
-                res.innerHTML += `<div class='card'><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small><br><button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto; padding:5px 10px; margin-top:5px;">Connect</button></div>`;
-            }
+            let m = true;
+            if(inst && !u.inst.toLowerCase().includes(inst)) m = false;
+            if(year && u.year != year) m = false;
+            if(ucl && !u.uClass.toLowerCase().includes(ucl)) m = false;
+            if(city && !u.city.toLowerCase().includes(city)) m = false;
+            if(m) res.innerHTML += `<div class='card'><b>${u.name}</b><br><small>${u.inst} | ${u.uClass}</small><br><button onclick="sendReq('${c.key}')" class="btn-primary" style="width:auto">Connect</button></div>`;
         });
     });
 }
 
-// Chat, Media, Voice & AI
+// Chat with Media, Voice, Delete & AI
 async function sendMediaMessage() {
-    const file = document.getElementById('chat-file').files[0]; if(!file || !currentChatFriendId) return;
-    const b64 = await toBase64(file);
-    pushMessage({ sender: user.uid, media: b64 });
+    const f = document.getElementById('chat-file').files[0]; if(!f || !currentChatFriendId) return;
+    const b = await toBase64(f); pushMessage({ sender: user.uid, media: b });
 }
 
 function sendMessage() {
-    const text = document.getElementById('chatInput').value; if(!text || !currentChatFriendId) return;
-    pushMessage({ sender: user.uid, text: text });
-    document.getElementById('chatInput').value = "";
+    const t = document.getElementById('chatInput').value; if(!t || !currentChatFriendId) return;
+    pushMessage({ sender: user.uid, text: t }); document.getElementById('chatInput').value = "";
 }
 
-function pushMessage(msgObj) {
-    const fid = currentChatFriendId;
-    const chatId = user.uid < fid ? user.uid + "_" + fid : fid + "_" + user.uid;
-    db.ref(`chats/${chatId}`).push({...msgObj, time: Date.now()});
+function pushMessage(o) {
+    const fid = currentChatFriendId; const cid = user.uid < fid ? user.uid+"_"+fid : fid+"_"+user.uid;
+    db.ref(`chats/${cid}`).push({...o, time: Date.now()});
 }
 
 function loadMessages(fid) {
-    const chatId = user.uid < fid ? user.uid + "_" + fid : fid + "_" + user.uid;
-    db.ref(`chats/${chatId}`).on('value', snap => {
+    const cid = user.uid < fid ? user.uid+"_"+fid : fid+"_"+user.uid;
+    db.ref(`chats/${cid}`).on('value', snap => {
         const cont = document.getElementById('chat-messages'); cont.innerHTML = "";
         snap.forEach(s => {
-            const m = s.val(); const mid = s.key;
-            const cls = m.sender === user.uid ? 'msg-sent' : 'msg-received';
-            let delBtn = m.sender === user.uid ? `<span class="delete-btn" onclick="deleteMsg('${chatId}', '${mid}')">Delete</span>` : "";
-            let content = m.text ? m.text : (m.media ? `<img src="${m.media}" class="chat-media">` : `<audio controls src="${m.audio}" style="width:140px;"></audio>`);
-            cont.innerHTML += `<div class="${cls}">${delBtn}${content}</div>`;
+            const m = s.val(); const cls = m.sender === user.uid ? 'msg-sent' : 'msg-received';
+            let del = m.sender === user.uid ? `<span class="delete-btn" onclick="deleteMsg('${cid}', '${s.key}')">Delete</span>` : "";
+            let con = m.text ? m.text : (m.media ? `<img src="${m.media}" class="chat-media">` : `<audio controls src="${m.audio}" style="width:140px;"></audio>`);
+            cont.innerHTML += `<div class="${cls}">${del}${con}</div>`;
         });
         cont.scrollTop = cont.scrollHeight;
     });
 }
-function deleteMsg(cid, mid) { if(confirm("Delete?")) db.ref(`chats/${cid}/${mid}`).remove(); }
+function deleteMsg(c, m) { if(confirm("Delete?")) db.ref(`chats/${c}/${m}`).remove(); }
 
 function askAI() {
     const q = document.getElementById('aiInput').value; if(!q) return;
-    const cont = document.getElementById('ai-messages');
-    cont.innerHTML += `<p style="text-align:right"><b>You:</b> ${q}</p>`;
-    setTimeout(() => {
-        cont.innerHTML += `<p style="color:var(--primary)"><b>Bot:</b> Hello! I'm your assistant. How can I help you with your studies?</p>`;
-        cont.scrollTop = cont.scrollHeight;
-    }, 1000);
+    const cont = document.getElementById('ai-messages'); cont.innerHTML += `<p style="text-align:right"><b>You:</b> ${q}</p>`;
+    setTimeout(() => { cont.innerHTML += `<p style="color:var(--primary)"><b>Bot:</b> I'm here to help with your studies!</p>`; cont.scrollTop = cont.scrollHeight; }, 1000);
     document.getElementById('aiInput').value = "";
 }
 
-// Profile & Friends Logic
+// Profile, Friends, Stories
 function saveProfile() {
-    const d = { 
-        name: document.getElementById('p-name-input').value, 
-        inst: document.getElementById('p-inst').value, 
-        year: document.getElementById('p-year').value, 
-        uClass: document.getElementById('p-class').value, 
-        city: document.getElementById('p-city').value,
-        privacy: document.getElementById('p-hide-contact').checked 
-    };
-    db.ref('users/' + user.uid).update(d).then(() => alert("Profile Updated!"));
+    const d = { name: document.getElementById('p-name-input').value, inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value, uClass: document.getElementById('p-class').value, city: document.getElementById('p-city').value, privacy: document.getElementById('p-hide-contact').checked };
+    db.ref('users/' + user.uid).update(d).then(() => alert("Saved!"));
 }
 
 function loadFriends() {
@@ -168,19 +154,18 @@ function loadFriends() {
         const fl = document.getElementById('friends-list'); fl.innerHTML = "";
         snap.forEach(s => {
             db.ref('users/' + s.key + '/status').on('value', st => {
-                const dot = st.val() === 'online' ? '<span class="online-dot"></span>' : '<span class="offline-dot"></span>';
-                fl.innerHTML += `<div class='card'>${dot} <b>${s.val().name}</b> <button onclick="openChat('${s.key}','${s.val().name}')" class="btn-primary" style="float:right; width:auto;">Chat</button></div>`;
+                const d = st.val()==='online'?'<span class="online-dot"></span>':'<span class="offline-dot"></span>';
+                fl.innerHTML += `<div class='card'>${d} <b>${s.val().name}</b> <button onclick="openChat('${s.key}','${s.val().name}')" class="btn-primary" style="float:right; width:auto;">Chat</button></div>`;
             });
         });
     });
 }
 function openChat(f, n) { currentChatFriendId = f; document.getElementById('chat-friend-name').innerText = n; show('chat-window'); loadMessages(f); }
 
-// Stories, Voice, Notifications & Helpers
 function loadStories() {
     db.ref('stories').on('value', snap => {
-        const list = document.getElementById('story-list'); list.innerHTML = `<div class="story-circle" onclick="addStory()" style="line-height:60px; text-align:center; background:#eee;">+</div>`;
-        snap.forEach(s => { list.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
+        const l = document.getElementById('story-list'); l.innerHTML = `<div class="story-circle" onclick="addStory()" style="line-height:60px; text-align:center; background:#eee">+</div>`;
+        snap.forEach(s => { l.innerHTML += `<div class="story-circle"><img src="${s.val().userPhoto}"></div>`; });
     });
 }
 async function addStory() {
@@ -190,30 +175,24 @@ async function addStory() {
 }
 async function startRecording() {
     audioChunks = []; const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = async () => {
-        const b = await blobToBase64(new Blob(audioChunks, { type: 'audio/webm' }));
-        pushMessage({ sender: user.uid, audio: b });
-    }; mediaRecorder.start();
+    mediaRecorder = new MediaRecorder(stream); mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => { const b = await blobToBase64(new Blob(audioChunks, { type: 'audio/webm' })); pushMessage({ sender: user.uid, audio: b }); };
+    mediaRecorder.start();
 }
 function stopRecording() { if(mediaRecorder) mediaRecorder.stop(); }
 
-function sendReq(t) { db.ref(`notifications/${t}`).push({ from: user.name, fromUid: user.uid }); alert("Request Sent!"); }
+function sendReq(t) { db.ref(`notifications/${t}`).push({ from: user.name, fromUid: user.uid }); alert("Sent!"); }
 function listenNotifs() {
     db.ref('notifications/' + user.uid).on('value', snap => {
-        const b = document.getElementById('notif-badge'); const list = document.getElementById('notif-list'); list.innerHTML = "";
+        const b = document.getElementById('notif-badge'); const l = document.getElementById('notif-list'); l.innerHTML = "";
         if(snap.exists()) { b.innerText = snap.numChildren(); b.style.display="block"; snap.forEach(s => {
-            list.innerHTML += `<div class='card'>${s.val().from} request. <button onclick="acceptReq('${s.key}','${s.val().fromUid}','${s.val().from}')">Accept</button></div>`;
+            l.innerHTML += `<div class='card'>${s.val().from} <button onclick="acceptReq('${s.key}','${s.val().fromUid}','${s.val().from}')">Accept</button></div>`;
         }); } else b.style.display="none";
     });
 }
 function acceptReq(k, f, n) { db.ref(`friends/${user.uid}/${f}`).set({name: n}); db.ref(`friends/${f}/${user.uid}`).set({name: user.name}); db.ref(`notifications/${user.uid}/${k}`).remove(); }
 
-function show(id, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
+function show(id, el) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function toBase64(f) { return new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(f); }); }
 function blobToBase64(b) { return new Promise(r => { const rd = new FileReader(); rd.onloadend = () => r(rd.result); rd.readAsDataURL(b); }); }
 function login() { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
