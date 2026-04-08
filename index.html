@@ -18,12 +18,16 @@
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; background: white; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; }
         .active-nav { color: var(--primary); font-weight: 600; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
         .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: 15px; }
+        .story-container { display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #ddd; }
+        .story-circle { width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--primary); flex-shrink: 0; overflow: hidden; padding: 2px; background: white; }
+        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .poll-option { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
         #chat-messages { height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: #fff; }
-        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; }
-        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 8px 12px; border-radius: 15px 15px 15px 0; }
+        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; max-width: 80%; }
+        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; }
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .lang-btn { font-size: 12px; padding: 5px 10px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -39,10 +43,10 @@
     <header>
         <div style="display:flex; align-items:center;">
             <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%; margin-right:10px;">
-            <span id="u-display">Loading...</span>
+            <span id="u-display" style="font-weight:600;">Loading...</span>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <select onchange="changeLang(this.value)" class="lang-btn">
+            <select onchange="changeLang(this.value)" style="font-size:12px; border-radius:20px; padding:2px 5px;">
                 <option value="en">English</option>
                 <option value="te">తెలుగు</option>
             </select>
@@ -55,9 +59,21 @@
 
     <main>
         <section id="home" class="section active">
+            <div id="story-list" class="story-container"></div>
             <div class="card">
                 <textarea id="msgInput" placeholder="What's happening?"></textarea>
-                <button onclick="handlePost()" class="btn-primary" id="btn-post">Post</button>
+                <div id="poll-inputs" style="display:none; border-top: 1px solid #eee; padding-top: 10px;">
+                    <input type="text" id="p-q" placeholder="Ask a question...">
+                    <input type="text" id="p-1" placeholder="Option 1">
+                    <input type="text" id="p-2" placeholder="Option 2">
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <div style="display:flex; gap:20px;">
+                        <label><i class="fas fa-image" style="font-size:22px; color:var(--primary); cursor:pointer;"></i><input type="file" id="f-img" accept="image/*" hidden></label>
+                        <i class="fas fa-poll" onclick="togglePoll()" style="font-size:22px; color:var(--success); cursor:pointer;"></i>
+                    </div>
+                    <button onclick="handlePost()" class="btn-primary" id="btn-post" style="width:80px;">Post</button>
+                </div>
             </div>
             <div id="post-container"></div>
         </section>
@@ -65,10 +81,10 @@
         <section id="search" class="section">
             <div class="card">
                 <h3 id="txt-find">Find Classmates</h3>
-                <input type="text" id="s-inst" placeholder="Institution">
-                <input type="number" id="s-year" placeholder="Year">
-                <input type="text" id="s-class" placeholder="Class">
-                <input type="text" id="s-city" placeholder="City">
+                <input type="text" id="s-inst" placeholder="Institution Name">
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Studying Class/Section">
+                <input type="text" id="s-city" placeholder="Institution City">
                 <button onclick="search()" class="btn-primary" id="btn-search">Search Now</button>
             </div>
             <div id="search-results"></div>
@@ -80,13 +96,13 @@
         </section>
 
         <section id="chat-window" class="section">
-            <div class="card" style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-arrow-left" onclick="show('friends', document.getElementById('nav-friends'))"></i>
+            <div class="card" style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                <i class="fas fa-arrow-left" onclick="show('friends', document.getElementById('nav-friends'))" style="cursor:pointer; color:var(--primary);"></i>
                 <b id="chat-friend-name">Chat</b>
             </div>
-            <div id="chat-messages" class="card"></div>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <input type="text" id="chatInput" placeholder="Message...">
+            <div id="chat-messages"></div>
+            <div style="display:flex; gap:10px; padding:5px; align-items:center;">
+                <input type="text" id="chatInput" placeholder="Type a message...">
                 <button id="voiceBtn" class="btn-primary" style="width:50px; background:var(--danger);" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">
                     <i class="fas fa-microphone"></i>
                 </button>
@@ -97,14 +113,16 @@
 
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
-                <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--primary);">
-                <input type="text" id="p-name-input" placeholder="Name">
-                <input type="text" id="p-inst" placeholder="Institution">
-                <input type="number" id="p-year" placeholder="Year">
-                <input type="text" id="p-class" placeholder="Class">
-                <input type="text" id="p-city" placeholder="City">
+                <img id="p-img" src="" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--primary);">
+                <div style="text-align:left; margin-top:15px;">
+                    <label>Full Name</label><input type="text" id="p-name-input">
+                    <label>Institution</label><input type="text" id="p-inst">
+                    <label>Year</label><input type="number" id="p-year">
+                    <label>Class</label><input type="text" id="p-class">
+                    <label>City</label><input type="text" id="p-city">
+                </div>
                 <button onclick="saveProfile()" class="btn-primary" id="btn-save">Update Profile</button>
-                <button onclick="logout()" class="btn-primary" style="background:var(--danger); margin-top:10px;">Logout</button>
+                <button onclick="logout()" style="margin-top:15px; background:#ff4757;" class="btn-primary">Logout</button>
             </div>
         </section>
 
