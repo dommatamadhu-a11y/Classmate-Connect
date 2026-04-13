@@ -10,29 +10,21 @@
         :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 70px; transition: 0.3s; }
-        
         header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .section { display: none; padding: 10px; }
         .active { display: block; }
-        
         .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        input, textarea { width: 100%; padding: 12px; margin: 5px 0 12px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; display: block; }
+        input, textarea { width: 100%; padding: 12px; margin: 5px 0 12px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; }
         label { font-size: 12px; font-weight: 600; color: #666; display: block; text-align: left; }
-        
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; margin-bottom: 10px; }
-        .btn-wa { background: var(--wa); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
-        
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; background: var(--card); border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; }
         .active-nav { color: var(--primary); font-weight: 600; }
-
-        /* Notification Popup */
         .notif-popup { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 12px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 3000; display: none; animation: slideDown 0.5s ease; font-size: 14px; }
         @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
-
         .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
-        .comment-item { font-size: 13px; margin-bottom: 5px; padding: 8px; background: #f8f9fa; border-radius: 8px; }
-        #chat-messages { height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
+        .comment-item { font-size: 12px; padding: 5px; background: #f0f2f5; margin-top: 5px; border-radius: 5px; }
+        #chat-messages, #ai-messages { height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
         .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 10px; border-radius: 15px 15px 0 15px; max-width: 80%; }
         .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px; border-radius: 15px 15px 15px 0; max-width: 80%; }
     </style>
@@ -46,7 +38,7 @@
 
     <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center;">
         <h1>Classmate Connect</h1>
-        <button onclick="login()" class="btn-primary" style="width:250px;"><i class="fab fa-google"></i> Login with Google</button>
+        <button onclick="login()" class="btn-primary" style="width:250px;">Login with Google</button>
     </div>
 
     <header>
@@ -55,9 +47,10 @@
             <span id="u-display" style="font-weight: 600;">Welcome</span>
         </div>
         <div style="display:flex; gap:15px; align-items:center;">
-            <i class="fas fa-moon" onclick="toggleDarkMode()" style="cursor:pointer; font-size: 18px;"></i>
+            <i class="fas fa-robot" onclick="show('ai-bot')" style="cursor:pointer; color:var(--primary);"></i>
+            <i class="fas fa-moon" onclick="toggleDarkMode()" style="cursor:pointer;"></i>
             <div onclick="show('notifications')" style="position:relative; cursor:pointer;">
-                <i class="fas fa-bell" style="font-size: 18px;"></i>
+                <i class="fas fa-bell"></i>
                 <span id="notif-badge" style="display:none; position:absolute; top:-8px; right:-8px; background:red; color:white; border-radius:50%; padding:2px 5px; font-size:9px;">0</span>
             </div>
         </div>
@@ -65,12 +58,19 @@
 
     <main>
         <section id="home" class="section active">
-            <div id="story-list" style="display:flex; gap:10px; overflow-x:auto; margin-bottom:15px; padding: 5px;"></div>
             <div class="card">
-                <textarea id="msgInput" rows="2" placeholder="Post a classmate update..."></textarea>
+                <textarea id="msgInput" rows="2" placeholder="Share something with classmates..."></textarea>
+                <div id="poll-inputs" style="display:none; border:1px dashed #ccc; padding:10px; margin-bottom:10px;">
+                    <input type="text" id="p-q" placeholder="Poll Question">
+                    <input type="text" id="p-1" placeholder="Option 1">
+                    <input type="text" id="p-2" placeholder="Option 2">
+                </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <label><i class="fas fa-image" style="color:var(--primary); font-size: 20px; cursor:pointer;"></i><input type="file" id="f-img" hidden accept="image/*"></label>
-                    <button onclick="handlePost()" class="btn-primary" style="width:80px; margin-bottom:0;">Post</button>
+                    <div style="display:flex; gap:15px;">
+                        <label><i class="fas fa-image" style="color:var(--primary); font-size: 20px;"></i><input type="file" id="f-img" hidden accept="image/*"></label>
+                        <i class="fas fa-poll" onclick="togglePoll()" style="color:var(--success); font-size: 20px; cursor:pointer;"></i>
+                    </div>
+                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Post</button>
                 </div>
             </div>
             <div id="post-container"></div>
@@ -78,49 +78,57 @@
 
         <section id="search" class="section">
             <div class="card">
-                <h3 style="margin-top:0;">Find Classmates</h3>
-                <label>Institution Name</label><input type="text" id="s-inst" placeholder="College/School">
-                <label>Passout Year</label><input type="number" id="s-year" placeholder="Year">
-                <label>Studying Class</label><input type="text" id="s-class" placeholder="Class/Degree">
-                <label>Institution City</label><input type="text" id="s-city" placeholder="City">
-                <button onclick="search()" class="btn-primary"><i class="fas fa-search"></i> Search Now</button>
+                <h3>Find Classmates</h3>
+                <label>Institution</label><input type="text" id="s-inst">
+                <label>Year</label><input type="number" id="s-year">
+                <label>Class</label><input type="text" id="s-class">
+                <label>City</label><input type="text" id="s-city">
+                <button onclick="search()" class="btn-primary">Search</button>
             </div>
             <div id="search-results"></div>
         </section>
 
         <section id="friends" class="section">
-            <div class="card"><h3 style="margin:0;">My Friends</h3></div>
+            <div class="card"><h3>Friends</h3></div>
             <div id="friends-list"></div>
         </section>
 
         <section id="chat-window" class="section">
-            <div class="card" style="display:flex; align-items:center; gap:10px; padding: 10px;">
+            <div class="card" style="display:flex; align-items:center; gap:10px; padding:10px;">
                 <i class="fas fa-arrow-left" onclick="show('friends')"></i>
-                <b id="chat-friend-name">Direct Chat</b>
+                <b id="chat-friend-name">Chat</b>
             </div>
             <div id="chat-messages"></div>
-            <div style="display:flex; gap:8px; padding:10px; align-items:center;">
-                <input type="text" id="chatInput" placeholder="Type a message...">
-                <button onclick="sendMessage()" class="btn-primary" style="width:45px; margin-bottom:0;"><i class="fas fa-paper-plane"></i></button>
+            <div style="display:flex; gap:8px; padding:10px;">
+                <input type="text" id="chatInput" placeholder="Message...">
+                <button onclick="sendMessage()" class="btn-primary" style="width:45px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </section>
+
+        <section id="ai-bot" class="section">
+            <div class="card"><h3>AI Classmate Assistant</h3></div>
+            <div id="ai-messages"></div>
+            <div style="display:flex; gap:5px; padding:10px;">
+                <input type="text" id="aiInput" placeholder="Ask AI anything...">
+                <button onclick="askAI()" class="btn-primary" style="width:70px;">Ask</button>
             </div>
         </section>
 
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
-                <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--primary); margin-bottom:15px; object-fit: cover;">
-                <label>Full Name</label><input type="text" id="p-name-input" placeholder="Required">
-                <label>Institution Name</label><input type="text" id="p-inst">
-                <label>Passout Year</label><input type="number" id="p-year">
-                <label>Studying Class</label><input type="text" id="p-class">
-                <label>Institution City</label><input type="text" id="p-city">
-                <button onclick="saveProfile()" class="btn-primary">Update My Profile</button>
-                <a href="#" onclick="shareWhatsApp()" class="btn-wa"><i class="fab fa-whatsapp"></i> Invite Classmates</a>
-                <button onclick="logout()" style="background:var(--danger);" class="btn-primary">Logout</button>
+                <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--primary); object-fit: cover;">
+                <label>Full Name</label><input type="text" id="p-name-input">
+                <label>Institution</label><input type="text" id="p-inst">
+                <label>Year</label><input type="number" id="p-year">
+                <label>Class</label><input type="text" id="p-class">
+                <label>City</label><input type="text" id="p-city">
+                <button onclick="saveProfile()" class="btn-primary">Update Profile</button>
+                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
             </div>
         </section>
 
         <section id="notifications" class="section">
-            <div class="card"><h3>Recent Notifications</h3></div>
+            <div class="card"><h3>Notifications</h3></div>
             <div id="notif-list"></div>
         </section>
     </main>
