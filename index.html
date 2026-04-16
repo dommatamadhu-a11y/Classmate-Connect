@@ -8,40 +8,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --primary: #1a73e8; --bg: #f8fafc; --card: #ffffff; --text: #1f2937; --success: #10b981; --danger: #ef4444; --wa: #25D366; }
-        body.dark { --bg: #111827; --card: #1f2937; --text: #f9fafb; --primary: #60a5fa; }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 85px; transition: 0.3s; overflow-x: hidden; }
+        :root { --primary: #1a73e8; --bg: #f8fafc; --card: #ffffff; --text: #1f2937; --success: #10b981; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 85px; overflow-x: hidden; }
         
-        /* Splash Screen Style */
-        #splash { position: fixed; inset: 0; background: linear-gradient(135deg, #1a73e8, #60a5fa); color: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeOut 2s 1.5s forwards; }
-        #splash .logo { font-size: 50px; margin-bottom: 20px; animation: scaleUp 1s ease-out; }
-        @keyframes scaleUp { from { transform: scale(0.5); } to { transform: scale(1); } }
-        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+        /* Splash Screen */
+        #splash { position: fixed; inset: 0; background: linear-gradient(135deg, #1a73e8, #60a5fa); color: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s; }
+        #splash i { font-size: 60px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        header { background: var(--card); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; border-radius: 0 0 15px 15px; }
+        header { background: var(--card); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
         .section { display: none; padding: 15px; animation: fadeIn 0.4s ease-out; }
         .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: var(--card); margin-bottom: 20px; padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); transition: transform 0.2s; }
-        .card:hover { transform: translateY(-3px); }
-        input, textarea, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #e2e8f0; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 15px; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15); }
+        .card { background: var(--card); margin-bottom: 15px; padding: 18px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+        input, textarea, select { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; box-sizing: border-box; font-size: 14px; }
+        .btn-primary { background: linear-gradient(135deg, #1a73e8, #60a5fa); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2); }
         
-        .btn-primary { background: linear-gradient(135deg, #1a73e8, #60a5fa); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 600; font-size: 16px; box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2); }
-        .btn-primary:active { transform: scale(0.98); }
-        .badge-icon { background: gold; color: black; font-size: 10px; padding: 4px 10px; border-radius: 6px; font-weight: bold; text-transform: uppercase; margin-left: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 12px 0; z-index: 1000; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.03); }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 12px 0; z-index: 1000; border-radius: 20px 20px 0 0; }
         .nav-item { flex: 1; text-align: center; color: #9ca3af; font-size: 11px; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: 600; }
         .nav-item i { font-size: 20px; margin-bottom: 4px; }
 
-        /* Chat & Group UI */
-        #chat-messages, #group-messages { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 20px; background: #fafafa; border-radius: 16px; margin-bottom: 10px; border: 1px solid #f1f5f9; }
-        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 12px 18px; border-radius: 20px 20px 0 20px; max-width: 80%; box-shadow: 0 3px 10px rgba(26, 115, 232, 0.2); }
-        .msg-received { align-self: flex-start; background: #e2e8f0; color: black; padding: 12px 18px; border-radius: 20px 20px 20px 0; max-width: 80%; }
+        #feed-container img { width: 100%; border-radius: 12px; margin-top: 10px; }
     </style>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -50,89 +41,89 @@
 <body>
 
     <div id="splash">
-        <div class="logo"><i class="fas fa-handshake"></i></div>
-        <h1 style="font-size: 24px; font-weight: 600;">Classmate Connect Global</h1>
-        <p style="font-size: 14px; opacity: 0.8;">Revisit Memories. Shape Careers.</p>
+        <i class="fas fa-handshake"></i>
+        <h1 style="margin-top: 20px; font-weight: 600;">Classmate Connect</h1>
+        <p style="opacity: 0.9;">Global Alumni Network</p>
     </div>
 
     <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
         <i class="fas fa-user-circle" style="font-size: 60px; color: var(--primary); margin-bottom: 20px;"></i>
-        <h1 style="color:var(--primary);">Login to Connect</h1>
-        <button onclick="login()" class="btn-primary" style="width:260px; height:50px;"><i class="fab fa-google"></i> Login with Google</button>
+        <h2>Welcome Back</h2>
+        <button onclick="login()" class="btn-primary" style="width:250px;"><i class="fab fa-google"></i> Sign in with Google</button>
     </div>
 
     <header>
         <div style="display:flex; align-items:center;">
-            <img id="h-img" src="" style="width:42px; height:42px; border-radius:50%; border:2px solid #eee;">
-            <div style="margin-left:10px;">
-                <span id="u-display" style="font-weight:600; font-size:15px; display:block;">Welcome</span>
-                <span id="u-badge" class="badge-icon" style="display:none;">Expert</span>
+            <img id="h-img" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid #eee;">
+            <div style="margin-left:12px;">
+                <span id="u-display" style="font-weight:600; font-size:15px; display:block;">User</span>
+                <span id="u-badge" style="font-size:10px; color:var(--primary); font-weight:bold; display:none;">Expert</span>
             </div>
         </div>
-        <div style="display:flex; gap:20px; color:#555; font-size:18px;">
-            <i class="fas fa-robot" onclick="show('ai-bot')" title="Career AI"></i>
+        <div style="display:flex; gap:15px; color:#64748b;">
             <i class="fas fa-bell" onclick="show('notifications')"></i>
-            <i class="fas fa-cog" onclick="show('settings')"></i>
+            <i class="fas fa-cog" onclick="show('profile')"></i>
         </div>
     </header>
 
     <main>
         <section id="home" class="section active">
-            <div class="card" id="mem-banner" style="display:none; background: linear-gradient(135deg, #1a73e8, #60a5fa); color:white; border-radius: 12px; padding: 15px;">
-                <b style="font-size:13px;"><i class="fas fa-history"></i> On This Day Memory:</b>
-                <p id="mem-text" style="font-size:12px; margin:5px 0 0 0;"></p>
+            <div id="mem-banner" class="card" style="display:none; background: #e0f2fe; border: 1px solid #bae6fd;">
+                <b><i class="fas fa-star"></i> On This Day:</b>
+                <p id="mem-text" style="font-size: 13px; margin: 5px 0 0 0;"></p>
             </div>
             <div class="card">
-                <textarea id="msgInput" rows="2" placeholder="Share a memory or career update..."></textarea>
-                <div id="poll-ui" style="display:none; background:#f8fafc; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #eee;">
-                    <input type="text" id="p-q" placeholder="Poll Question">
-                    <input type="text" id="p-1" placeholder="Option 1">
-                    <input type="text" id="p-2" placeholder="Option 2">
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; gap:18px; color:var(--primary); font-size:18px;">
-                        <label><i class="fas fa-image"></i><input type="file" id="f-post" hidden accept="image/*,video/*"></label>
-                        <i class="fas fa-poll" onclick="togglePoll()"></i>
-                    </div>
-                    <button onclick="handlePost()" class="btn-primary" style="width:90px; height:40px; margin:0;">Post</button>
+                <textarea id="msgInput" rows="2" placeholder="Share a memory or update..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <label style="cursor:pointer; color:var(--primary); font-size:20px;">
+                        <i class="fas fa-image"></i>
+                        <input type="file" id="f-post" hidden accept="image/*">
+                    </label>
+                    <button onclick="handlePost()" class="btn-primary" style="width:100px; margin:0;">Post</button>
                 </div>
             </div>
             <div id="feed-container"></div>
         </section>
 
-        <section id="chat-window" class="section">
-            <div class="card" style="display:flex; align-items:center; gap:12px; padding:12px; background: var(--card);">
-                <i class="fas fa-chevron-left" onclick="show('friends')"></i>
-                <b id="chat-t-name">Chat</b>
+        <section id="search" class="section">
+            <div class="card">
+                <h3 style="margin-top:0;">Find Your Classmates</h3>
+                <input type="text" id="s-inst" placeholder="Institution Name">
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Studying Class">
+                <input type="text" id="s-city" placeholder="Institution City">
+                <button onclick="searchClassmates()" class="btn-primary">Search</button>
             </div>
-            <div id="chat-messages"></div>
-            <div class="card" style="display:flex; gap:10px; padding:10px;">
-                <input type="text" id="chatInput" placeholder="Message..." style="margin:0;">
-                <button onclick="sendChatMessage()" class="btn-primary" style="width:55px; margin:0;"><i class="fas fa-paper-plane"></i></button>
-            </div>
+            <div id="search-results"></div>
         </section>
 
-        <section id="group-chat-window" class="section">
-            <div class="card" style="display:flex; align-items:center; gap:12px; padding:12px; background:var(--primary); color:white;">
-                <i class="fas fa-chevron-left" onclick="show('friends')"></i>
-                <i class="fas fa-users" style="font-size:22px;"></i>
-                <b id="g-chat-name">Group Chat</b>
-            </div>
-            <div id="group-messages"></div>
-            <div class="card" style="display:flex; gap:10px; padding:10px;">
-                <input type="text" id="g-chatInput" placeholder="Message to Group..." style="margin:0;">
-                <button onclick="sendGroupMessage()" class="btn-primary" style="width:55px; margin:0;"><i class="fas fa-paper-plane"></i></button>
-            </div>
+        <section id="notifications" class="section">
+            <div class="card"><h3>Requests</h3><div id="notif-list">No new requests</div></div>
+            <div class="card"><h3>My Connections</h3><div id="friends-list"></div></div>
         </section>
 
-        </main>
+        <section id="profile" class="section">
+            <div class="card" style="text-align:center;">
+                <img id="p-img" src="" style="width:100px; height:100px; border-radius:50%; margin-bottom:15px;">
+                <input type="text" id="p-name" placeholder="Full Name">
+                <input type="text" id="p-inst" placeholder="Institution Name">
+                <input type="number" id="p-year" placeholder="Passout Year">
+                <input type="text" id="p-class" placeholder="Studying Class">
+                <input type="text" id="p-city" placeholder="Institution City">
+                <input type="text" id="p-skills" placeholder="Skills (Expertise)">
+                <button onclick="updateProfile()" class="btn-primary">Sync Profile & Groups</button>
+                <button onclick="logout()" style="background:none; border:none; color:red; margin-top:20px; width:100%;">Sign Out</button>
+            </div>
+            <h4 style="margin-left:10px;">My Class Groups</h4>
+            <div id="auto-groups"></div>
+        </section>
+    </main>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-history"></i><br>Feed</div>
-        <div class="nav-item" onclick="show('career', this)"><i class="fas fa-graduation-cap"></i><br>Library</div>
-        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search-plus"></i><br>Find</div>
-        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-handshake"></i><br>Circle</div>
-        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user-circle"></i><br>Profile</div>
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br>Home</div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br>Search</div>
+        <div class="nav-item" onclick="show('notifications', this)"><i class="fas fa-users"></i><br>Circle</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><br>Profile</div>
     </nav>
 
     <script src="app.js"></script>
