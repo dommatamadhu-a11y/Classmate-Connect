@@ -26,6 +26,9 @@
         .nav-item { flex: 1; text-align: center; color: #888; font-size: 11px; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: 600; }
 
+        /* Media Feed Styling */
+        .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; background: #000; }
+        
         #chat-messages, #group-messages { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; }
         .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 10px 15px; border-radius: 18px 18px 0 18px; max-width: 80%; }
         .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px 15px; border-radius: 18px 18px 18px 0; max-width: 80%; }
@@ -72,12 +75,14 @@
                     <input type="text" id="p-1" placeholder="Option 1">
                     <input type="text" id="p-2" placeholder="Option 2">
                 </div>
+                <div id="file-name-preview" style="font-size: 11px; color: var(--primary); margin-bottom: 5px;"></div>
+                
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; gap:15px; color:var(--primary);">
-                        <label><i class="fas fa-image"></i><input type="file" id="f-post" hidden accept="image/*,video/*"></label>
+                        <label title="Upload Image or Video"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
                         <i class="fas fa-poll" onclick="togglePoll()"></i>
                     </div>
-                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Post</button>
+                    <button onclick="handlePost()" id="postBtn" class="btn-primary" style="width:80px;">Post</button>
                 </div>
             </div>
             <div id="feed-container"></div>
@@ -185,5 +190,11 @@
     </nav>
 
     <script src="app.js"></script>
+    <script>
+        function showFileName() {
+            const file = document.getElementById('f-post').files[0];
+            document.getElementById('file-name-preview').innerText = file ? "Selected: " + file.name : "";
+        }
+    </script>
 </body>
 </html>
