@@ -7,110 +7,202 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; transition: 0.3s; }
+        
         header { background: var(--card); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-        .section { display: none; padding: 15px; }
+        .section { display: none; padding: 10px; animation: fadeIn 0.4s; }
         .active { display: block; }
-        .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; background: var(--card); color: var(--text); }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: 600; }
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 10px 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; }
+        
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; }
+        .badge-icon { background: gold; color: black; font-size: 10px; padding: 3px 8px; border-radius: 5px; font-weight: bold; text-transform: uppercase; margin-left: 5px; }
+
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 10px 0; z-index: 1000; }
         .nav-item { flex: 1; text-align: center; color: #888; font-size: 11px; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: 600; }
-        .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; }
-        #chat-messages, #ai-msgs { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: #f0f2f5; border-radius: 8px; }
-        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; }
-        .msg-received { align-self: flex-start; background: #e4e6eb; color: black; padding: 8px 12px; border-radius: 15px 15px 15px 0; }
+
+        /* Media Feed Styling */
+        .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; background: #000; }
+        
+        #chat-messages, #group-messages { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; }
+        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 10px 15px; border-radius: 18px 18px 0 18px; max-width: 80%; }
+        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px 15px; border-radius: 18px 18px 18px 0; max-width: 80%; }
+        
+        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .lib-item { background: var(--card); border: 1px solid #eee; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; }
+
+        /* GDPR Consent Banner */
+        #gdpr-banner { position: fixed; bottom: 70px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 10px; z-index: 3000; display: none; font-size: 12px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-    <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center;">
-        <h2>Classmate Connect</h2>
-        <button onclick="login()" class="btn-primary" style="width:200px;">Login with Google</button>
+
+    <div id="gdpr-banner">
+        <p id="gdpr-text">We use cookies to ensure you get the best experience on our app. By continuing, you agree to our Privacy Policy.</p>
+        <button onclick="acceptGDPR()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">Accept</button>
+    </div>
+
+    <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 20px;">
+        <h1 style="color:var(--primary);">Classmate Connect Global</h1>
+        <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Your data is encrypted and secure with GDPR standards.</p>
+        <button onclick="login()" class="btn-primary" style="width:260px;">Login with Google</button>
     </div>
 
     <header>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img id="h-img" src="" style="width:35px; height:35px; border-radius:50%;">
-            <select id="lang-selector" onchange="changeLanguage(this.value)" style="width:auto; padding:2px; font-size:10px;">
-                <option value="en">English</option>
-                <option value="te">తెలుగు</option>
-            </select>
+        <div style="display:flex; align-items:center;">
+            <img id="h-img" src="" style="width:38px; height:38px; border-radius:50%;">
+            <div style="margin-left:8px;">
+                <span id="u-display" style="font-weight:600; font-size:14px; display:block;">User</span>
+                <select id="lang-selector" onchange="changeLanguage(this.value)" style="width: auto; padding: 2px; margin: 0; font-size: 10px; border: none; background: transparent; color: var(--primary);">
+                    <option value="en">English</option>
+                    <option value="te">తెలుగు</option>
+                </select>
+            </div>
         </div>
-        <div style="display:flex; gap:15px;">
+        <div style="display:flex; gap:18px;">
             <i class="fas fa-robot" onclick="show('ai-bot')"></i>
-            <i class="fas fa-cog" onclick="show('profile')"></i>
+            <i class="fas fa-bell" onclick="show('notifications')"></i>
+            <i class="fas fa-cog" onclick="show('settings')"></i>
         </div>
     </header>
 
     <main>
         <section id="home" class="section active">
+            <div class="card" id="mem-banner" style="display:none; background: linear-gradient(to right, #6a11cb, #2575fc); color:white;">
+                <small><i class="fas fa-history"></i> <span data-key="memory_title">On This Day Memory:</span></small>
+                <p id="mem-text" style="font-size:12px; margin:5px 0 0 0;"></p>
+            </div>
             <div class="card">
-                <textarea id="msgInput" data-placeholder="feed_placeholder"></textarea>
-                <input type="file" id="f-post" accept="image/*,video/*">
-                <button onclick="handlePost()" class="btn-primary" data-key="post_btn">Post</button>
+                <textarea id="msgInput" rows="2" data-placeholder="feed_placeholder" placeholder="Share a memory or career update..."></textarea>
+                <div id="poll-ui" style="display:none; background:#f1f3f5; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <input type="text" id="p-q" placeholder="Poll Question">
+                    <input type="text" id="p-1" placeholder="Option 1">
+                    <input type="text" id="p-2" placeholder="Option 2">
+                </div>
+                <div id="file-name-preview" style="font-size: 11px; color: var(--primary); margin-bottom: 5px;"></div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:15px; color:var(--primary);">
+                        <label title="Upload Image or Video"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
+                        <i class="fas fa-poll" onclick="togglePoll()"></i>
+                    </div>
+                    <button onclick="handlePost()" id="postBtn" class="btn-primary" style="width:80px;" data-key="post_btn">Post</button>
+                </div>
             </div>
             <div id="feed-container"></div>
         </section>
 
+        <section id="career" class="section">
+            <div class="card">
+                <h3 data-key="library_title">Digital Library</h3>
+                <input type="text" id="lib-title" data-placeholder="resource_placeholder" placeholder="Resource Title">
+                <div style="display:flex; gap:5px;">
+                    <label class="btn-primary" style="text-align:center;"><i class="fas fa-paperclip"></i><input type="file" id="f-lib" hidden></label>
+                    <button onclick="uploadToLibrary()" class="btn-primary" data-key="share_btn">Share Resource</button>
+                </div>
+            </div>
+            <div id="library-list" class="lib-grid"></div>
+        </section>
+
         <section id="search" class="section">
             <div class="card">
-                <h3 data-key="search_title">Search</h3>
-                <input type="text" id="s-inst" data-placeholder="inst_placeholder">
-                <input type="number" id="s-year" data-placeholder="year_placeholder">
-                <input type="text" id="s-class" data-placeholder="class_placeholder">
-                <input type="text" id="s-city" data-placeholder="city_placeholder">
-                <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search</button>
+                <h3 data-key="search_title">Find Classmates</h3>
+                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution Name">
+                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Passout Year">
+                <input type="text" id="s-class" data-placeholder="class_placeholder" placeholder="Studying Class">
+                <input type="text" id="s-city" data-placeholder="city_placeholder" placeholder="Institution City">
+                <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search Now</button>
             </div>
             <div id="search-results"></div>
         </section>
 
         <section id="friends" class="section">
+            <div class="card"><h3 data-key="circle_title">Friends List</h3></div>
             <div id="friends-list"></div>
-            <div id="auto-groups" style="margin-top:20px;"></div>
+            <hr>
+            <div class="card"><h3 data-key="groups_title">My Class Groups</h3></div>
+            <div id="auto-groups"></div>
         </section>
 
         <section id="chat-window" class="section">
-            <h4 id="chat-t-name">Chat</h4>
+            <div class="card" style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-arrow-left" onclick="show('friends')"></i>
+                <b id="chat-t-name">Chat</b>
+            </div>
             <div id="chat-messages"></div>
-            <input type="text" id="chatInput" data-placeholder="msg_placeholder">
-            <button onclick="sendChatMessage()" class="btn-primary">Send</button>
-            <label style="font-size:10px;"><input type="checkbox" id="auto-translate"> Auto-translate</label>
+            <div class="card" style="display:flex; gap:5px;">
+                <input type="text" id="chatInput" data-placeholder="msg_placeholder" placeholder="Message...">
+                <button onclick="sendChatMessage()" class="btn-primary" style="width:50px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </section>
 
         <section id="ai-bot" class="section">
-            <h3 data-key="ai_title">Career AI</h3>
-            <div id="ai-msgs"></div>
-            <input type="text" id="aiInput" data-placeholder="ask_ai_placeholder">
-            <button onclick="askAI()" class="btn-primary" data-key="ask_btn">Ask AI</button>
+            <div class="card"><h3 data-key="ai_title">Career AI</h3></div>
+            <div id="ai-msgs" style="height:50vh; overflow-y:auto; padding:10px;"></div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="aiInput" data-placeholder="ask_ai_placeholder" placeholder="Ask AI...">
+                <button onclick="askAI()" class="btn-primary" style="width:70px;" data-key="ask_btn">Ask</button>
+            </div>
         </section>
 
         <section id="profile" class="section">
+            <div class="card" style="text-align:center;">
+                <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
+                <input type="text" id="p-name" placeholder="Full Name">
+                <input type="text" id="p-inst" placeholder="Institution Name">
+                <input type="number" id="p-year" placeholder="Passout Year">
+                <input type="text" id="p-class" placeholder="Studying Class">
+                <input type="text" id="p-city" placeholder="Institution City">
+                <input type="text" id="p-skills" placeholder="Skills (e.g. Maths, Java)">
+                <button onclick="updateProfile()" class="btn-primary" data-key="profile_update_btn">Update Profile & Sync Groups</button>
+                <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary" data-key="whatsapp_invite"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
+                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary" data-key="logout_btn">Logout</button>
+            </div>
+            <div class="card" style="font-size: 11px; text-align: center;">
+                <a href="#" onclick="alert('Privacy Policy: Your data is encrypted and not shared with 3rd parties.')" data-key="privacy_link">Privacy Policy</a> | <a href="#" onclick="deleteMyData()" style="color:var(--danger);" data-key="delete_data">Delete My Data</a>
+            </div>
+        </section>
+
+        <section id="settings" class="section">
             <div class="card">
-                <img id="p-img" src="" style="width:60px; border-radius:50%;">
-                <input type="text" id="p-name" placeholder="Name">
-                <input type="text" id="p-inst" placeholder="Institution">
-                <input type="number" id="p-year" placeholder="Year">
-                <input type="text" id="p-class" placeholder="Class">
-                <input type="text" id="p-city" placeholder="City">
-                <input type="text" id="p-skills" placeholder="Skills">
-                <button onclick="updateProfile()" class="btn-primary">Save Profile</button>
-                <button onclick="logout()" style="background:red; margin-top:10px;" class="btn-primary">Logout</button>
+                <h3 data-key="settings_title">Settings</h3>
+                <button onclick="toggleDarkMode()" class="btn-primary" data-key="dark_mode_btn">Toggle Dark Mode</button>
             </div>
         </section>
     </main>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="show('home', this)">Feed</div>
-        <div class="nav-item" onclick="show('search', this)">Search</div>
-        <div class="nav-item" onclick="show('friends', this)">Circle</div>
-        <div class="nav-item" onclick="show('profile', this)">Profile</div>
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br><span data-key="nav_feed">Feed</span></div>
+        <div class="nav-item" onclick="show('career', this)"><i class="fas fa-book"></i><br><span data-key="nav_library">Library</span></div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br><span data-key="nav_search">Search</span></div>
+        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-users"></i><br><span data-key="nav_circle">Circle</span></div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><br><span data-key="nav_profile">Profile</span></div>
     </nav>
+
     <script src="app.js"></script>
+    <script>
+        function showFileName() {
+            const file = document.getElementById('f-post').files[0];
+            const preview = document.getElementById('file-name-preview');
+            if(preview) preview.innerText = file ? "Selected: " + file.name : "";
+        }
+        function acceptGDPR() {
+            localStorage.setItem('gdpr_accepted', 'true');
+            document.getElementById('gdpr-banner').style.display = 'none';
+        }
+        window.onload = function() {
+            if(!localStorage.getItem('gdpr_accepted')) {
+                document.getElementById('gdpr-banner').style.display = 'block';
+            }
+        }
+    </script>
 </body>
 </html>
