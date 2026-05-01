@@ -1,4 +1,4 @@
-// Firebase Configuration (మీ పాత వివరాలు)
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
     authDomain: "class-connect-b58f0.firebaseapp.com",
@@ -17,15 +17,12 @@ let user = null;
 let currentChatUid = null;
 let currentLang = localStorage.getItem('appLang') || 'en';
 
-// --- 1. Translation Dictionary (Updated with Translation labels) ---
+// --- 1. Translation Dictionary ---
 const translations = {
     en: {
         feed_placeholder: "Share a memory or career update...",
         post_btn: "Post",
         memory_title: "On This Day Memory:",
-        library_title: "Digital Library",
-        resource_placeholder: "Resource Title",
-        share_btn: "Share Resource",
         search_title: "Find Classmates",
         inst_placeholder: "Institution Name",
         year_placeholder: "Passout Year",
@@ -35,31 +32,24 @@ const translations = {
         circle_title: "Friends List",
         groups_title: "My Class Groups",
         msg_placeholder: "Message...",
-        ai_title: "Career AI",
-        ask_ai_placeholder: "Ask AI...",
-        ask_btn: "Ask",
+        ai_title: "Career AI Assistant",
+        ask_ai_placeholder: "Ask about jobs, skills...",
+        ask_btn: "Ask AI",
         profile_update_btn: "Update Profile & Sync Groups",
         whatsapp_invite: "Invite via WhatsApp",
         logout_btn: "Logout",
-        settings_title: "Settings",
-        dark_mode_btn: "Toggle Dark Mode",
-        nav_feed: "Feed",
-        nav_library: "Library",
+        nav_feed: "Home",
         nav_search: "Search",
         nav_circle: "Circle",
-        nav_profile: "Profile",
-        privacy_link: "Privacy Policy",
-        delete_data: "Delete My Data",
+        nav_profile: "Me",
         translate_label: "Auto-translate to English",
-        ai_thinking: "AI is thinking..."
+        ai_thinking: "AI is thinking...",
+        nav_notifications: "Notifications"
     },
     te: {
         feed_placeholder: "జ్ఞాపకాన్ని లేదా కెరీర్ అప్‌డేట్‌ను పంచుకోండి...",
         post_btn: "పోస్ట్",
         memory_title: "ఈ రోజు జ్ఞాపకం:",
-        library_title: "డిజిటల్ లైబ్రరీ",
-        resource_placeholder: "వనరు పేరు",
-        share_btn: "షేర్ చేయండి",
         search_title: "క్లాస్‌మేట్స్‌ని వెతకండి",
         inst_placeholder: "సంస్థ పేరు",
         year_placeholder: "పాసవుట్ సంవత్సరం",
@@ -69,27 +59,23 @@ const translations = {
         circle_title: "స్నేహితుల జాబితా",
         groups_title: "నా క్లాస్ గ్రూపులు",
         msg_placeholder: "సందేశం పంపండి...",
-        ai_title: "కెరీర్ AI",
-        ask_ai_placeholder: "AI ని అడగండి...",
+        ai_title: "కెరీర్ AI అసిస్టెంట్",
+        ask_ai_placeholder: "జాబ్స్, స్కిల్స్ గురించి అడగండి...",
         ask_btn: "అడుగు",
         profile_update_btn: "ప్రొఫైల్ అప్‌డేట్ & గ్రూప్ సింక్",
         whatsapp_invite: "WhatsApp ద్వారా ఆహ్వానించండి",
         logout_btn: "లాగ్ అవుట్",
-        settings_title: "సెట్టింగ్స్",
-        dark_mode_btn: "డార్క్ మోడ్ మార్చండి",
-        nav_feed: "ఫీడ్",
-        nav_library: "లైబ్రరీ",
+        nav_feed: "హోమ్",
         nav_search: "సెర్చ్",
         nav_circle: "సర్కిల్",
         nav_profile: "ప్రొఫైల్",
-        privacy_link: "ప్రైవసీ పాలసీ",
-        delete_data: "నా డేటాను తొలగించు",
         translate_label: "తెలుగులోకి అనువదించు",
-        ai_thinking: "AI ఆలోచిస్తోంది..."
+        ai_thinking: "AI ఆలోచిస్తోంది...",
+        nav_notifications: "నోటిఫికేషన్లు"
     }
 };
 
-// --- 2. Auth Listener ---
+// --- 2. Auth & User Initialization ---
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = 'none';
@@ -103,6 +89,7 @@ auth.onAuthStateChanged(u => {
             updateUI();
             loadFeed();
             loadFriends();
+            loadNotifications();
             autoGroupSync();
             applyLanguage();
         });
@@ -114,7 +101,7 @@ auth.onAuthStateChanged(u => {
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut().then(() => location.reload()); }
 
-// --- 3. Translation Logic ---
+// --- 3. UI & Language Logic ---
 function changeLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('appLang', lang);
@@ -123,16 +110,13 @@ function changeLanguage(lang) {
 
 function applyLanguage() {
     const langData = translations[currentLang];
-    document.querySelectorAll('[data-placeholder]').forEach(el => {
-        el.placeholder = langData[el.getAttribute('data-placeholder')];
-    });
+    document.querySelectorAll('[data-placeholder]').forEach(el => el.placeholder = langData[el.getAttribute('data-placeholder')]);
     document.querySelectorAll('[data-key]').forEach(el => {
         const key = el.getAttribute('data-key');
         if (langData[key]) el.innerText = langData[key];
     });
 }
 
-// API ద్వారా టెక్స్ట్‌ని అనువదించే ఫంక్షన్
 async function translateText(text, target) {
     try {
         const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${target}`);
@@ -141,7 +125,50 @@ async function translateText(text, target) {
     } catch(e) { return text; }
 }
 
-// --- 4. Messaging & Real-time Translation ---
+// --- 4. Post, Media & Polls ---
+async function handlePost() {
+    const msg = document.getElementById('msgInput').value;
+    const file = document.getElementById('f-post').files[0];
+    const pollQ = document.getElementById('p-q').value;
+    
+    if(!msg && !file && !pollQ) return;
+    
+    let postData = { uid: user.uid, userName: user.name, userPhoto: user.photo, msg: msg, time: Date.now() };
+    
+    if(file) {
+        postData.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+        postData.media = await toBase64(file);
+    }
+    
+    if(pollQ) {
+        postData.poll = { question: pollQ, options: [
+            { text: document.getElementById('p-1').value, votes: 0 },
+            { text: document.getElementById('p-2').value, votes: 0 }
+        ]};
+    }
+
+    db.ref('posts').push(postData).then(() => {
+        document.getElementById('msgInput').value = "";
+        document.getElementById('f-post').value = "";
+        document.getElementById('p-q').value = "";
+        document.getElementById('poll-ui').style.display = 'none';
+    });
+}
+
+function loadFeed() {
+    db.ref('posts').limitToLast(20).on('value', snap => {
+        const cont = document.getElementById('feed-container');
+        cont.innerHTML = "";
+        let posts = [];
+        snap.forEach(s => posts.push({ id: s.key, ...s.val() }));
+        posts.reverse().forEach(p => {
+            let mediaHTML = p.media ? (p.mediaType === 'video' ? `<video src="${p.media}" class="feed-media" controls></video>` : `<img src="${p.media}" class="feed-media">`) : "";
+            cont.innerHTML += `<div class="card"><b>${p.userName}</b><p>${p.msg}</p>${mediaHTML}</div>`;
+        });
+    });
+}
+
+// --- 5. Messaging & AI Bot ---
 function openChat(targetUid, targetName) {
     currentChatUid = targetUid;
     document.getElementById('chat-t-name').innerText = targetName;
@@ -150,21 +177,15 @@ function openChat(targetUid, targetName) {
     
     db.ref('chats/' + chatId).on('value', async snap => {
         const cont = document.getElementById('chat-messages');
-        const isAutoTrans = document.getElementById('auto-translate') ? document.getElementById('auto-translate').checked : false;
+        const isAutoTrans = document.getElementById('auto-translate').checked;
         cont.innerHTML = "";
-        
-        const msgs = [];
-        snap.forEach(s => { msgs.push(s.val()); });
-
-        for(let m of msgs) {
+        snap.forEach(async s => {
+            const m = s.val();
             let display = m.text;
-            // ఒకవేళ ఆటో-ట్రాన్స్‌లేట్ ఆన్ లో ఉంటే మరియు మెసేజ్ అవతలి వారిదైతే అనువదిస్తుంది
-            if(isAutoTrans && m.sender !== user.uid) {
-                display = await translateText(m.text, currentLang);
-            }
+            if(isAutoTrans && m.sender !== user.uid) display = await translateText(m.text, currentLang);
             const cls = m.sender === user.uid ? 'msg-sent' : 'msg-received';
             cont.innerHTML += `<div class="${cls}">${display}</div>`;
-        }
+        });
         cont.scrollTop = cont.scrollHeight;
     });
 }
@@ -177,57 +198,26 @@ function sendChatMessage() {
     document.getElementById('chatInput').value = "";
 }
 
-// --- 5. Career AI Logic ---
 async function askAI() {
-    const input = document.getElementById('aiInput');
-    const msg = input.value;
+    const msg = document.getElementById('aiInput').value;
     if(!msg) return;
-
     const cont = document.getElementById('ai-msgs');
     cont.innerHTML += `<div class="msg-sent">${msg}</div>`;
-    input.value = "";
+    document.getElementById('aiInput').value = "";
     
     const thinkingId = "ai-" + Date.now();
     cont.innerHTML += `<div id="${thinkingId}" class="msg-received">${translations[currentLang].ai_thinking}</div>`;
-    cont.scrollTop = cont.scrollHeight;
-
-    try {
-        const prompt = `As a career expert, help with: ${msg}. (For Mathematics postgraduates, consider Data Science or Teaching).`;
-        const aiResponse = await translateText(prompt, currentLang);
-        document.getElementById(thinkingId).innerText = aiResponse;
-    } catch (e) {
-        document.getElementById(thinkingId).innerText = "AI Offline.";
-    }
+    
+    const prompt = `As a Math expert and career coach, for your query "${msg}", I suggest...`;
+    const response = await translateText(prompt, currentLang);
+    document.getElementById(thinkingId).innerText = response;
     cont.scrollTop = cont.scrollHeight;
 }
 
-// --- 6. Core Features (Feed, Profile, UI) ---
-function loadFeed() {
-    db.ref('posts').limitToLast(20).on('value', snap => {
-        const cont = document.getElementById('feed-container');
-        cont.innerHTML = "";
-        let posts = [];
-        snap.forEach(s => { posts.push({ id: s.key, ...s.val() }); });
-        posts.reverse().forEach(p => {
-            let mediaHTML = p.media ? (p.mediaType === 'video' ? `<video src="${p.media}" class="feed-media" controls></video>` : `<img src="${p.media}" class="feed-media">`) : "";
-            cont.innerHTML += `<div class="card"><b>${p.userName}</b><p>${p.msg}</p>${mediaHTML}</div>`;
-        });
-    });
-}
-
-async function handlePost() {
-    const msg = document.getElementById('msgInput').value;
-    const file = document.getElementById('f-post').files[0];
-    if(!msg && !file) return;
-    let postData = { uid: user.uid, userName: user.name, userPhoto: user.photo, msg: msg, time: Date.now() };
-    if(file) {
-        postData.mediaType = file.type.startsWith('video') ? 'video' : 'image';
-        postData.media = await toBase64(file);
-    }
-    db.ref('posts').push(postData).then(() => {
-        document.getElementById('msgInput').value = "";
-        document.getElementById('f-post').value = "";
-    });
+// --- 6. Utilities & Notifications ---
+function shareInvite() {
+    const msg = encodeURIComponent(`Join me on Classmate Connect Global!\nLink: ${window.location.href}`);
+    window.open(`https://api.whatsapp.com/send?text=${msg}`);
 }
 
 function updateProfile() {
@@ -245,7 +235,7 @@ function updateProfile() {
 function updateUI() {
     document.getElementById('h-img').src = user.photo;
     document.getElementById('u-display').innerText = user.name.split(' ')[0];
-    document.getElementById('lang-selector').value = currentLang;
+    document.getElementById('p-img').src = user.photo;
     document.getElementById('p-name').value = user.name;
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-year').value = user.year;
@@ -264,17 +254,40 @@ function show(id, el) {
 }
 
 function toBase64(file) {
-    return new Promise((res, rej) => {
+    return new Promise((res) => {
         const r = new FileReader();
         r.readAsDataURL(file);
         r.onload = () => res(r.result);
-        r.onerror = e => rej(e);
     });
 }
 
 function toggleDarkMode() { document.body.classList.toggle('dark'); }
+
 function autoGroupSync() {
     if(user.inst && user.year) {
         document.getElementById('auto-groups').innerHTML = `<div class="card" style="background:var(--primary); color:white;">Joined ${user.inst} (${user.year})</div>`;
     }
+}
+
+function loadNotifications() {
+    // నోటిఫికేషన్ లాజిక్ ఇక్కడ వస్తుంది
+    document.getElementById('notif-list').innerHTML = `<div class="card">No new notifications.</div>`;
+}
+
+function loadFriends() {
+    // ఫ్రెండ్స్ లిస్ట్ లాజిక్
+}
+
+function searchClassmates() {
+    const inst = document.getElementById('s-inst').value.toLowerCase();
+    db.ref('users').once('value', snap => {
+        const res = document.getElementById('search-results');
+        res.innerHTML = "";
+        snap.forEach(s => {
+            const u = s.val();
+            if(u.inst && u.inst.toLowerCase().includes(inst) && s.key !== user.uid) {
+                res.innerHTML += `<div class="card"><b>${u.name}</b> (${u.year})</div>`;
+            }
+        });
+    });
 }
