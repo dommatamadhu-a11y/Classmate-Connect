@@ -30,6 +30,7 @@
         .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px 15px; border-radius: 18px 18px 18px 0; max-width: 80%; font-size: 13px; }
         
         #gdpr-banner { position: fixed; bottom: 70px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 10px; z-index: 3000; display: none; font-size: 12px; }
+        .verified-badge { background: var(--primary); color: white; border-radius: 50%; padding: 2px; font-size: 10px; margin-left: 5px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -38,7 +39,7 @@
 <body>
 
     <div id="gdpr-banner">
-        <p id="gdpr-text">We use cookies for the best experience. By continuing, you agree to our Privacy Policy.</p>
+        <p>We use cookies for the best experience. By continuing, you agree to our Privacy Policy.</p>
         <button onclick="acceptGDPR()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">Accept</button>
     </div>
 
@@ -80,7 +81,6 @@
                     <input type="text" id="p-2" placeholder="Option 2">
                 </div>
                 <div id="file-name-preview" style="font-size: 11px; color: var(--primary);"></div>
-                
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                     <div style="display:flex; gap:15px; color:var(--primary);">
                         <label style="cursor:pointer;"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
@@ -95,10 +95,8 @@
         <section id="search" class="section">
             <div class="card">
                 <h3 data-key="search_title">Find Classmates</h3>
-                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution Name">
-                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Passout Year">
-                <input type="text" id="s-class" data-placeholder="class_placeholder" placeholder="Studying Class">
-                <input type="text" id="s-city" data-placeholder="city_placeholder" placeholder="Institution City">
+                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution">
+                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Year">
                 <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search Now</button>
             </div>
             <div id="search-results"></div>
@@ -107,8 +105,7 @@
         <section id="friends" class="section">
             <div class="card"><h3 data-key="circle_title">Friends List</h3></div>
             <div id="friends-list"></div>
-            <hr>
-            <div class="card"><h3 data-key="groups_title">My Class Groups</h3></div>
+            <div class="card"><h3 data-key="groups_title">Class Groups</h3></div>
             <div id="auto-groups"></div>
         </section>
 
@@ -119,10 +116,8 @@
             </div>
             <div id="chat-messages"></div>
             <div class="card">
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="chatInput" data-placeholder="msg_placeholder" placeholder="Message...">
-                    <button onclick="sendChatMessage()" class="btn-primary" style="width:50px;"><i class="fas fa-paper-plane"></i></button>
-                </div>
+                <input type="text" id="chatInput" data-placeholder="msg_placeholder" placeholder="Message...">
+                <button onclick="sendChatMessage()" class="btn-primary" style="margin-top:5px;"><i class="fas fa-paper-plane"></i></button>
                 <label style="font-size:10px; color:var(--primary); margin-top:5px; display:block;">
                     <input type="checkbox" id="auto-translate"> <span data-key="translate_label">Auto-translate</span>
                 </label>
@@ -130,7 +125,12 @@
         </section>
 
         <section id="ai-bot" class="section">
-            <div class="card"><h3 data-key="ai_title">Career AI</h3></div>
+            <div class="card">
+                <h3 data-key="ai_title">Career AI Assistant</h3>
+                <button onclick="generateRoadmap()" class="btn-primary" style="background:var(--success); margin-bottom:10px;">
+                    <i class="fas fa-map-signs"></i> Generate Career Roadmap
+                </button>
+            </div>
             <div id="ai-msgs"></div>
             <div class="card" style="display:flex; gap:5px;">
                 <input type="text" id="aiInput" data-placeholder="ask_ai_placeholder" placeholder="Ask AI...">
@@ -139,32 +139,42 @@
         </section>
 
         <section id="notifications" class="section">
-            <div class="card"><h3 data-key="nav_notifications">Notifications</h3></div>
+            <div class="card"><h3>Notifications</h3></div>
             <div id="notif-list"></div>
         </section>
 
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
-                <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
+                <div style="position:relative; width:80px; margin:auto;">
+                    <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
+                    <span id="v-badge" style="display:none; position:absolute; bottom:0; right:0; background:var(--primary); color:white; border-radius:50%; width:20px; height:20px; font-size:12px; border:2px solid white;"><i class="fas fa-check"></i></span>
+                </div>
                 <input type="text" id="p-name" placeholder="Full Name">
                 <input type="text" id="p-inst" placeholder="Institution">
                 <input type="number" id="p-year" placeholder="Passout Year">
-                <input type="text" id="p-class" placeholder="Class">
+                <input type="text" id="p-class" placeholder="Studying Class">
                 <input type="text" id="p-city" placeholder="City">
-                <input type="text" id="p-skills" placeholder="Skills">
-                <button onclick="updateProfile()" class="btn-primary" data-key="profile_update_btn">Update Profile</button>
-                <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary" data-key="whatsapp_invite"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
-                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary" data-key="logout_btn">Logout</button>
+                <input type="text" id="p-skills" placeholder="Skills (comma separated)">
+                <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
+                
+                <div id="verify-section" class="card" style="margin-top:15px; border:1px dashed var(--primary);">
+                    <p style="font-size:11px;">Verify Alumni Status</p>
+                    <input type="file" id="v-doc" style="font-size:10px;">
+                    <button onclick="requestVerification()" class="btn-primary" style="font-size:12px; padding:5px;">Upload & Verify</button>
+                </div>
+
+                <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
+                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
             </div>
-            <div class="card" style="font-size: 11px; text-align: center;">
-                <a href="#" onclick="deleteMyData()" style="color:var(--danger);" data-key="delete_data">Delete My Data</a>
+            <div class="card" style="text-align: center;">
+                <a href="#" onclick="deleteMyData()" style="color:var(--danger); font-size: 11px;">Delete My Data</a>
             </div>
         </section>
 
         <section id="settings" class="section">
             <div class="card">
-                <h3 data-key="settings_title">Settings</h3>
-                <button onclick="toggleDarkMode()" class="btn-primary" data-key="dark_mode_btn">Toggle Dark Mode</button>
+                <h3>Settings</h3>
+                <button onclick="toggleDarkMode()" class="btn-primary">Toggle Dark Mode</button>
             </div>
         </section>
     </main>
@@ -180,7 +190,7 @@
     <script>
         function showFileName() {
             const file = document.getElementById('f-post').files[0];
-            document.getElementById('file-name-preview').innerText = file ? "Selected: " + file.name : "";
+            document.getElementById('file-name-preview').innerText = file ? "File: " + file.name : "";
         }
         function togglePoll() {
             const ui = document.getElementById('poll-ui');
