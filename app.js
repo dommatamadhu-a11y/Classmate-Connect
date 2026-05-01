@@ -19,18 +19,20 @@ let currentLang = localStorage.getItem('appLang') || 'en';
 
 const translations = {
     en: {
-        feed_placeholder: "Share a memory or career update...",
+        feed_placeholder: "Share a memory...",
         post_btn: "Post",
         memory_title: "On This Day Memory:",
         search_title: "Find Classmates",
         inst_placeholder: "Institution Name",
         year_placeholder: "Passout Year",
+        class_placeholder: "Studying Class",
+        city_placeholder: "Institution City",
         search_btn_text: "Search Now",
         circle_title: "Friends List",
-        groups_title: "My Class Groups",
+        groups_title: "Class Groups",
         msg_placeholder: "Message...",
         ai_title: "Career AI Assistant",
-        ask_ai_placeholder: "Ask about jobs, skills...",
+        ask_ai_placeholder: "Ask about jobs...",
         ask_btn: "Ask AI",
         nav_feed: "Home",
         nav_search: "Search",
@@ -40,12 +42,14 @@ const translations = {
         ai_thinking: "AI is thinking..."
     },
     te: {
-        feed_placeholder: "జ్ఞాపకాన్ని లేదా కెరీర్ అప్‌డేట్‌ను పంచుకోండి...",
+        feed_placeholder: "జ్ఞాపకాన్ని పంచుకోండి...",
         post_btn: "పోస్ట్",
         memory_title: "ఈ రోజు జ్ఞాపకం:",
         search_title: "క్లాస్‌మేట్స్‌ని వెతకండి",
         inst_placeholder: "సంస్థ పేరు",
-        year_placeholder: "పాసవుట్ సంవత్సరం",
+        year_placeholder: "సంవత్సరం",
+        class_placeholder: "చదువుతున్న క్లాస్",
+        city_placeholder: "పట్టణం/సిటీ",
         search_btn_text: "వెతకండి",
         circle_title: "స్నేహితుల జాబితా",
         groups_title: "నా క్లాస్ గ్రూపులు",
@@ -113,6 +117,47 @@ function updateUI() {
     document.getElementById('p-skills').value = user.skills;
 }
 
+// --- Multi-Filter Search ---
+function searchClassmates() {
+    const sInst = document.getElementById('s-inst').value.toLowerCase();
+    const sYear = document.getElementById('s-year').value;
+    const sClass = document.getElementById('s-class').value.toLowerCase();
+    const sCity = document.getElementById('s-city').value.toLowerCase();
+
+    db.ref('users').once('value', snap => {
+        const res = document.getElementById('search-results');
+        res.innerHTML = "";
+        let count = 0;
+
+        snap.forEach(s => {
+            const u = s.val();
+            if(s.key === user.uid) return;
+
+            // Filter logic: matches only if input is provided AND matches the user data
+            let matches = true;
+            if(sInst && (!u.inst || !u.inst.toLowerCase().includes(sInst))) matches = false;
+            if(sYear && u.year != sYear) matches = false;
+            if(sClass && (!u.class || !u.class.toLowerCase().includes(sClass))) matches = false;
+            if(sCity && (!u.city || !u.city.toLowerCase().includes(sCity))) matches = false;
+
+            if(matches) {
+                count++;
+                res.innerHTML += `
+                    <div class="card" onclick="openChat('${s.key}', '${u.name}')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${u.photo || ''}" style="width:40px; height:40px; border-radius:50%;">
+                            <div>
+                                <b>${u.name}</b><br>
+                                <small>${u.inst || ''} | ${u.year || ''} | ${u.class || ''} | ${u.city || ''}</small>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        });
+        if(count === 0) res.innerHTML = "<p style='text-align:center;'>No classmates found with these filters.</p>";
+    });
+}
+
 // --- Features: Verification & Roadmap ---
 function requestVerification() {
     const file = document.getElementById('v-doc').files[0];
@@ -135,35 +180,27 @@ async function generateRoadmap() {
     if(!user.skills || !user.class) { alert("Complete profile first"); return; }
     const cont = document.getElementById('ai-msgs');
     const tid = "ai-" + Date.now();
-    cont.innerHTML += `<div id="${tid}" class="msg-received">Creating roadmap for ${user.class}...</div>`;
-    const msg = `Career Roadmap for ${user.class} with skills in ${user.skills}: Month 1-2: Skill Polish. Month 3-4: Projects. Month 5-6: Job Hunting.`;
+    cont.innerHTML += `<div id="${tid}" class="msg-received">Creating roadmap...</div>`;
+    const msg = `Career Roadmap for ${user.class}: Focus on ${user.skills}. 1. Polish basics 2. Build projects 3. Network.`;
     const res = await translateText(msg, currentLang);
     document.getElementById(tid).innerText = res;
 }
 
-// --- Posts & Media ---
+// --- Post & Feed ---
 async function handlePost() {
     const msg = document.getElementById('msgInput').value;
     const file = document.getElementById('f-post').files[0];
-    const pollQ = document.getElementById('p-q').value;
-    if(!msg && !file && !pollQ) return;
-    
+    if(!msg && !file) return;
     let pData = { uid: user.uid, userName: user.name, userPhoto: user.photo, msg: msg, time: Date.now() };
     if(file) {
         pData.mediaType = file.type.startsWith('video') ? 'video' : 'image';
         pData.media = await toBase64(file);
     }
-    if(pollQ) pData.poll = { question: pollQ, options: [{text: document.getElementById('p-1').value, v:0}, {text: document.getElementById('p-2').value, v:0}] };
-    
-    db.ref('posts').push(pData).then(() => {
-        document.getElementById('msgInput').value = "";
-        document.getElementById('p-q').value = "";
-        document.getElementById('poll-ui').style.display = 'none';
-    });
+    db.ref('posts').push(pData).then(() => { document.getElementById('msgInput').value = ""; });
 }
 
 function loadFeed() {
-    db.ref('posts').limitToLast(20).on('value', snap => {
+    db.ref('posts').limitToLast(10).on('value', snap => {
         const cont = document.getElementById('feed-container');
         cont.innerHTML = "";
         let posts = [];
@@ -183,14 +220,12 @@ function openChat(tUid, tName) {
     const cid = user.uid < tUid ? user.uid + tUid : tUid + user.uid;
     db.ref('chats/' + cid).on('value', async snap => {
         const cont = document.getElementById('chat-messages');
-        const auto = document.getElementById('auto-translate').checked;
         cont.innerHTML = "";
-        snap.forEach(async s => {
+        snap.forEach(s => {
             const m = s.val();
-            let txt = m.text;
-            if(auto && m.sender !== user.uid) txt = await translateText(m.text, currentLang);
-            cont.innerHTML += `<div class="${m.sender === user.uid ? 'msg-sent' : 'msg-received'}">${txt}</div>`;
+            cont.innerHTML += `<div class="${m.sender === user.uid ? 'msg-sent' : 'msg-received'}">${m.text}</div>`;
         });
+        cont.scrollTop = cont.scrollHeight;
     });
 }
 
@@ -239,6 +274,5 @@ function toggleDarkMode() { document.body.classList.toggle('dark'); }
 function autoGroupSync() {
     if(user.inst && user.year) document.getElementById('auto-groups').innerHTML = `<div class="card" style="background:var(--primary); color:white;">Group: ${user.inst} (${user.year})</div>`;
 }
-function loadNotifications() { document.getElementById('notif-list').innerHTML = `<div class="card">No new notifications.</div>`; }
+function loadNotifications() {}
 function loadFriends() {}
-function searchClassmates() {}
