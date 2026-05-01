@@ -38,7 +38,7 @@
 <body>
 
     <div id="gdpr-banner">
-        <p id="gdpr-text">We use cookies to ensure you get the best experience on our app. By continuing, you agree to our Privacy Policy.</p>
+        <p id="gdpr-text">We use cookies for the best experience. By continuing, you agree to our Privacy Policy.</p>
         <button onclick="acceptGDPR()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">Accept</button>
     </div>
 
@@ -60,30 +60,36 @@
         </div>
         <div style="display:flex; gap:18px;">
             <i class="fas fa-robot" onclick="show('ai-bot')"></i>
+            <i class="fas fa-bell" onclick="show('notifications')"></i>
             <i class="fas fa-cog" onclick="show('settings')"></i>
         </div>
     </header>
 
     <main>
         <section id="home" class="section active">
+            <div class="card" id="mem-banner" style="display:none; background: linear-gradient(to right, #6a11cb, #2575fc); color:white;">
+                <small><i class="fas fa-history"></i> <span data-key="memory_title">On This Day Memory:</span></small>
+                <p id="mem-text" style="font-size:12px; margin:5px 0 0 0;"></p>
+            </div>
+
             <div class="card">
                 <textarea id="msgInput" rows="2" data-placeholder="feed_placeholder" placeholder="Share a memory..."></textarea>
+                <div id="poll-ui" style="display:none; background:#f1f3f5; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <input type="text" id="p-q" placeholder="Poll Question">
+                    <input type="text" id="p-1" placeholder="Option 1">
+                    <input type="text" id="p-2" placeholder="Option 2">
+                </div>
                 <div id="file-name-preview" style="font-size: 11px; color: var(--primary);"></div>
+                
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <label style="color:var(--primary); cursor:pointer;"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
+                    <div style="display:flex; gap:15px; color:var(--primary);">
+                        <label style="cursor:pointer;"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
+                        <i class="fas fa-poll" onclick="togglePoll()" style="cursor:pointer;"></i>
+                    </div>
                     <button onclick="handlePost()" id="postBtn" class="btn-primary" style="width:80px;" data-key="post_btn">Post</button>
                 </div>
             </div>
             <div id="feed-container"></div>
-        </section>
-
-        <section id="career" class="section">
-            <div class="card">
-                <h3 data-key="library_title">Digital Library</h3>
-                <input type="text" id="lib-title" data-placeholder="resource_placeholder" placeholder="Resource Title">
-                <button onclick="uploadToLibrary()" class="btn-primary" data-key="share_btn">Share Resource</button>
-            </div>
-            <div id="library-list"></div>
         </section>
 
         <section id="search" class="section">
@@ -93,15 +99,16 @@
                 <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Passout Year">
                 <input type="text" id="s-class" data-placeholder="class_placeholder" placeholder="Studying Class">
                 <input type="text" id="s-city" data-placeholder="city_placeholder" placeholder="Institution City">
-                <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search</button>
+                <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search Now</button>
             </div>
             <div id="search-results"></div>
         </section>
 
         <section id="friends" class="section">
-            <div class="card"><h3 data-key="circle_title">Friends</h3></div>
+            <div class="card"><h3 data-key="circle_title">Friends List</h3></div>
             <div id="friends-list"></div>
-            <div class="card"><h3 data-key="groups_title">Groups</h3></div>
+            <hr>
+            <div class="card"><h3 data-key="groups_title">My Class Groups</h3></div>
             <div id="auto-groups"></div>
         </section>
 
@@ -131,6 +138,11 @@
             </div>
         </section>
 
+        <section id="notifications" class="section">
+            <div class="card"><h3 data-key="nav_notifications">Notifications</h3></div>
+            <div id="notif-list"></div>
+        </section>
+
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
                 <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
@@ -141,21 +153,24 @@
                 <input type="text" id="p-city" placeholder="City">
                 <input type="text" id="p-skills" placeholder="Skills">
                 <button onclick="updateProfile()" class="btn-primary" data-key="profile_update_btn">Update Profile</button>
+                <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary" data-key="whatsapp_invite"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
                 <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary" data-key="logout_btn">Logout</button>
+            </div>
+            <div class="card" style="font-size: 11px; text-align: center;">
+                <a href="#" onclick="deleteMyData()" style="color:var(--danger);" data-key="delete_data">Delete My Data</a>
             </div>
         </section>
 
         <section id="settings" class="section">
             <div class="card">
                 <h3 data-key="settings_title">Settings</h3>
-                <button onclick="toggleDarkMode()" class="btn-primary" data-key="dark_mode_btn">Dark Mode</button>
+                <button onclick="toggleDarkMode()" class="btn-primary" data-key="dark_mode_btn">Toggle Dark Mode</button>
             </div>
         </section>
     </main>
 
     <nav class="bottom-nav">
         <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br><span data-key="nav_feed">Home</span></div>
-        <div class="nav-item" onclick="show('career', this)"><i class="fas fa-book"></i><br><span data-key="nav_library">Library</span></div>
         <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br><span data-key="nav_search">Search</span></div>
         <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-users"></i><br><span data-key="nav_circle">Circle</span></div>
         <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><br><span data-key="nav_profile">Profile</span></div>
@@ -166,6 +181,10 @@
         function showFileName() {
             const file = document.getElementById('f-post').files[0];
             document.getElementById('file-name-preview').innerText = file ? "Selected: " + file.name : "";
+        }
+        function togglePoll() {
+            const ui = document.getElementById('poll-ui');
+            ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
         }
         function acceptGDPR() {
             localStorage.setItem('gdpr_accepted', 'true');
