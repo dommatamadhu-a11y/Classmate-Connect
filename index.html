@@ -30,7 +30,6 @@
         .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px 15px; border-radius: 18px 18px 18px 0; max-width: 80%; font-size: 13px; }
         
         #gdpr-banner { position: fixed; bottom: 70px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 10px; z-index: 3000; display: none; font-size: 12px; }
-        .verified-badge { background: var(--primary); color: white; border-radius: 50%; padding: 2px; font-size: 10px; margin-left: 5px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -95,8 +94,10 @@
         <section id="search" class="section">
             <div class="card">
                 <h3 data-key="search_title">Find Classmates</h3>
-                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution">
-                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Year">
+                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution Name">
+                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Passout Year">
+                <input type="text" id="s-class" data-placeholder="class_placeholder" placeholder="Studying Class">
+                <input type="text" id="s-city" data-placeholder="city_placeholder" placeholder="Institution City">
                 <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search Now</button>
             </div>
             <div id="search-results"></div>
@@ -154,7 +155,7 @@
                 <input type="number" id="p-year" placeholder="Passout Year">
                 <input type="text" id="p-class" placeholder="Studying Class">
                 <input type="text" id="p-city" placeholder="City">
-                <input type="text" id="p-skills" placeholder="Skills (comma separated)">
+                <input type="text" id="p-skills" placeholder="Skills">
                 <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
                 
                 <div id="verify-section" class="card" style="margin-top:15px; border:1px dashed var(--primary);">
@@ -165,9 +166,6 @@
 
                 <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
                 <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
-            </div>
-            <div class="card" style="text-align: center;">
-                <a href="#" onclick="deleteMyData()" style="color:var(--danger); font-size: 11px;">Delete My Data</a>
             </div>
         </section>
 
@@ -187,22 +185,5 @@
     </nav>
 
     <script src="app.js"></script>
-    <script>
-        function showFileName() {
-            const file = document.getElementById('f-post').files[0];
-            document.getElementById('file-name-preview').innerText = file ? "File: " + file.name : "";
-        }
-        function togglePoll() {
-            const ui = document.getElementById('poll-ui');
-            ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
-        }
-        function acceptGDPR() {
-            localStorage.setItem('gdpr_accepted', 'true');
-            document.getElementById('gdpr-banner').style.display = 'none';
-        }
-        window.onload = function() {
-            if(!localStorage.getItem('gdpr_accepted')) document.getElementById('gdpr-banner').style.display = 'block';
-        }
-    </script>
 </body>
 </html>
