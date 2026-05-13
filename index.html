@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; --gold: #ffc107; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; transition: 0.3s; }
         header { background: var(--card); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
@@ -18,12 +18,13 @@
         .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; }
+        .btn-wa { background: var(--wa); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; margin-top: 10px; text-decoration: none; display: block; text-align: center; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 10px 0; z-index: 1000; }
         .nav-item { flex: 1; text-align: center; color: #888; font-size: 10px; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: 600; }
+        .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 300px; object-fit: cover; }
+        #qr-code img { margin: auto; display: block; width: 150px; height: 150px; }
         #gdpr-banner { position: fixed; bottom: 75px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 12px; z-index: 3000; display: none; font-size: 12px; }
-        #qr-code img { margin: auto; display: block; }
-        .job-tag { background: #e7f3ff; color: var(--primary); padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 600; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -33,7 +34,7 @@
 
     <div id="gdpr-banner">
         <p>We use essential cookies & Firebase for services. By using, you agree to our Policy.</p>
-        <button onclick="acceptGDPR()" class="btn-primary" style="padding: 8px; width: auto; font-size: 11px;">Accept</button>
+        <button onclick="acceptGDPR()" class="btn-primary" style="padding: 5px; width: auto;">I Accept</button>
     </div>
 
     <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 20px;">
@@ -46,97 +47,100 @@
             <img id="h-img" src="" style="width:38px; height:38px; border-radius:50%;">
             <div style="margin-left:8px;">
                 <span id="u-display" style="font-weight:600; font-size:14px;">User</span>
-                <select id="lang-selector" onchange="changeLanguage(this.value)" style="width: auto; padding: 0; font-size: 10px; border: none; background: transparent; color: var(--primary);">
-                    <option value="en">English</option>
-                    <option value="te">తెలుగు</option>
-                </select>
             </div>
         </div>
         <div style="display:flex; gap:18px;">
             <i class="fas fa-briefcase" onclick="show('jobs')"></i>
-            <i class="fas fa-calendar-alt" onclick="show('events')"></i>
+            <i class="fas fa-book" onclick="show('library')"></i>
             <i class="fas fa-cog" onclick="show('settings')"></i>
         </div>
     </header>
 
     <main>
-        <!-- Home/Feed -->
         <section id="home" class="section active">
             <div class="card">
-                <textarea id="msgInput" rows="2" data-placeholder="feed_placeholder" placeholder="Share a memory..."></textarea>
-                <button onclick="handlePost()" class="btn-primary" style="width:80px; float:right;" data-key="post_btn">Post</button>
-                <div style="clear:both;"></div>
+                <textarea id="msgInput" rows="2" placeholder="Share a memory or study material..."></textarea>
+                <div id="poll-ui" style="display:none; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <input type="text" id="p-q" placeholder="Poll Question">
+                    <input type="text" id="p-1" placeholder="Option 1">
+                    <input type="text" id="p-2" placeholder="Option 2">
+                </div>
+                <div id="file-preview-name" style="font-size:11px; color:var(--primary); margin-bottom:5px;"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:15px; color:var(--primary);">
+                        <label style="cursor:pointer;"><i class="fas fa-image"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="previewFile()"></label>
+                        <i class="fas fa-poll" onclick="togglePoll()" style="cursor:pointer;"></i>
+                    </div>
+                    <button onclick="handlePost()" class="btn-primary" style="width:80px;">Post</button>
+                </div>
             </div>
             <div id="feed-container"></div>
         </section>
 
-        <!-- Search Classmates (4 Filters) -->
+        <section id="library" class="section">
+            <div class="card">
+                <h3>Library</h3>
+                <input type="file" id="lib-file" accept=".pdf,.doc,.docx">
+                <input type="text" id="lib-title" placeholder="Document Title">
+                <button onclick="uploadToLibrary()" class="btn-primary">Upload PDF</button>
+            </div>
+            <div id="library-list"></div>
+        </section>
+
         <section id="search" class="section">
             <div class="card">
-                <h3 data-key="search_title">Find Classmates</h3>
-                <input type="text" id="s-inst" data-placeholder="inst_placeholder" placeholder="Institution Name">
-                <input type="number" id="s-year" data-placeholder="year_placeholder" placeholder="Passout Year">
-                <input type="text" id="s-class" data-placeholder="class_placeholder" placeholder="Studying Class">
-                <input type="text" id="s-city" data-placeholder="city_placeholder" placeholder="Institution City">
-                <button onclick="searchClassmates()" class="btn-primary" data-key="search_btn_text">Search Now</button>
+                <h3>Search Classmates</h3>
+                <input type="text" id="s-inst" placeholder="Institution Name">
+                <input type="number" id="s-year" placeholder="Passout Year">
+                <input type="text" id="s-class" placeholder="Studying Class">
+                <input type="text" id="s-city" placeholder="City">
+                <button onclick="searchClassmates()" class="btn-primary">Search</button>
             </div>
             <div id="search-results"></div>
         </section>
 
-        <!-- Events (Smart Reunion Management) -->
         <section id="events" class="section">
             <div class="card">
-                <h3>Smart Reunion Management</h3>
-                <input type="text" id="ev-title" placeholder="Event Title">
+                <h3>Events & Reunions</h3>
+                <input type="text" id="ev-title" placeholder="Event Name">
                 <input type="date" id="ev-date">
                 <input type="text" id="ev-loc" placeholder="Location">
-                <button onclick="createEvent()" class="btn-primary">Create Reunion</button>
+                <button onclick="createEvent()" class="btn-primary">Create Event</button>
             </div>
             <div id="events-list"></div>
         </section>
 
-        <!-- Job & Internship Board -->
+        <section id="mentors" class="section">
+            <div class="card"><h3>Mentorship</h3></div>
+            <div id="mentor-list"></div>
+        </section>
+
         <section id="jobs" class="section">
             <div class="card">
-                <h3>Job & Internship Board</h3>
-                <input type="text" id="job-title" placeholder="Role (e.g. Web Developer)">
-                <input type="text" id="job-comp" placeholder="Company">
-                <select id="job-type">
-                    <option value="Job">Full-time Job</option>
-                    <option value="Internship">Internship</option>
-                </select>
+                <h3>Job Board</h3>
+                <input type="text" id="job-title" placeholder="Job Role">
+                <input type="text" id="job-comp" placeholder="Company Name">
                 <button onclick="postJob()" class="btn-primary">Post Opportunity</button>
             </div>
             <div id="jobs-list"></div>
         </section>
 
-        <!-- Mentorship & Circle -->
-        <section id="friends" class="section">
-            <div class="card"><h3>Peer-to-Peer Mentorship</h3><p style="font-size:11px;">Connect with seniors or skilled peers.</p></div>
-            <div id="mentor-list"></div>
-        </section>
-
-        <!-- Profile & Digital QR Business Card -->
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
-                <img id="p-img" src="" style="width:70px; height:70px; border-radius:50%;">
+                <div id="qr-code"></div>
                 <h4 id="profile-name-tag">Name</h4>
-                <div id="qr-code" style="padding:10px;"></div>
-                <p style="font-size:10px;">Scan to connect instantly</p>
                 <hr>
                 <input type="text" id="p-name" placeholder="Full Name">
                 <input type="text" id="p-inst" placeholder="Institution">
-                <input type="number" id="p-year" placeholder="Passout Year">
-                <input type="text" id="p-class" placeholder="Studying Class">
-                <input type="text" id="p-city" placeholder="City">
-                <input type="text" id="p-skills" placeholder="Skills (Mentor/Expertise)">
+                <input type="number" id="p-year" placeholder="Year">
+                <input type="text" id="p-skills" placeholder="Skills">
                 <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
-                <button onclick="deleteMyData()" style="background:none; border:none; color:var(--danger); font-size:11px; margin-top:15px; cursor:pointer;">Delete My Data (GDPR)</button>
-                <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
+                <button onclick="shareInvite()" class="btn-wa"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
+                <button onclick="deleteMyData()" style="background:none; border:none; color:var(--danger); font-size:11px; margin-top:15px; cursor:pointer;">Delete My Data</button>
+                <button onclick="logout()" style="background:var(--danger); color:white; margin-top:10px;" class="btn-primary">Logout</button>
             </div>
         </section>
 
-        <!-- Settings -->
         <section id="settings" class="section">
             <div class="card">
                 <h3>Settings</h3>
@@ -146,11 +150,11 @@
     </main>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br><span data-key="nav_feed">Home</span></div>
-        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br><span data-key="nav_search">Search</span></div>
-        <div class="nav-item" onclick="show('events', this)"><i class="fas fa-calendar-check"></i><br>Events</div>
-        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-graduation-cap"></i><br>Mentors</div>
-        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-id-card"></i><br><span data-key="nav_profile">Profile</span></div>
+        <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br>Feed</div>
+        <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br>Search</div>
+        <div class="nav-item" onclick="show('events', this)"><i class="fas fa-calendar-alt"></i><br>Events</div>
+        <div class="nav-item" onclick="show('mentors', this)"><i class="fas fa-graduation-cap"></i><br>Mentors</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-id-card"></i><br>Profile</div>
     </nav>
 
     <script src="app.js"></script>
