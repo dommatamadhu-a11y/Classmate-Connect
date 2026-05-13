@@ -13,73 +13,153 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 let user = null;
-let currentLang = localStorage.getItem('appLang') || 'en';
 
-const translations = {
-    en: { feed_placeholder: "Share a memory...", post_btn: "Post", search_title: "Find Classmates", inst_placeholder: "Institution Name", year_placeholder: "Passout Year", class_placeholder: "Studying Class", city_placeholder: "Institution City", search_btn_text: "Search Now", nav_feed: "Home", nav_search: "Search", nav_profile: "Me" },
-    te: { feed_placeholder: "జ్ఞాపకాన్ని పంచుకోండి...", post_btn: "పోస్ట్", search_title: "క్లాస్‌మేట్స్‌ని వెతకండి", inst_placeholder: "సంస్థ పేరు", year_placeholder: "పాసవుట్ సంవత్సరం", class_placeholder: "చదువుతున్న క్లాస్", city_placeholder: "పట్టణం/సిటీ", search_btn_text: "వెతకండి", nav_feed: "హోమ్", nav_search: "సెర్చ్", nav_profile: "ప్రొఫైల్" }
-};
-
+// Auth Logic
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = 'none';
         db.ref('users/' + u.uid).on('value', snap => {
             const d = snap.val() || {};
-            user = { uid: u.uid, name: d.name || u.displayName, photo: u.photoURL, inst: d.inst || "", year: d.year || "", class: d.class || "", city: d.city || "", skills: d.skills || "" };
+            user = { uid: u.uid, name: d.name || u.displayName, photo: u.photoURL, inst: d.inst || "", year: d.year || "", skills: d.skills || "" };
             updateUI();
             loadFeed();
+            loadLibrary();
             loadEvents();
-            loadJobs();
             loadMentors();
-            applyLanguage();
+            loadJobs();
             generateQRCode();
         });
-    } else { document.getElementById('login-overlay').style.display = 'flex'; }
+    } else {
+        document.getElementById('login-overlay').style.display = 'flex';
+    }
 });
 
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut().then(() => location.reload()); }
 
-function updateProfile() {
-    const d = { name: document.getElementById('p-name').value, inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value, class: document.getElementById('p-class').value, city: document.getElementById('p-city').value, skills: document.getElementById('p-skills').value };
-    db.ref('users/' + user.uid).update(d).then(() => alert("Profile Updated!"));
-}
-
 function updateUI() {
     document.getElementById('h-img').src = user.photo;
     document.getElementById('u-display').innerText = user.name.split(' ')[0];
-    document.getElementById('p-img').src = user.photo;
     document.getElementById('profile-name-tag').innerText = user.name;
     document.getElementById('p-name').value = user.name;
     document.getElementById('p-inst').value = user.inst;
     document.getElementById('p-year').value = user.year;
-    document.getElementById('p-class').value = user.class;
-    document.getElementById('p-city').value = user.city;
     document.getElementById('p-skills').value = user.skills;
 }
 
-// 1. Digital Business Card (QR Code)
+// Post Management
+function togglePoll() {
+    const ui = document.getElementById('poll-ui');
+    ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
+}
+
+function previewFile() {
+    const file = document.getElementById('f-post').files[0];
+    if(file) document.getElementById('file-preview-name').innerText = "Selected: " + file.name;
+}
+
+async function handlePost() {
+    const msg = document.getElementById('msgInput').value;
+    const file = document.getElementById('f-post').files[0];
+    const isPoll = document.getElementById('poll-ui').style.display === 'block';
+    
+    if(!msg && !file && !isPoll) return alert("Empty Post");
+
+    let postData = { uid: user.uid, name: user.name, text: msg, time: Date.now() };
+
+    if(isPoll) {
+        postData.poll = {
+            question: document.getElementById('p-q').value,
+            options: [
+                {text: document.getElementById('p-1').value, votes: 0},
+                {text: document.getElementById('p-2').value, votes: 0}
+            ]
+        };
+    }
+
+    if(file) {
+        postData.media = await toBase64(file);
+        postData.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+    }
+
+    db.ref('posts').push(postData).then(() => {
+        document.getElementById('msgInput').value = "";
+        document.getElementById('poll-ui').style.display = 'none';
+        document.getElementById('file-preview-name').innerText = "";
+    });
+}
+
+function loadFeed() {
+    db.ref('posts').limitToLast(20).on('value', snap => {
+        const cont = document.getElementById('feed-container');
+        cont.innerHTML = "";
+        snap.forEach(s => {
+            const p = s.val();
+            const id = s.key;
+            let mediaHtml = p.media ? (p.mediaType === 'video' ? `<video src="${p.media}" controls class="feed-media"></video>` : `<img src="${p.media}" class="feed-media">`) : "";
+            let pollHtml = p.poll ? `<div style="background:#eee; padding:10px; border-radius:8px; margin-top:5px;"><b>${p.poll.question}</b><br><button onclick="vote('${id}', 0)" style="width:100%; margin:5px 0;">${p.poll.options[0].text} (${p.poll.options[0].votes || 0})</button><button onclick="vote('${id}', 1)" style="width:100%;">${p.poll.options[1].text} (${p.poll.options[1].votes || 0})</button></div>` : "";
+            cont.innerHTML = `<div class="card"><b>${p.name}</b><p>${p.text}</p>${mediaHtml}${pollHtml}</div>` + cont.innerHTML;
+        });
+    });
+}
+
+function vote(postId, optIdx) {
+    db.ref(`posts/${postId}/poll/options/${optIdx}/votes`).transaction(c => (c || 0) + 1);
+}
+
+// Library Management
+async function uploadToLibrary() {
+    const file = document.getElementById('lib-file').files[0];
+    const title = document.getElementById('lib-title').value;
+    if(!file || !title) return alert("Select File and Title");
+    const base64 = await toBase64(file);
+    db.ref('library').push({ title, file: base64, fileName: file.name, uploader: user.name });
+    alert("Uploaded!");
+}
+
+function loadLibrary() {
+    db.ref('library').on('value', snap => {
+        const cont = document.getElementById('library-list');
+        cont.innerHTML = "";
+        snap.forEach(s => {
+            const d = s.val();
+            cont.innerHTML += `<div class="card"><b>${d.title}</b><br><a href="${d.file}" download="${d.fileName}" style="color:var(--primary); font-weight:bold;">Download PDF</a></div>`;
+        });
+    });
+}
+
+// Search Logic
+function searchClassmates() {
+    const sInst = document.getElementById('s-inst').value.toLowerCase();
+    const sYear = document.getElementById('s-year').value;
+    db.ref('users').once('value', snap => {
+        const res = document.getElementById('search-results');
+        res.innerHTML = "";
+        snap.forEach(s => {
+            const u = s.val();
+            if(s.key === user.uid) return;
+            if((!sInst || u.inst.toLowerCase().includes(sInst)) && (!sYear || u.year == sYear)) {
+                res.innerHTML += `<div class="card"><b>${u.name}</b><br><small>${u.inst}</small></div>`;
+            }
+        });
+    });
+}
+
+// QR Code
 function generateQRCode() {
     const qrDiv = document.getElementById('qr-code');
     qrDiv.innerHTML = "";
-    const typeNumber = 4;
-    const errorCorrectionLevel = 'L';
-    const qr = qrcode(typeNumber, errorCorrectionLevel);
-    // Information encoded in QR
-    const data = `ClassmateConnect: ${user.name} | ${user.inst} | ${user.class}`;
-    qr.addData(data);
+    const qr = qrcode(4, 'L');
+    qr.addData(`Connect with ${user.name}`);
     qr.make();
     qrDiv.innerHTML = qr.createImgTag(4);
 }
 
-// 2. Smart Event Management
+// Events
 function createEvent() {
     const title = document.getElementById('ev-title').value;
     const date = document.getElementById('ev-date').value;
-    const loc = document.getElementById('ev-loc').value;
-    if(!title || !date) return;
-    db.ref('events').push({ title, date, loc, creator: user.name, creatorId: user.uid });
-    alert("Reunion Created!");
+    if(title && date) db.ref('events').push({ title, date, loc: document.getElementById('ev-loc').value });
 }
 
 function loadEvents() {
@@ -88,19 +168,16 @@ function loadEvents() {
         cont.innerHTML = "";
         snap.forEach(s => {
             const e = s.val();
-            cont.innerHTML += `<div class="card"><b>${e.title}</b><br><small><i class="fas fa-calendar"></i> ${e.date} | <i class="fas fa-map-marker-alt"></i> ${e.loc}</small><br><button class="btn-primary" style="margin-top:5px; padding:5px; font-size:10px;">I'm Interested</button></div>`;
+            cont.innerHTML += `<div class="card"><b>${e.title}</b><br><small>${e.date}</small></div>`;
         });
     });
 }
 
-// 3. Job & Internship Board
+// Jobs & Mentors
 function postJob() {
     const title = document.getElementById('job-title').value;
     const comp = document.getElementById('job-comp').value;
-    const type = document.getElementById('job-type').value;
-    if(!title || !comp) return;
-    db.ref('jobs').push({ title, comp, type, postedBy: user.name });
-    alert("Job Posted!");
+    if(title && comp) db.ref('jobs').push({ title, comp, postedBy: user.name });
 }
 
 function loadJobs() {
@@ -109,85 +186,51 @@ function loadJobs() {
         cont.innerHTML = "";
         snap.forEach(s => {
             const j = s.val();
-            cont.innerHTML += `<div class="card"><span class="job-tag">${j.type}</span><br><b>${j.title}</b> at ${j.comp}<br><small>Referral by: ${j.postedBy}</small></div>`;
+            cont.innerHTML += `<div class="card"><b>${j.title}</b> at ${j.comp}</div>`;
         });
     });
 }
 
-// 4. Peer-to-Peer Mentorship
 function loadMentors() {
-    db.ref('users').limitToLast(20).once('value', snap => {
+    db.ref('users').once('value', snap => {
         const cont = document.getElementById('mentor-list');
         cont.innerHTML = "";
         snap.forEach(s => {
             const u = s.val();
-            if(u.skills && s.key !== user.uid) {
-                cont.innerHTML += `<div class="card" onclick="alert('Chat with ${u.name} for mentoring?')"><b>${u.name}</b><br><small>Skills: ${u.skills}</small><br><button style="background:var(--success); color:white; border:none; border-radius:5px; font-size:10px;">Connect as Mentee</button></div>`;
-            }
+            if(u.skills) cont.innerHTML += `<div class="card"><b>${u.name}</b><br><small>${u.skills}</small></div>`;
         });
     });
 }
 
-// (Existing Search & Feed Logic Remains Same)
-function searchClassmates() {
-    const sInst = document.getElementById('s-inst').value.toLowerCase();
-    const sYear = document.getElementById('s-year').value;
-    const sClass = document.getElementById('s-class').value.toLowerCase();
-    const sCity = document.getElementById('s-city').value.toLowerCase();
-    db.ref('users').once('value', snap => {
-        const res = document.getElementById('search-results');
-        res.innerHTML = "";
-        snap.forEach(s => {
-            const u = s.val();
-            if(s.key === user.uid) return;
-            let matches = true;
-            if(sInst && (!u.inst || !u.inst.toLowerCase().includes(sInst))) matches = false;
-            if(sYear && u.year != sYear) matches = false;
-            if(sClass && (!u.class || !u.class.toLowerCase().includes(sClass))) matches = false;
-            if(sCity && (!u.city || !u.city.toLowerCase().includes(sCity))) matches = false;
-            if(matches) res.innerHTML += `<div class="card"><b>${u.name}</b><br><small>${u.inst} | ${u.year} | ${u.class}</small></div>`;
-        });
+// WhatsApp
+function shareInvite() {
+    const msg = encodeURIComponent(`Join Classmate Connect to reconnect with our old friends!\nLink: ${window.location.href}`);
+    window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+}
+
+// Utils
+function toBase64(file) {
+    return new Promise((r, j) => {
+        const reader = new FileReader(); reader.readAsDataURL(file);
+        reader.onload = () => r(reader.result); reader.onerror = e => j(e);
     });
-}
-
-function handlePost() {
-    const msg = document.getElementById('msgInput').value;
-    if(!msg) return;
-    db.ref('posts').push({ uid: user.uid, userName: user.name, msg: msg, time: Date.now() });
-    document.getElementById('msgInput').value = "";
-}
-
-function loadFeed() {
-    db.ref('posts').limitToLast(10).on('value', snap => {
-        const cont = document.getElementById('feed-container');
-        cont.innerHTML = "";
-        let posts = [];
-        snap.forEach(s => posts.push(s.val()));
-        posts.reverse().forEach(p => cont.innerHTML += `<div class="card"><b>${p.userName}</b><p>${p.msg}</p></div>`);
-    });
-}
-
-// GDPR: Delete Data
-function deleteMyData() {
-    if(confirm("Permanently delete your profile and posts?")) {
-        db.ref('users/' + user.uid).remove();
-        auth.currentUser.delete().then(() => location.reload());
-    }
 }
 
 function show(id, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    if(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav')); el.classList.add('active-nav'); }
+    if(el) {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+        el.classList.add('active-nav');
+    }
 }
 
-function applyLanguage() {
-    const d = translations[currentLang];
-    document.querySelectorAll('[data-placeholder]').forEach(e => { if(d[e.getAttribute('data-placeholder')]) e.placeholder = d[e.getAttribute('data-placeholder')]; });
-    document.querySelectorAll('[data-key]').forEach(e => { if(d[e.getAttribute('data-key')]) e.innerText = d[e.getAttribute('data-key')]; });
+function updateProfile() {
+    const d = { name: document.getElementById('p-name').value, inst: document.getElementById('p-inst').value, year: document.getElementById('p-year').value, skills: document.getElementById('p-skills').value };
+    db.ref('users/' + user.uid).update(d).then(() => alert("Profile Updated"));
 }
 
-function changeLanguage(l) { currentLang = l; localStorage.setItem('appLang', l); applyLanguage(); }
 function toggleDarkMode() { document.body.classList.toggle('dark'); }
+function deleteMyData() { if(confirm("Delete data?")) { db.ref('users/' + user.uid).remove(); auth.currentUser.delete().then(() => location.reload()); } }
 function acceptGDPR() { localStorage.setItem('gdpr_accepted', 'true'); document.getElementById('gdpr-banner').style.display = 'none'; }
 if(!localStorage.getItem('gdpr_accepted')) document.getElementById('gdpr-banner').style.display = 'block';
