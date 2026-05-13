@@ -6,30 +6,24 @@
     <title>Classmate Connect Global</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --card: #ffffff; --text: #333; --success: #28a745; --danger: #dc3545; --wa: #25D366; --gold: #ffc107; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; transition: 0.3s; }
-        
         header { background: var(--card); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
         .section { display: none; padding: 10px; animation: fadeIn 0.4s; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; }
-        
         .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #eee; padding: 10px 0; z-index: 1000; }
-        .nav-item { flex: 1; text-align: center; color: #888; font-size: 11px; cursor: pointer; }
+        .nav-item { flex: 1; text-align: center; color: #888; font-size: 10px; cursor: pointer; }
         .active-nav { color: var(--primary); font-weight: 600; }
-
-        .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; background: #000; }
-        #chat-messages, #ai-msgs { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; }
-        .msg-sent { align-self: flex-end; background: var(--primary); color: white; padding: 10px 15px; border-radius: 18px 18px 0 18px; max-width: 80%; font-size: 13px; }
-        .msg-received { align-self: flex-start; background: #e9ecef; color: black; padding: 10px 15px; border-radius: 18px 18px 18px 0; max-width: 80%; font-size: 13px; }
-        
-        #gdpr-banner { position: fixed; bottom: 70px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 10px; z-index: 3000; display: none; font-size: 12px; }
+        #gdpr-banner { position: fixed; bottom: 75px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 12px; z-index: 3000; display: none; font-size: 12px; }
+        #qr-code img { margin: auto; display: block; }
+        .job-tag { background: #e7f3ff; color: var(--primary); padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 600; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -38,12 +32,12 @@
 <body>
 
     <div id="gdpr-banner">
-        <p>We use cookies for the best experience. By continuing, you agree to our Privacy Policy.</p>
-        <button onclick="acceptGDPR()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">Accept</button>
+        <p>We use essential cookies & Firebase for services. By using, you agree to our Policy.</p>
+        <button onclick="acceptGDPR()" class="btn-primary" style="padding: 8px; width: auto; font-size: 11px;">Accept</button>
     </div>
 
     <div id="login-overlay" style="position:fixed; inset:0; background:white; z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 20px;">
-        <h1 style="color:var(--primary);">Classmate Connect Global</h1>
+        <h1 style="color:var(--primary);">Classmate Connect</h1>
         <button onclick="login()" class="btn-primary" style="width:260px;">Login with Google</button>
     </div>
 
@@ -51,46 +45,32 @@
         <div style="display:flex; align-items:center;">
             <img id="h-img" src="" style="width:38px; height:38px; border-radius:50%;">
             <div style="margin-left:8px;">
-                <span id="u-display" style="font-weight:600; font-size:14px; display:block;">User</span>
-                <select id="lang-selector" onchange="changeLanguage(this.value)" style="width: auto; padding: 2px; font-size: 10px; border: none; background: transparent; color: var(--primary);">
+                <span id="u-display" style="font-weight:600; font-size:14px;">User</span>
+                <select id="lang-selector" onchange="changeLanguage(this.value)" style="width: auto; padding: 0; font-size: 10px; border: none; background: transparent; color: var(--primary);">
                     <option value="en">English</option>
                     <option value="te">తెలుగు</option>
                 </select>
             </div>
         </div>
         <div style="display:flex; gap:18px;">
-            <i class="fas fa-robot" onclick="show('ai-bot')"></i>
-            <i class="fas fa-bell" onclick="show('notifications')"></i>
+            <i class="fas fa-briefcase" onclick="show('jobs')"></i>
+            <i class="fas fa-calendar-alt" onclick="show('events')"></i>
             <i class="fas fa-cog" onclick="show('settings')"></i>
         </div>
     </header>
 
     <main>
+        <!-- Home/Feed -->
         <section id="home" class="section active">
-            <div class="card" id="mem-banner" style="display:none; background: linear-gradient(to right, #6a11cb, #2575fc); color:white;">
-                <small><i class="fas fa-history"></i> <span data-key="memory_title">On This Day Memory:</span></small>
-                <p id="mem-text" style="font-size:12px; margin:5px 0 0 0;"></p>
-            </div>
-
             <div class="card">
                 <textarea id="msgInput" rows="2" data-placeholder="feed_placeholder" placeholder="Share a memory..."></textarea>
-                <div id="poll-ui" style="display:none; background:#f1f3f5; padding:10px; border-radius:8px; margin-bottom:10px;">
-                    <input type="text" id="p-q" placeholder="Poll Question">
-                    <input type="text" id="p-1" placeholder="Option 1">
-                    <input type="text" id="p-2" placeholder="Option 2">
-                </div>
-                <div id="file-name-preview" style="font-size: 11px; color: var(--primary);"></div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="display:flex; gap:15px; color:var(--primary);">
-                        <label style="cursor:pointer;"><i class="fas fa-photo-video"></i><input type="file" id="f-post" hidden accept="image/*,video/*" onchange="showFileName()"></label>
-                        <i class="fas fa-poll" onclick="togglePoll()" style="cursor:pointer;"></i>
-                    </div>
-                    <button onclick="handlePost()" id="postBtn" class="btn-primary" style="width:80px;" data-key="post_btn">Post</button>
-                </div>
+                <button onclick="handlePost()" class="btn-primary" style="width:80px; float:right;" data-key="post_btn">Post</button>
+                <div style="clear:both;"></div>
             </div>
             <div id="feed-container"></div>
         </section>
 
+        <!-- Search Classmates (4 Filters) -->
         <section id="search" class="section">
             <div class="card">
                 <h3 data-key="search_title">Find Classmates</h3>
@@ -103,72 +83,60 @@
             <div id="search-results"></div>
         </section>
 
+        <!-- Events (Smart Reunion Management) -->
+        <section id="events" class="section">
+            <div class="card">
+                <h3>Smart Reunion Management</h3>
+                <input type="text" id="ev-title" placeholder="Event Title">
+                <input type="date" id="ev-date">
+                <input type="text" id="ev-loc" placeholder="Location">
+                <button onclick="createEvent()" class="btn-primary">Create Reunion</button>
+            </div>
+            <div id="events-list"></div>
+        </section>
+
+        <!-- Job & Internship Board -->
+        <section id="jobs" class="section">
+            <div class="card">
+                <h3>Job & Internship Board</h3>
+                <input type="text" id="job-title" placeholder="Role (e.g. Web Developer)">
+                <input type="text" id="job-comp" placeholder="Company">
+                <select id="job-type">
+                    <option value="Job">Full-time Job</option>
+                    <option value="Internship">Internship</option>
+                </select>
+                <button onclick="postJob()" class="btn-primary">Post Opportunity</button>
+            </div>
+            <div id="jobs-list"></div>
+        </section>
+
+        <!-- Mentorship & Circle -->
         <section id="friends" class="section">
-            <div class="card"><h3 data-key="circle_title">Friends List</h3></div>
-            <div id="friends-list"></div>
-            <div class="card"><h3 data-key="groups_title">Class Groups</h3></div>
-            <div id="auto-groups"></div>
+            <div class="card"><h3>Peer-to-Peer Mentorship</h3><p style="font-size:11px;">Connect with seniors or skilled peers.</p></div>
+            <div id="mentor-list"></div>
         </section>
 
-        <section id="chat-window" class="section">
-            <div class="card" style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-arrow-left" onclick="show('friends')"></i>
-                <b id="chat-t-name">Chat</b>
-            </div>
-            <div id="chat-messages"></div>
-            <div class="card">
-                <input type="text" id="chatInput" data-placeholder="msg_placeholder" placeholder="Message...">
-                <button onclick="sendChatMessage()" class="btn-primary" style="margin-top:5px;"><i class="fas fa-paper-plane"></i></button>
-                <label style="font-size:10px; color:var(--primary); margin-top:5px; display:block;">
-                    <input type="checkbox" id="auto-translate"> <span data-key="translate_label">Auto-translate</span>
-                </label>
-            </div>
-        </section>
-
-        <section id="ai-bot" class="section">
-            <div class="card">
-                <h3 data-key="ai_title">Career AI Assistant</h3>
-                <button onclick="generateRoadmap()" class="btn-primary" style="background:var(--success); margin-bottom:10px;">
-                    <i class="fas fa-map-signs"></i> Generate Career Roadmap
-                </button>
-            </div>
-            <div id="ai-msgs"></div>
-            <div class="card" style="display:flex; gap:5px;">
-                <input type="text" id="aiInput" data-placeholder="ask_ai_placeholder" placeholder="Ask AI...">
-                <button onclick="askAI()" class="btn-primary" style="width:70px;" data-key="ask_btn">Ask</button>
-            </div>
-        </section>
-
-        <section id="notifications" class="section">
-            <div class="card"><h3>Notifications</h3></div>
-            <div id="notif-list"></div>
-        </section>
-
+        <!-- Profile & Digital QR Business Card -->
         <section id="profile" class="section">
             <div class="card" style="text-align:center;">
-                <div style="position:relative; width:80px; margin:auto;">
-                    <img id="p-img" src="" style="width:80px; height:80px; border-radius:50%;">
-                    <span id="v-badge" style="display:none; position:absolute; bottom:0; right:0; background:var(--primary); color:white; border-radius:50%; width:20px; height:20px; font-size:12px; border:2px solid white;"><i class="fas fa-check"></i></span>
-                </div>
+                <img id="p-img" src="" style="width:70px; height:70px; border-radius:50%;">
+                <h4 id="profile-name-tag">Name</h4>
+                <div id="qr-code" style="padding:10px;"></div>
+                <p style="font-size:10px;">Scan to connect instantly</p>
+                <hr>
                 <input type="text" id="p-name" placeholder="Full Name">
                 <input type="text" id="p-inst" placeholder="Institution">
                 <input type="number" id="p-year" placeholder="Passout Year">
                 <input type="text" id="p-class" placeholder="Studying Class">
                 <input type="text" id="p-city" placeholder="City">
-                <input type="text" id="p-skills" placeholder="Skills">
+                <input type="text" id="p-skills" placeholder="Skills (Mentor/Expertise)">
                 <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
-                
-                <div id="verify-section" class="card" style="margin-top:15px; border:1px dashed var(--primary);">
-                    <p style="font-size:11px;">Verify Alumni Status</p>
-                    <input type="file" id="v-doc" style="font-size:10px;">
-                    <button onclick="requestVerification()" class="btn-primary" style="font-size:12px; padding:5px;">Upload & Verify</button>
-                </div>
-
-                <button onclick="shareInvite()" style="background:var(--wa); margin-top:10px;" class="btn-primary"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
+                <button onclick="deleteMyData()" style="background:none; border:none; color:var(--danger); font-size:11px; margin-top:15px; cursor:pointer;">Delete My Data (GDPR)</button>
                 <button onclick="logout()" style="background:var(--danger); margin-top:10px;" class="btn-primary">Logout</button>
             </div>
         </section>
 
+        <!-- Settings -->
         <section id="settings" class="section">
             <div class="card">
                 <h3>Settings</h3>
@@ -180,8 +148,9 @@
     <nav class="bottom-nav">
         <div class="nav-item active-nav" onclick="show('home', this)"><i class="fas fa-home"></i><br><span data-key="nav_feed">Home</span></div>
         <div class="nav-item" onclick="show('search', this)"><i class="fas fa-search"></i><br><span data-key="nav_search">Search</span></div>
-        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-users"></i><br><span data-key="nav_circle">Circle</span></div>
-        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-user"></i><br><span data-key="nav_profile">Profile</span></div>
+        <div class="nav-item" onclick="show('events', this)"><i class="fas fa-calendar-check"></i><br>Events</div>
+        <div class="nav-item" onclick="show('friends', this)"><i class="fas fa-graduation-cap"></i><br>Mentors</div>
+        <div class="nav-item" onclick="show('profile', this)"><i class="fas fa-id-card"></i><br><span data-key="nav_profile">Profile</span></div>
     </nav>
 
     <script src="app.js"></script>
