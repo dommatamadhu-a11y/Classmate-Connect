@@ -1,4 +1,3 @@
-// Firebase Configuration Setup
 const firebaseConfig = {
     apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
     authDomain: "class-connect-b58f0.firebaseapp.com",
@@ -15,10 +14,9 @@ const auth = firebase.auth();
 
 let user = null;
 let currentChatId = null;
-let currentChatType = ""; // Options: "direct" or "group"
+let currentChatType = ""; 
 let blocksList = [];
 
-// Authentication Listener and Application Bootstrapper
 auth.onAuthStateChanged(u => {
     if(u) {
         document.getElementById('login-overlay').style.display = 'none';
@@ -36,7 +34,6 @@ auth.onAuthStateChanged(u => {
                 badge: d.badge || "Customer" 
             };
             
-            // Sync user's block list to handle post and profile exclusions
             db.ref(`blocks/${user.uid}`).on('value', bSnap => {
                 blocksList = [];
                 bSnap.forEach(bChild => { blocksList.push(bChild.key); });
@@ -76,7 +73,6 @@ function updateUI() {
     }
 }
 
-// --- Home Feed & Interactive Memory Timeline (Likes, Comments, Polls, Media, Reports) ---
 function togglePoll() {
     const ui = document.getElementById('poll-ui');
     ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
@@ -127,7 +123,6 @@ function loadFeed() {
             const p = s.val();
             const id = s.key;
             
-            // Privacy Rule: Filter out content from blocked creators
             if(blocksList.includes(p.uid)) return;
 
             let mediaHtml = p.media ? (p.mediaType === 'video' ? `<video src="${p.media}" controls class="feed-media"></video>` : `<img src="${p.media}" class="feed-media">`) : "";
@@ -143,7 +138,6 @@ function loadFeed() {
                 </div>`;
             }
 
-            // Interaction Metrics (Likes and Comments Layout)
             const likesCount = p.likes ? Object.keys(p.likes).length : 0;
             let commentsHtml = "";
             if(p.comments) {
@@ -203,7 +197,6 @@ function triggerSafetyMenu(postId, targetUid) {
     }
 }
 
-// --- Smart 4-Field Search and Explicit Access Control Gateway ---
 function searchClassmates() {
     const sInst = document.getElementById('s-inst').value.toLowerCase();
     const sYear = document.getElementById('s-year').value;
@@ -246,9 +239,7 @@ function sendFriendRequest(targetUid) {
     });
 }
 
-// --- Networking Systems Hub (Requests, Friends Direct Messaging & Auto Cluster Grouping) ---
 function loadNetworkingHub() {
-    // 1. Monitor incoming handshakes
     db.ref(`requests/${user.uid}`).on('value', snap => {
         const cont = document.getElementById('incoming-requests');
         if(!cont) return;
@@ -265,7 +256,6 @@ function loadNetworkingHub() {
         });
     });
 
-    // 2. Verified Friends Messaging List
     db.ref(`friends/${user.uid}`).on('value', snap => {
         const cont = document.getElementById('friends-chat-list');
         if(!cont) return;
@@ -280,7 +270,6 @@ function loadNetworkingHub() {
         });
     });
 
-    // 3. Automated Clustering Engine (Auto Batch Group Mapping)
     const groupCont = document.getElementById('auto-groups-list');
     if(groupCont) {
         if(user.inst && user.year && user.class && user.city) {
@@ -347,7 +336,6 @@ function sendChatMessage() {
     });
 }
 
-// --- Academic Reference Library System ---
 async function uploadToLibrary() {
     const file = document.getElementById('lib-file').files[0];
     const title = document.getElementById('lib-title').value;
@@ -368,7 +356,6 @@ function loadLibrary() {
     });
 }
 
-// --- Auxiliary Services (Events, Mentors, Jobs, QR Engine) ---
 function createEvent() {
     const title = document.getElementById('ev-title').value;
     const date = document.getElementById('ev-date').value;
@@ -437,11 +424,9 @@ function shareInvite() {
 }
 
 function sendPushNotificationLog(messageText) {
-    // Simulates an FCM system push layer pipeline for foreground updates
     console.log("[Push Notification Processing Engine Log]: " + messageText);
 }
 
-// --- Functional Utilities & Profiles ---
 function toBase64(file) {
     return new Promise((r, j) => {
         const reader = new FileReader(); reader.readAsDataURL(file);
