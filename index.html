@@ -15,7 +15,7 @@
         .section { display: none; padding: 10px; animation: fadeIn 0.4s; }
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: relative; }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; background: var(--card); color: var(--text); font-size: 14px; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; }
         .btn-wa { background: var(--wa); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: 600; margin-top: 10px; text-decoration: none; display: block; text-align: center; }
@@ -25,6 +25,18 @@
         .feed-media { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 300px; object-fit: cover; }
         #qr-code img { margin: auto; display: block; width: 150px; height: 150px; }
         #gdpr-banner { position: fixed; bottom: 75px; left: 10px; right: 10px; background: #333; color: white; padding: 15px; border-radius: 12px; z-index: 3000; display: none; font-size: 12px; }
+        .post-actions { display: flex; gap: 15px; margin-top: 10px; font-size: 13px; color: #65676b; }
+        .post-actions span { cursor: pointer; }
+        .comment-box { margin-top: 8px; display: flex; gap: 5px; }
+        .comment-box input { margin: 0; padding: 8px; }
+        .comment-box button { padding: 8px 12px; border-radius: 10px; border: none; background: var(--primary); color: white; cursor: pointer; }
+        .comments-list { font-size: 12px; margin-top: 5px; background: rgba(0,0,0,0.02); padding: 5px; border-radius: 6px; }
+        .badge-verified { background: #ffd700; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 20px; font-weight: bold; margin-left: 5px; }
+        .options-dropdown { position: absolute; top: 15px; right: 15px; cursor: pointer; }
+        .chat-container { display: flex; flex-direction: column; height: 350px; background: rgba(0,0,0,0.02); border-radius: 8px; padding: 10px; overflow-y: auto; }
+        .chat-msg { max-width: 75%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; }
+        .chat-msg.sent { background: var(--primary); color: white; align-self: flex-end; }
+        .chat-msg.received { background: #e4e6eb; color: #333; align-self: flex-start; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -50,16 +62,17 @@
             </div>
         </div>
         <div style="display:flex; gap:18px;">
-            <i class="fas fa-briefcase" onclick="show('jobs')"></i>
-            <i class="fas fa-book" onclick="show('library')"></i>
-            <i class="fas fa-cog" onclick="show('settings')"></i>
+            <i class="fas fa-user-friends" onclick="show('networking')" title="Requests & Groups"></i>
+            <i class="fas fa-briefcase" onclick="show('jobs')" title="Jobs"></i>
+            <i class="fas fa-book" onclick="show('library')" title="Library"></i>
+            <i class="fas fa-cog" onclick="show('settings')" title="Settings"></i>
         </div>
     </header>
 
     <main>
         <section id="home" class="section active">
             <div class="card">
-                <textarea id="msgInput" rows="2" placeholder="Share a memory or study material..."></textarea>
+                <textarea id="msgInput" rows="2" placeholder="Share a memory, media, or updates..."></textarea>
                 <div id="poll-ui" style="display:none; background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:10px;">
                     <input type="text" id="p-q" placeholder="Poll Question">
                     <input type="text" id="p-1" placeholder="Option 1">
@@ -93,10 +106,33 @@
                 <input type="text" id="s-inst" placeholder="Institution Name">
                 <input type="number" id="s-year" placeholder="Passout Year">
                 <input type="text" id="s-class" placeholder="Studying Class">
-                <input type="text" id="s-city" placeholder="City">
+                <input type="text" id="s-city" placeholder="Institution City">
                 <button onclick="searchClassmates()" class="btn-primary">Search</button>
             </div>
             <div id="search-results"></div>
+        </section>
+
+        <section id="networking" class="section">
+            <div class="card">
+                <h3>Friend Requests</h3>
+                <div id="incoming-requests"></div>
+            </div>
+            <div class="card">
+                <h3>My Friends & Direct Chats</h3>
+                <div id="friends-chat-list"></div>
+            </div>
+            <div class="card">
+                <h3>Automatic Batch Groups</h3>
+                <div id="auto-groups-list"></div>
+            </div>
+            <div id="active-chat-box" class="card" style="display:none;">
+                <h4 id="chat-title">Chat Room</h4>
+                <div id="chat-messages" class="chat-container"></div>
+                <div class="comment-box">
+                    <input type="text" id="chatMsgInput" placeholder="Type your message...">
+                    <button onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
         </section>
 
         <section id="events" class="section">
@@ -111,7 +147,7 @@
         </section>
 
         <section id="mentors" class="section">
-            <div class="card"><h3>Mentorship</h3></div>
+            <div class="card"><h3>Mentorship & Guidance</h3></div>
             <div id="mentor-list"></div>
         </section>
 
@@ -129,11 +165,14 @@
             <div class="card" style="text-align:center;">
                 <div id="qr-code"></div>
                 <h4 id="profile-name-tag">Name</h4>
+                <div id="user-badge-space"></div>
                 <hr>
                 <input type="text" id="p-name" placeholder="Full Name">
-                <input type="text" id="p-inst" placeholder="Institution">
-                <input type="number" id="p-year" placeholder="Year">
-                <input type="text" id="p-skills" placeholder="Skills">
+                <input type="text" id="p-inst" placeholder="Institution Name">
+                <input type="number" id="p-year" placeholder="Passout Year">
+                <input type="text" id="p-class" placeholder="Studying Class">
+                <input type="text" id="p-city" placeholder="Institution City">
+                <input type="text" id="p-skills" placeholder="Skills / Expertise">
                 <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
                 <button onclick="shareInvite()" class="btn-wa"><i class="fab fa-whatsapp"></i> Invite via WhatsApp</button>
                 <button onclick="deleteMyData()" style="background:none; border:none; color:var(--danger); font-size:11px; margin-top:15px; cursor:pointer;">Delete My Data</button>
