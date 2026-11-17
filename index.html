@@ -61,7 +61,8 @@
                 <span id="u-display" style="font-weight:600; font-size:14px;">User</span>
             </div>
         </div>
-        <div style="display:flex; gap:18px;">
+        <div style="display:flex; gap:16px;">
+            <i class="fas fa-images" onclick="show('memories')" title="Memories"></i>
             <i class="fas fa-user-friends" onclick="show('networking')" title="Requests & Groups"></i>
             <i class="fas fa-briefcase" onclick="show('jobs')" title="Jobs"></i>
             <i class="fas fa-book" onclick="show('library')" title="Library"></i>
@@ -88,6 +89,16 @@
                 </div>
             </div>
             <div id="feed-container"></div>
+        </section>
+
+        <section id="memories" class="section">
+            <div class="card">
+                <h3>Classroom Memories</h3>
+                <input type="text" id="mem-caption" placeholder="Write memory caption...">
+                <input type="file" id="mem-file" accept="image/*">
+                <button onclick="uploadMemory()" class="btn-primary">Upload Memory</button>
+            </div>
+            <div id="memories-list"></div>
         </section>
 
         <section id="library" class="section">
@@ -167,7 +178,7 @@
                 <h4 id="profile-name-tag">Name</h4>
                 <div id="user-badge-space"></div>
                 <hr>
-                <input type="text" id="p-name" placeholder="Full Name">
+                <input type="text" id="p-name" placeholder="Name">
                 <input type="text" id="p-inst" placeholder="Institution Name">
                 <input type="number" id="p-year" placeholder="Passout Year">
                 <input type="text" id="p-class" placeholder="Studying Class">
