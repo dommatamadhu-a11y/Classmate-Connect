@@ -1,3 +1,4 @@
+// Firebase Configuration Setup
 const firebaseConfig = {
     apiKey: "AIzaSyAWZ2ky33M2U5xSWL-XSkU32y25U-Bwyrc",
     authDomain: "class-connect-b58f0.firebaseapp.com",
@@ -45,6 +46,7 @@ auth.onAuthStateChanged(u => {
                 loadMentors();
                 loadJobs();
                 loadNetworkingHub();
+                loadMemories(); // Added Memories Loader
                 generateQRCode();
             });
         });
@@ -118,6 +120,7 @@ async function handlePost() {
 function loadFeed() {
     db.ref('posts').limitToLast(30).on('value', snap => {
         const cont = document.getElementById('feed-container');
+        if(!cont) return;
         cont.innerHTML = "";
         snap.forEach(s => {
             const p = s.val();
@@ -197,6 +200,44 @@ function triggerSafetyMenu(postId, targetUid) {
     }
 }
 
+// --- New Feature: Classroom Memories / Photo Albums Hub ---
+async function uploadMemory() {
+    const caption = document.getElementById('mem-caption').value;
+    const fileInput = document.getElementById('mem-file');
+    const file = fileInput.files[0];
+    
+    if(!file || !caption) return alert("Please select an image and write a caption for your memory");
+    
+    const base64 = await toBase64(file);
+    db.ref('memories').push({
+        uid: user.uid,
+        name: user.name,
+        caption: caption,
+        image: base64,
+        timestamp: Date.now()
+    }).then(() => {
+        document.getElementById('mem-caption').value = "";
+        fileInput.value = "";
+        alert("Memory uploaded successfully!");
+    });
+}
+
+function loadMemories() {
+    db.ref('memories').limitToLast(20).on('value', snap => {
+        const cont = document.getElementById('memories-list');
+        if(!cont) return;
+        cont.innerHTML = "";
+        snap.forEach(s => {
+            const m = s.val();
+            cont.innerHTML += `<div class="card">
+                <b>${m.name}'s Memory</b>
+                <p>${m.caption}</p>
+                <img src="${m.image}" class="feed-media" style="border-radius:8px;">
+            </div>` + cont.innerHTML;
+        });
+    });
+}
+
 function searchClassmates() {
     const sInst = document.getElementById('s-inst').value.toLowerCase();
     const sYear = document.getElementById('s-year').value;
@@ -205,6 +246,7 @@ function searchClassmates() {
     
     db.ref('users').once('value', snap => {
         const res = document.getElementById('search-results');
+        if(!res) return;
         res.innerHTML = "";
         snap.forEach(s => {
             const u = s.val();
@@ -306,6 +348,7 @@ function openChat(chatId, title, type) {
     db.ref(nodePath).off();
     db.ref(nodePath).limitToLast(40).on('value', snap => {
         const box = document.getElementById('chat-messages');
+        if(!box) return;
         box.innerHTML = "";
         snap.forEach(s => {
             const m = s.val();
@@ -348,6 +391,7 @@ async function uploadToLibrary() {
 function loadLibrary() {
     db.ref('library').on('value', snap => {
         const cont = document.getElementById('library-list');
+        if(!cont) return;
         cont.innerHTML = "";
         snap.forEach(s => {
             const d = s.val();
@@ -369,6 +413,7 @@ function createEvent() {
 function loadEvents() {
     db.ref('events').on('value', snap => {
         const cont = document.getElementById('events-list');
+        if(!cont) return;
         cont.innerHTML = "";
         snap.forEach(s => {
             const e = s.val();
@@ -390,6 +435,7 @@ function postJob() {
 function loadJobs() {
     db.ref('jobs').on('value', snap => {
         const cont = document.getElementById('jobs-list');
+        if(!cont) return;
         cont.innerHTML = "";
         snap.forEach(s => {
             const j = s.val();
@@ -401,6 +447,7 @@ function loadJobs() {
 function loadMentors() {
     db.ref('users').once('value', snap => {
         const cont = document.getElementById('mentor-list');
+        if(!cont) return;
         cont.innerHTML = "";
         snap.forEach(s => {
             const u = s.val();
@@ -411,6 +458,7 @@ function loadMentors() {
 
 function generateQRCode() {
     const qrDiv = document.getElementById('qr-code');
+    if(!qrDiv) return;
     qrDiv.innerHTML = "";
     const qr = qrcode(4, 'L');
     qr.addData(`Connect with ${user.name} via unique UID node mapping.`);
@@ -436,7 +484,8 @@ function toBase64(file) {
 
 function show(id, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const target = document.getElementById(id);
+    if(target) target.classList.add('active');
     if(el) {
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
         el.classList.add('active-nav');
@@ -458,5 +507,6 @@ function updateProfile() {
 
 function toggleDarkMode() { document.body.classList.toggle('dark'); }
 function deleteMyData() { if(confirm("Permanently erase your account records?")) { db.ref('users/' + user.uid).remove(); auth.currentUser.delete().then(() => location.reload()); } }
-function acceptGDPR() { localStorage.setItem('gdpr_accepted', 'true'); document.getElementById('gdpr-banner').style.display = 'none'; }
-if(!localStorage.getItem('gdpr_accepted')) document.getElementById('gdpr-banner').style.display = 'block';
+function acceptGDPR() { localStorage.setItem('gdpr_accepted', 'true'); const banner = document.getElementById('gdpr-banner'); if(banner) banner.style.display = 'none'; }
+const gdprBanner = document.getElementById('gdpr-banner');
+if(!localStorage.getItem('gdpr_accepted') && gdprBanner) gdprBanner.style.display = 'block';
